@@ -1,0 +1,8 @@
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- مسار التوقيع البديل -->
+  <path d="M20,50 C30,30 40,60 60,40 C80,20 100,60 120,40 C140,20 160,30 180,50" 
+        stroke="#555" 
+        stroke-width="2" 
+        fill="none" 
+        stroke-linecap="round"/>
+</svg>

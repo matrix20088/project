@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke="none" stroke-width="1" fill-rule="evenodd">
+        <circle fill="#E8F5E9" cx="100" cy="100" r="100"/>
+        <g transform="translate(35, 30)">
+            <rect fill="#FFFFFF" stroke="#4CAF50" stroke-width="3" x="0" y="0" width="130" height="150" rx="8"/>
+            <rect fill="#4CAF50" x="10" y="10" width="110" height="20" rx="4"/>
+            <text x="35" y="25" font-family="Arial" font-size="12" font-weight="bold" fill="#FFFFFF">طلب شراء</text>
+            <line x1="10" y1="40" x2="120" y2="40" stroke="#E0E0E0" stroke-width="2"/>
+            
+            <rect fill="#E8F5E9" x="15" y="50" width="100" height="10" rx="2"/>
+            <rect fill="#E8F5E9" x="15" y="65" width="100" height="10" rx="2"/>
+            <rect fill="#E8F5E9" x="15" y="80" width="100" height="10" rx="2"/>
+            
+            <rect fill="#E8F5E9" x="15" y="100" width="40" height="10" rx="2"/>
+            <rect fill="#4CAF50" x="65" y="100" width="50" height="20" rx="4"/>
+            <text x="75" y="115" font-family="Arial" font-size="10" font-weight="bold" fill="#FFFFFF">إضافة</text>
+            
+            <rect fill="#E8F5E9" x="15" y="130" width="40" height="10" rx="2"/>
+            <rect fill="#4CAF50" x="65" y="130" width="50" height="10" rx="2"/>
+        </g>
+        <g transform="translate(140, 40)">
+            <circle fill="#FFC107" cx="25" cy="25" r="25"/>
+            <text x="25" y="30" font-family="Arial" font-size="24" font-weight="bold" fill="#FFFFFF" text-anchor="middle">+</text>
+        </g>
+    </g>
+</svg>

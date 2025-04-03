@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke="none" stroke-width="1" fill-rule="evenodd">
+        <circle fill="#E8F5E9" cx="100" cy="100" r="100"/>
+        
+        <!-- Success Checkmark in Circle -->
+        <circle fill="#4CAF50" cx="100" cy="100" r="60"/>
+        <path d="M70,100 L90,120 L130,80" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        
+        <!-- Small decorative elements -->
+        <g transform="translate(30, 40)">
+            <circle fill="#81C784" cx="10" cy="10" r="10"/>
+            <path d="M5,10 L8,13 L15,7" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        
+        <g transform="translate(160, 40)">
+            <circle fill="#81C784" cx="10" cy="10" r="10"/>
+            <path d="M5,10 L8,13 L15,7" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        
+        <g transform="translate(30, 150)">
+            <circle fill="#81C784" cx="10" cy="10" r="10"/>
+            <path d="M5,10 L8,13 L15,7" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        
+        <g transform="translate(160, 150)">
+            <circle fill="#81C784" cx="10" cy="10" r="10"/>
+            <path d="M5,10 L8,13 L15,7" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        
+        <!-- Star burst effects -->
+        <g transform="translate(50, 50)">
+            <path d="M0,0 L10,10" stroke="#66BB6A" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        
+        <g transform="translate(140, 50)">
+            <path d="M10,0 L0,10" stroke="#66BB6A" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        
+        <g transform="translate(50, 140)">
+            <path d="M0,10 L10,0" stroke="#66BB6A" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        
+        <g transform="translate(140, 140)">
+            <path d="M10,10 L0,0" stroke="#66BB6A" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        
+        <!-- Trophy/Achievement icon -->
+        <g transform="translate(85, 15)">
+            <rect fill="#FFD54F" x="10" y="0" width="10" height="5"/>
+            <path d="M5,5 L25,5 L25,20 C25,24 20,30 15,30 C10,30 5,24 5,20 L5,5 Z" fill="#FFC107"/>
+            <rect fill="#FFECB3" x="10" y="10" width="10" height="10" rx="5"/>
+        </g>
+    </g>
+</svg>

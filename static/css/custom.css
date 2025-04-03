@@ -1,0 +1,100 @@
+/**
+ * نظام إدارة المشتريات - CSS محسن للأداء
+ * تم تحسين إعدادات CSS لتقليل وقت تحميل الصفحة وزيادة استجابة التطبيق
+ */
+
+/* استخدام متغيرات CSS لتقليل حجم الملف وضمان التناسق */
+:root {
+    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+}
+
+/* تحسينات عامة - تم دمج العديد من الخصائص لتقليل حجم الملف */
+.card {
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    will-change: transform; /* تحسين أداء تحويل العناصر */
+}
+
+.card-body { padding: var(--space-lg); }
+.btn { border-radius: var(--border-radius-sm); }
+
+/* تجنب استخدام !important حيثما أمكن للحصول على أداء أفضل */
+.dataTable { margin-top: var(--space-md); }
+
+/* تخصيص DataTables للاتجاه RTL - تم دمج العديد من القواعد */
+div.dataTables_wrapper div.dataTables_filter { text-align: left; }
+.pagination { direction: ltr; }
+.dataTables_filter input { margin: 0 0 0 0.5em; }
+
+/* أزرار التصدير - تحسين الأداء باستخدام transform بدلاً من margin */
+div.dt-buttons {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+div.dt-buttons .btn {
+    margin-bottom: var(--space-sm);
+    transform: translateZ(0); /* تسريع العرض */
+}
+
+/* نموذج - تقليل حجم CSS عن طريق استخدام قواعد موجزة */
+.form-group { margin-bottom: 1.25rem; }
+
+/* إصلاح عرض الجداول على الشاشات الصغيرة - تجميع القواعد المتشابهة */
+@media (max-width: 768px) {
+    /* تحسين عرض الجداول */
+    .table-responsive, .dataTables_wrapper { 
+        overflow-x: auto;
+        /* تحسين التمرير على الأجهزة اللمسية */
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .btn-group-sm .btn { padding: 0.25rem 0.4rem; }
+}
+
+/* تحسينات الأداء للمحتوى المتحرك */
+.modal-content, 
+.dropdown-menu,
+.list-group-item {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
+
+/* تحسين وقت استجابة الأزرار */
+.btn:active {
+    transform: translateY(1px);
+    transition: transform 0.1s;
+}
+
+/* تحسين قراءة العناصر في نمط RTL */
+[dir="rtl"] .nav,
+[dir="rtl"] .list-group {
+    padding-right: 0;
+}
+
+/* تحسين ألوان الإشعارات وقابلية القراءة */
+.list-group-item.unread.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.list-group-item.unread h5.font-weight-bold {
+    font-weight: bold;
+}
+
+/* تحسين ألوان النص في الإشعارات للتباين مع الخلفية */
+.list-group-item.unread p.mb-1 {
+    color: #333 !important;
+}
+
+.list-group-item p.mb-1 {
+    color: #444 !important;
+}
+
+.list-group-item small.text-muted {
+    color: #666 !important;
+}

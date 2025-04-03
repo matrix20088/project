@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke="none" stroke-width="1" fill-rule="evenodd">
+        <circle fill="#FFF3E0" cx="100" cy="100" r="100"/>
+        
+        <!-- Purchase Order Document -->
+        <g transform="translate(50, 30)">
+            <rect fill="#FFFFFF" stroke="#FF9800" stroke-width="3" x="0" y="0" width="100" height="140" rx="8"/>
+            <rect fill="#FF9800" x="0" y="0" width="100" height="30" rx="8"/>
+            <text x="50" y="20" font-family="Arial" font-size="12" font-weight="bold" fill="#FFFFFF" text-anchor="middle">أمر شراء</text>
+            
+            <line x1="10" y1="40" x2="90" y2="40" stroke="#FFE0B2" stroke-width="2"/>
+            <line x1="10" y1="50" x2="90" y2="50" stroke="#FFE0B2" stroke-width="2"/>
+            <line x1="10" y1="60" x2="90" y2="60" stroke="#FFE0B2" stroke-width="2"/>
+            
+            <rect fill="#FFF3E0" x="10" y="70" width="80" height="25" rx="4"/>
+            <rect fill="#FFF3E0" x="10" y="105" width="80" height="25" rx="4"/>
+        </g>
+        
+        <!-- Shopping Cart Icon -->
+        <g transform="translate(25, 65)">
+            <circle fill="#FF9800" cx="15" cy="15" r="15"/>
+            <path d="M8,8 L10,13 L20,13 L22,8" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M10,16 C10,17.1 9.1,18 8,18 C6.9,18 6,17.1 6,16 C6,14.9 6.9,14 8,14" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M20,16 C20,17.1 19.1,18 18,18 C16.9,18 16,17.1 16,16 C16,14.9 16.9,14 18,14" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </g>
+        
+        <!-- Shop/Supplier Icon -->
+        <g transform="translate(150, 40)">
+            <rect fill="#FF9800" x="0" y="0" width="30" height="30" rx="4"/>
+            <rect fill="#FFFFFF" x="5" y="10" width="20" height="15" rx="2"/>
+            <rect fill="#FF9800" x="10" y="20" width="10" height="20"/>
+            <rect fill="#FF9800" x="0" y="0" width="30" height="5"/>
+        </g>
+        
+        <!-- Arrow connecting -->
+        <path d="M120,100 C140,100 140,80 160,80" stroke="#FF9800" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <polygon fill="#FF9800" points="160,80 155,76 155,84"/>
+        
+        <!-- Stamp -->
+        <g transform="translate(100, 130)">
+            <circle fill="#FFB74D" cx="25" cy="25" r="25" opacity="0.7"/>
+            <text x="25" y="30" font-family="Arial" font-size="10" font-weight="bold" fill="#FFFFFF" text-anchor="middle">APPROVED</text>
+        </g>
+        
+    </g>
+</svg>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke="none" stroke-width="1" fill-rule="evenodd">
+        <circle fill="#E1F5FE" cx="100" cy="100" r="100"/>
+        
+        <!-- Delivery Truck -->
+        <g transform="translate(30, 100)">
+            <rect fill="#0288D1" x="0" y="0" width="80" height="40" rx="5"/>
+            <rect fill="#FFFFFF" x="5" y="5" width="30" height="20" rx="2"/>
+            <rect fill="#0288D1" x="80" y="10" width="40" height="30"/>
+            <rect fill="#B3E5FC" x="85" y="15" width="30" height="20" rx="2"/>
+            <circle fill="#616161" cx="30" cy="45" r="10"/>
+            <circle fill="#FFFFFF" cx="30" cy="45" r="3"/>
+            <circle fill="#616161" cx="90" cy="45" r="10"/>
+            <circle fill="#FFFFFF" cx="90" cy="45" r="3"/>
+        </g>
+        
+        <!-- Package Box -->
+        <g transform="translate(130, 90)">
+            <rect fill="#795548" x="0" y="0" width="40" height="40"/>
+            <rect fill="#8D6E63" x="0" y="0" width="40" height="15"/>
+            <rect fill="#6D4C41" x="15" y="15" width="10" height="10"/>
+            <line x1="0" y1="15" x2="40" y2="15" stroke="#5D4037" stroke-width="2"/>
+            <line x1="20" y1="0" x2="20" y2="40" stroke="#5D4037" stroke-width="2"/>
+        </g>
+        
+        <!-- Clipboard and Checkmark -->
+        <g transform="translate(70, 30)">
+            <rect fill="#FFFFFF" stroke="#0288D1" stroke-width="2" x="0" y="0" width="50" height="60" rx="4"/>
+            <rect fill="#B3E5FC" x="5" y="5" width="40" height="5" rx="1"/>
+            <rect fill="#B3E5FC" x="5" y="15" width="40" height="5" rx="1"/>
+            <rect fill="#B3E5FC" x="5" y="25" width="40" height="5" rx="1"/>
+            <rect fill="#B3E5FC" x="5" y="35" width="40" height="5" rx="1"/>
+            <rect fill="#B3E5FC" x="5" y="45" width="20" height="5" rx="1"/>
+            <circle fill="#4CAF50" cx="40" cy="48" r="10"/>
+            <path d="M35,48 L39,52 L45,45" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        
+        <!-- Location/Destination Pin -->
+        <g transform="translate(140, 40)">
+            <path d="M15,0 C6.7,0 0,6.7 0,15 C0,25 15,40 15,40 C15,40 30,25 30,15 C30,6.7 23.3,0 15,0 Z" fill="#F44336"/>
+            <circle fill="#FFFFFF" cx="15" cy="15" r="7"/>
+        </g>
+        
+        <!-- Road/Path -->
+        <path d="M30,130 L170,130" stroke="#BDBDBD" stroke-width="5" stroke-dasharray="10,5"/>
+        
+        <!-- Completion Icon -->
+        <g transform="translate(90, 150)">
+            <circle fill="#0288D1" cx="15" cy="15" r="15"/>
+            <path d="M8,15 L13,20 L22,10" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+    </g>
+</svg>
