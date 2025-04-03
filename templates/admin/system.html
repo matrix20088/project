@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}
+إدارة النظام | نظام إدارة المشتريات
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">إدارة النظام</li>
+                </ol>
+            </nav>
+            
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">إدارة النظام - عمليات متقدمة</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-triangle"></i> تنبيه هام</h5>
+                        <p>العمليات في هذه الصفحة حساسة جداً وقد تؤدي إلى فقدان البيانات. تأكد من فهم العملية قبل تنفيذها.</p>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h5><i class="fas fa-trash-alt"></i> حذف بيانات المعاملات</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-danger">
+                                        <strong>تحذير:</strong> هذه العملية ستحذف <strong>جميع</strong> المعاملات في النظام بشكل دائم ولا يمكن التراجع عنها.
+                                    </p>
+                                    <p>ستتم إزالة البيانات التالية:</p>
+                                    <ul>
+                                        <li>جميع طلبات الشراء</li>
+                                        <li>جميع عروض الأسعار</li>
+                                        <li>جميع أوامر الشراء</li>
+                                        <li>جميع المستخلصات</li>
+                                        <li>جميع المعاملات الأخرى</li>
+                                        <li>جميع التوقيعات المرتبطة بالمعاملات</li>
+                                    </ul>
+                                    <p>لن يتم حذف:</p>
+                                    <ul>
+                                        <li>بيانات المستخدمين وصلاحياتهم</li>
+                                        <li>بيانات المشاريع</li>
+                                        <li>بيانات الموردين</li>
+                                        <li>إعدادات النظام</li>
+                                    </ul>
+                                    
+                                    <div class="text-center mt-3">
+                                        <button id="delete-transactions-btn" class="btn btn-outline-danger">
+                                            <i class="fas fa-trash"></i> حذف جميع بيانات المعاملات
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة التأكيد -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">تأكيد الحذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle fa-2x float-start me-3"></i>
+                    <p><strong>تحذير نهائي:</strong> أنت على وشك حذف <strong>جميع</strong> بيانات المعاملات من النظام.</p>
+                    <p>هذه العملية لا يمكن التراجع عنها أبداً.</p>
+                </div>
+                <p>للتأكيد، يرجى كتابة "<strong>نعم، أوافق على حذف جميع البيانات</strong>" في المربع أدناه:</p>
+                <input type="text" id="confirmationText" class="form-control" placeholder="اكتب عبارة التأكيد هنا...">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" id="confirmDeleteBtn" class="btn btn-danger" disabled>
+                    <i class="fas fa-trash"></i> تأكيد الحذف النهائي
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // زر فتح نافذة تأكيد الحذف
+    const deleteTransactionsBtn = document.getElementById('delete-transactions-btn');
+    const confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    const confirmationText = document.getElementById('confirmationText');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    
+    // عبارة التأكيد المطلوبة
+    const requiredConfirmation = "نعم، أوافق على حذف جميع البيانات";
+    
+    // عند الضغط على زر الحذف، افتح نافذة التأكيد
+    deleteTransactionsBtn.addEventListener('click', function() {
+        confirmDeleteModal.show();
+        confirmationText.value = ''; // إعادة تعيين حقل التأكيد
+        confirmDeleteBtn.disabled = true; // تعطيل زر التأكيد حتى يتم إدخال النص الصحيح
+    });
+    
+    // التحقق من نص التأكيد
+    confirmationText.addEventListener('input', function() {
+        if (confirmationText.value === requiredConfirmation) {
+            confirmDeleteBtn.disabled = false;
+        } else {
+            confirmDeleteBtn.disabled = true;
+        }
+    });
+    
+    // عند الضغط على زر التأكيد النهائي
+    confirmDeleteBtn.addEventListener('click', function() {
+        // تعطيل الزر لمنع النقرات المتعددة
+        confirmDeleteBtn.disabled = true;
+        confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحذف...';
+        
+        // إرسال طلب حذف البيانات
+        fetch('{{ url_for("admin.delete_all_transactions") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            confirmDeleteModal.hide();
+            
+            if (data.status === 'success') {
+                // إظهار رسالة نجاح
+                Swal.fire({
+                    title: 'تم الحذف بنجاح',
+                    text: 'تم حذف جميع بيانات المعاملات من النظام بنجاح.',
+                    icon: 'success',
+                    confirmButtonText: 'حسناً'
+                }).then(() => {
+                    // إعادة تحميل الصفحة
+                    window.location.href = '{{ url_for("auth.dashboard") }}';
+                });
+            } else {
+                // إظهار رسالة خطأ
+                Swal.fire({
+                    title: 'خطأ',
+                    text: data.message || 'حدث خطأ أثناء محاولة حذف البيانات',
+                    icon: 'error',
+                    confirmButtonText: 'حسناً'
+                });
+                // إعادة تمكين الزر
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> تأكيد الحذف النهائي';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            confirmDeleteModal.hide();
+            
+            // إظهار رسالة خطأ
+            Swal.fire({
+                title: 'خطأ',
+                text: 'حدث خطأ أثناء الاتصال بالخادم',
+                icon: 'error',
+                confirmButtonText: 'حسناً'
+            });
+            
+            // إعادة تمكين الزر
+            confirmDeleteBtn.disabled = false;
+            confirmDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> تأكيد الحذف النهائي';
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,645 @@
+{% extends "base.html" %}
+
+{% block title %}تحليلات المشتريات - مساعد الذكاء الاصطناعي{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .insights-header {
+        background: linear-gradient(135deg, #3498db, #2c3e50);
+        color: white;
+        padding: 20px 0;
+        margin-bottom: 30px;
+        border-radius: 0 0 15px 15px;
+    }
+    
+    .filter-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .insights-chart {
+        height: 300px;
+        width: 100%;
+        margin-bottom: 30px;
+    }
+    
+    .stats-card {
+        transition: all 0.3s ease;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+    }
+    
+    .trend-card {
+        transition: all 0.2s ease;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .trend-card:hover {
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    
+    .trend-icon {
+        font-size: 1.5rem;
+        margin-right: 10px;
+    }
+    
+    #insightsLoader {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 300px;
+    }
+    
+    .loader-spinner {
+        width: 48px;
+        height: 48px;
+        border: 5px solid #3498db;
+        border-bottom-color: transparent;
+        border-radius: 50%;
+        display: inline-block;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+        margin-bottom: 20px;
+    }
+    
+    @keyframes rotation {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="insights-header text-center">
+    <div class="container">
+        <h1><i class="fa fa-chart-line ml-2"></i>تحليلات المشتريات</h1>
+        <p class="lead">رؤى وإحصائيات متقدمة لتحسين قرارات الشراء</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('ai_assistant.index') }}">مساعد الذكاء الاصطناعي</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">تحليلات المشتريات</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card filter-card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fa fa-filter ml-2"></i>تصفية البيانات</h5>
+                </div>
+                <div class="card-body">
+                    <form id="insightsFilterForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="projectFilter">المشروع</label>
+                                    <select class="form-control" id="projectFilter">
+                                        <option value="">جميع المشاريع</option>
+                                        {% for project_name in project_names %}
+                                        <option value="{{ project_name }}">{{ project_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="supplierFilter">المورد</label>
+                                    <select class="form-control" id="supplierFilter">
+                                        <option value="">جميع الموردين</option>
+                                        {% for supplier in suppliers %}
+                                        <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="periodFilter">الفترة الزمنية</label>
+                                    <select class="form-control" id="periodFilter">
+                                        <option value="last_month">الشهر الماضي</option>
+                                        <option value="last_quarter">الربع الماضي</option>
+                                        <option value="last_year">السنة الماضية</option>
+                                        <option value="year_to_date" selected>منذ بداية العام</option>
+                                        <option value="custom">فترة مخصصة</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row" id="customDateRange" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="startDate">تاريخ البداية</label>
+                                    <input type="date" class="form-control" id="startDate">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="endDate">تاريخ النهاية</label>
+                                    <input type="date" class="form-control" id="endDate">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-search ml-1"></i> عرض التحليلات
+                            </button>
+                            <button type="button" id="resetFilters" class="btn btn-outline-secondary">
+                                <i class="fa fa-undo ml-1"></i> إعادة تعيين
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="insightsContent">
+        <div id="insightsLoader">
+            <span class="loader-spinner"></span>
+            <p class="text-muted">جاري تحميل التحليلات...</p>
+        </div>
+        
+        <div id="insightsData" style="display: none;">
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="fa fa-chart-area ml-2"></i>مخطط المشتريات</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="purchaseTrendChart" class="insights-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4" id="statsCardsRow">
+                <!-- سيتم تعبئة هذا القسم بواسطة JavaScript -->
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="fa fa-chart-pie ml-2"></i>توزيع المشتريات حسب الفئة</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="categoryDistributionChart" class="insights-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="fa fa-user-tie ml-2"></i>أعلى الموردين</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="topSuppliersChart" class="insights-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="fa fa-lightbulb ml-2"></i>الاتجاهات والتوصيات</h5>
+                        </div>
+                        <div class="card-body" id="trendsContainer">
+                            <!-- سيتم تعبئة هذا القسم بواسطة JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // معالجة تغيير نوع الفترة
+        document.getElementById('periodFilter').addEventListener('change', function(e) {
+            if (e.target.value === 'custom') {
+                document.getElementById('customDateRange').style.display = 'flex';
+            } else {
+                document.getElementById('customDateRange').style.display = 'none';
+            }
+        });
+        
+        // معالجة إعادة تعيين الفلاتر
+        document.getElementById('resetFilters').addEventListener('click', function() {
+            document.getElementById('insightsFilterForm').reset();
+            document.getElementById('customDateRange').style.display = 'none';
+            // استدعاء البيانات الافتراضية
+            fetchInsights({});
+        });
+        
+        // معالجة تقديم النموذج
+        document.getElementById('insightsFilterForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const filters = {};
+            const projectFilter = document.getElementById('projectFilter').value;
+            const supplierFilter = document.getElementById('supplierFilter').value;
+            const periodFilter = document.getElementById('periodFilter').value;
+            
+            if (projectFilter) filters.project_name = projectFilter;
+            if (supplierFilter) filters.supplier_id = supplierFilter;
+            if (periodFilter) filters.period = periodFilter;
+            
+            if (periodFilter === 'custom') {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                
+                if (startDate && endDate) {
+                    filters.custom_date_range = {
+                        start_date: startDate,
+                        end_date: endDate
+                    };
+                }
+            }
+            
+            fetchInsights(filters);
+        });
+        
+        // استدعاء البيانات الافتراضية عند تحميل الصفحة
+        fetchInsights({
+            period: 'year_to_date'
+        });
+    });
+    
+    function fetchInsights(filters) {
+        // عرض شاشة التحميل
+        document.getElementById('insightsLoader').style.display = 'flex';
+        document.getElementById('insightsData').style.display = 'none';
+        
+        // إعداد معلمات الطلب
+        const queryParams = new URLSearchParams();
+        for (const key in filters) {
+            if (key === 'custom_date_range') continue;
+            queryParams.append(key, filters[key]);
+        }
+        
+        if (filters.custom_date_range) {
+            queryParams.append('start_date', filters.custom_date_range.start_date);
+            queryParams.append('end_date', filters.custom_date_range.end_date);
+        }
+        
+        // استدعاء API
+        fetch(`{{ url_for('ai_assistant.api_purchase_insights') }}?${queryParams.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                // إخفاء شاشة التحميل
+                document.getElementById('insightsLoader').style.display = 'none';
+                document.getElementById('insightsData').style.display = 'block';
+                
+                // عرض البيانات
+                renderInsights(data);
+            })
+            .catch(error => {
+                document.getElementById('insightsLoader').style.display = 'none';
+                
+                // عرض رسالة الخطأ
+                document.getElementById('insightsContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fa fa-exclamation-circle ml-2"></i>
+                        <strong>خطأ:</strong> حدث خطأ أثناء تحميل التحليلات. يرجى المحاولة مرة أخرى لاحقاً.
+                    </div>
+                    <p class="text-muted">تفاصيل الخطأ: ${error.message || 'خطأ غير معروف'}</p>
+                `;
+                console.error('Error fetching insights:', error);
+            });
+    }
+    
+    function renderInsights(data) {
+        // عرض البطاقات الإحصائية
+        renderStatsCards(data.stats);
+        
+        // عرض مخطط الاتجاه
+        renderTrendChart(data.trend_data);
+        
+        // عرض مخطط توزيع الفئات
+        renderCategoryDistribution(data.category_distribution);
+        
+        // عرض مخطط أعلى الموردين
+        renderTopSuppliers(data.top_suppliers);
+        
+        // عرض الاتجاهات والتوصيات
+        renderTrends(data.trends);
+    }
+    
+    function renderStatsCards(stats) {
+        if (!stats) return;
+        
+        const container = document.getElementById('statsCardsRow');
+        let html = '';
+        
+        const statItems = [
+            {
+                key: 'total_spend',
+                label: 'إجمالي المشتريات',
+                icon: 'fa-money-bill-wave',
+                color: 'primary',
+                suffix: ' ريال'
+            },
+            {
+                key: 'avg_order_value',
+                label: 'متوسط قيمة الأمر',
+                icon: 'fa-shopping-cart',
+                color: 'info',
+                suffix: ' ريال'
+            },
+            {
+                key: 'order_count',
+                label: 'عدد أوامر الشراء',
+                icon: 'fa-file-invoice',
+                color: 'success',
+                suffix: ''
+            },
+            {
+                key: 'supplier_count',
+                label: 'عدد الموردين',
+                icon: 'fa-user-tie',
+                color: 'warning',
+                suffix: ''
+            }
+        ];
+        
+        statItems.forEach(item => {
+            if (stats[item.key] !== undefined) {
+                let changeIcon = '';
+                let changeClass = '';
+                
+                if (stats[`${item.key}_change`]) {
+                    const change = stats[`${item.key}_change`];
+                    if (change > 0) {
+                        changeIcon = '<i class="fa fa-arrow-up ml-1"></i>';
+                        changeClass = 'text-success';
+                    } else if (change < 0) {
+                        changeIcon = '<i class="fa fa-arrow-down ml-1"></i>';
+                        changeClass = 'text-danger';
+                    } else {
+                        changeIcon = '<i class="fa fa-equals ml-1"></i>';
+                        changeClass = 'text-muted';
+                    }
+                }
+                
+                html += `
+                    <div class="col-md-3 col-sm-6 mb-4">
+                        <div class="card stats-card text-center h-100">
+                            <div class="card-body">
+                                <div class="stat-icon text-${item.color}">
+                                    <i class="fa ${item.icon}"></i>
+                                </div>
+                                <div class="stat-value text-${item.color}">${stats[item.key]}${item.suffix}</div>
+                                <div class="stat-label text-muted">${item.label}</div>
+                                ${stats[`${item.key}_change`] !== undefined ? `
+                                <div class="mt-2 ${changeClass}">
+                                    ${changeIcon} ${Math.abs(stats[`${item.key}_change`])}%
+                                    ${stats[`${item.key}_change`] > 0 ? 'زيادة' : stats[`${item.key}_change`] < 0 ? 'انخفاض' : 'بدون تغيير'}
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    function renderTrendChart(trendData) {
+        if (!trendData || !trendData.labels || !trendData.values) return;
+        
+        const ctx = document.getElementById('purchaseTrendChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trendData.labels,
+                datasets: [{
+                    label: 'إجمالي المشتريات',
+                    data: trendData.values,
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'اتجاه المشتريات خلال الفترة',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'المبلغ (ريال)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'الفترة'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function renderCategoryDistribution(categoryData) {
+        if (!categoryData || !categoryData.labels || !categoryData.values) return;
+        
+        const ctx = document.getElementById('categoryDistributionChart').getContext('2d');
+        
+        const backgroundColors = [
+            'rgba(52, 152, 219, 0.7)',
+            'rgba(46, 204, 113, 0.7)',
+            'rgba(155, 89, 182, 0.7)',
+            'rgba(52, 73, 94, 0.7)',
+            'rgba(241, 196, 15, 0.7)',
+            'rgba(230, 126, 34, 0.7)',
+            'rgba(231, 76, 60, 0.7)',
+            'rgba(149, 165, 166, 0.7)'
+        ];
+        
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: categoryData.labels,
+                datasets: [{
+                    data: categoryData.values,
+                    backgroundColor: backgroundColors.slice(0, categoryData.labels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'توزيع المشتريات حسب الفئة',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value * 100) / total).toFixed(1);
+                                return `${label}: ${value} ريال (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function renderTopSuppliers(suppliersData) {
+        if (!suppliersData || !suppliersData.labels || !suppliersData.values) return;
+        
+        const ctx = document.getElementById('topSuppliersChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: suppliersData.labels,
+                datasets: [{
+                    label: 'قيمة المشتريات',
+                    data: suppliersData.values,
+                    backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                    borderColor: 'rgba(46, 204, 113, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'أعلى الموردين حسب قيمة المشتريات',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'المبلغ (ريال)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function renderTrends(trends) {
+        if (!trends || !trends.length) {
+            document.getElementById('trendsContainer').innerHTML = `
+                <div class="alert alert-info text-center">
+                    <i class="fa fa-info-circle ml-2"></i>
+                    لا توجد اتجاهات أو توصيات متاحة للفترة المحددة.
+                </div>
+            `;
+            return;
+        }
+        
+        const container = document.getElementById('trendsContainer');
+        let html = '';
+        
+        trends.forEach((trend, index) => {
+            const typeIcon = trend.type === 'saving' ? 'fa-piggy-bank text-success' : 
+                             trend.type === 'risk' ? 'fa-exclamation-triangle text-danger' : 
+                             trend.type === 'improvement' ? 'fa-arrow-up text-primary' : 
+                             'fa-chart-line text-info';
+            
+            html += `
+                <div class="trend-card mb-3 p-3 ${index < trends.length - 1 ? 'border-bottom' : ''}">
+                    <div class="d-flex">
+                        <div class="mr-3">
+                            <i class="fa ${typeIcon} trend-icon"></i>
+                        </div>
+                        <div>
+                            <h5>${trend.title}</h5>
+                            <p>${trend.description}</p>
+                            ${trend.recommendation ? `
+                            <div class="mt-3">
+                                <strong>التوصية:</strong> ${trend.recommendation}
+                            </div>` : ''}
+                            ${trend.impact ? `
+                            <div class="mt-2">
+                                <strong>التأثير المحتمل:</strong> ${trend.impact}
+                            </div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+</script>
+{% endblock %}

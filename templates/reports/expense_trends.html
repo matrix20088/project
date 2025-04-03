@@ -1,0 +1,411 @@
+{% extends 'base.html' %}
+
+{% block title %}تقرير اتجاهات المصروفات{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<style>
+    .print-header {
+        display: none;
+    }
+    .chart-container {
+        height: 450px;
+        margin-bottom: 30px;
+    }
+    .period-btn {
+        margin-right: 5px;
+    }
+    .period-btn.active {
+        background-color: #4e73df;
+        border-color: #4e73df;
+        color: white;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .print-header {
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .container-fluid {
+            width: 100%;
+            max-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- عنوان الطباعة - يظهر فقط عند الطباعة -->
+    <div class="print-header">
+        <h2>تقرير اتجاهات المصروفات</h2>
+        <p>من {{ start_date.strftime('%Y-%m-%d') }} إلى {{ end_date.strftime('%Y-%m-%d') }}</p>
+    </div>
+
+    <!-- بطاقة العنوان والتصفية - تختفي عند الطباعة -->
+    <div class="card shadow mb-4 no-print">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="m-0 font-weight-bold text-primary">تقرير اتجاهات المصروفات</h5>
+            <div>
+                <a href="{{ url_for('expense_reports.project_expenses') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-right"></i> مصروفات المشاريع
+                </a>
+                <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                    <i class="fas fa-print"></i> طباعة
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-5 mb-3">
+                    <label for="dateRange" class="form-label">الفترة الزمنية</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="dateRange" name="dateRange" readonly>
+                        <input type="hidden" id="start_date" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}">
+                        <input type="hidden" id="end_date" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}">
+                        <div class="input-group-append">
+                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-5 mb-3">
+                    <label class="form-label">طريقة العرض</label>
+                    <div>
+                        <input type="hidden" name="period" id="period_input" value="{{ period }}">
+                        <button type="button" class="btn btn-outline-primary period-btn {% if period == 'monthly' %}active{% endif %}" data-value="monthly">شهري</button>
+                        <button type="button" class="btn btn-outline-primary period-btn {% if period == 'quarterly' %}active{% endif %}" data-value="quarterly">ربع سنوي</button>
+                        <button type="button" class="btn btn-outline-primary period-btn {% if period == 'yearly' %}active{% endif %}" data-value="yearly">سنوي</button>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-block">تطبيق</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- بطاقة الرسم البياني الرئيسي -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">تطور المصروفات 
+                {% if period == 'monthly' %}
+                    الشهرية
+                {% elif period == 'quarterly' %}
+                    ربع السنوية
+                {% elif period == 'yearly' %}
+                    السنوية
+                {% endif %}
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- بطاقة الرسم البياني للنسب -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">توزيع المصروفات حسب النوع</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="chart-container" style="height: 350px;">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="chart-container" style="height: 350px;">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- بطاقة جدول البيانات التفصيلية -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">بيانات المصروفات التفصيلية</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>الفترة</th>
+                            <th>أوامر الشراء</th>
+                            <th>المستخلصات</th>
+                            <th>المعاملات الأخرى</th>
+                            <th>الإجمالي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set chart_data_obj = chart_data|tojson|safe|fromjson %}
+                        {% for item in chart_data_obj %}
+                            <tr>
+                                <td>{{ item.period }}</td>
+                                <td>{{ "{:,.2f}".format(item.purchase_orders) }}</td>
+                                <td>{{ "{:,.2f}".format(item.invoices) }}</td>
+                                <td>{{ "{:,.2f}".format(item.other_transactions) }}</td>
+                                <td>{{ "{:,.2f}".format(item.total) }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // تهيئة منتقي التاريخ
+        $('#dateRange').daterangepicker({
+            startDate: moment('{{ start_date.strftime('%Y-%m-%d') }}'),
+            endDate: moment('{{ end_date.strftime('%Y-%m-%d') }}'),
+            locale: {
+                format: 'YYYY-MM-DD',
+                applyLabel: 'تطبيق',
+                cancelLabel: 'إلغاء',
+                fromLabel: 'من',
+                toLabel: 'إلى',
+                customRangeLabel: 'مخصص',
+                daysOfWeek: ['أح', 'إث', 'ثل', 'أر', 'خم', 'جم', 'سب'],
+                monthNames: ['يناير', 'فبراير', 'مارس', 'إبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+                firstDay: 0
+            }
+        }, function(start, end, label) {
+            $('#start_date').val(start.format('YYYY-MM-DD'));
+            $('#end_date').val(end.format('YYYY-MM-DD'));
+        });
+        
+        // تهيئة أزرار اختيار الفترة
+        $('.period-btn').on('click', function() {
+            $('.period-btn').removeClass('active');
+            $(this).addClass('active');
+            $('#period_input').val($(this).data('value'));
+        });
+        
+        // إعداد البيانات للرسوم البيانية
+        const chartData = {{ chart_data|safe }};
+        const periods = chartData.map(item => item.period);
+        const purchaseOrdersData = chartData.map(item => item.purchase_orders);
+        const invoicesData = chartData.map(item => item.invoices);
+        const otherTransactionsData = chartData.map(item => item.other_transactions);
+        const totalData = chartData.map(item => item.total);
+        
+        // إجمالي قيم كل نوع
+        const totalPO = purchaseOrdersData.reduce((a, b) => a + b, 0);
+        const totalInvoices = invoicesData.reduce((a, b) => a + b, 0);
+        const totalOther = otherTransactionsData.reduce((a, b) => a + b, 0);
+        const grandTotal = totalPO + totalInvoices + totalOther;
+        
+        // الرسم البياني الرئيسي (خطي)
+        const mainChartCtx = document.getElementById('mainChart').getContext('2d');
+        new Chart(mainChartCtx, {
+            type: 'line',
+            data: {
+                labels: periods,
+                datasets: [
+                    {
+                        label: 'الإجمالي',
+                        data: totalData,
+                        borderColor: 'rgba(252, 88, 33, 1)',
+                        backgroundColor: 'rgba(252, 88, 33, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'أوامر الشراء',
+                        data: purchaseOrdersData,
+                        borderColor: 'rgba(78, 115, 223, 1)',
+                        backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'المستخلصات',
+                        data: invoicesData,
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'المعاملات الأخرى',
+                        data: otherTransactionsData,
+                        borderColor: 'rgba(23, 162, 184, 1)',
+                        backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'تطور المصروفات عبر الزمن',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'الفترة الزمنية'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'المبلغ'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // مخطط دائري لنسب المصروفات
+        const pieChartCtx = document.getElementById('pieChart').getContext('2d');
+        new Chart(pieChartCtx, {
+            type: 'pie',
+            data: {
+                labels: ['أوامر الشراء', 'المستخلصات', 'المعاملات الأخرى'],
+                datasets: [{
+                    data: [totalPO, totalInvoices, totalOther],
+                    backgroundColor: [
+                        'rgba(78, 115, 223, 0.8)',
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(23, 162, 184, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(78, 115, 223, 1)',
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(23, 162, 184, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'توزيع نسب المصروفات',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: ${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // مخطط أعمدة للمقارنة
+        const barChartCtx = document.getElementById('barChart').getContext('2d');
+        new Chart(barChartCtx, {
+            type: 'bar',
+            data: {
+                labels: ['إجمالي المصروفات حسب النوع'],
+                datasets: [
+                    {
+                        label: 'أوامر الشراء',
+                        data: [totalPO],
+                        backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                        borderColor: 'rgba(78, 115, 223, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'المستخلصات',
+                        data: [totalInvoices],
+                        backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'المعاملات الأخرى',
+                        data: [totalOther],
+                        backgroundColor: 'rgba(23, 162, 184, 0.8)',
+                        borderColor: 'rgba(23, 162, 184, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'مقارنة إجمالي المصروفات',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const percentage = ((value / grandTotal) * 100).toFixed(1);
+                                return `${context.dataset.label}: ${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: false,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'المبلغ'
+                        }
+                    },
+                    y: {
+                        stacked: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

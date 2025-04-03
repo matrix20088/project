@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('suppliers.index') }}">الموردين</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('suppliers.view', id=supplier.id) }}">{{ supplier.name }}</a></li>
+                    <li class="breadcrumb-item active">تعديل</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>تعديل بيانات المورد
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('suppliers.edit', id=supplier.id) }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">اسم المورد <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ supplier.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label">العنوان</label>
+                            <textarea class="form-control" id="address" name="address" rows="2">{{ supplier.address }}</textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">رقم الهاتف</label>
+                                <input type="text" class="form-control" id="phone" name="phone" value="{{ supplier.phone }}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">البريد الإلكتروني</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ supplier.email }}">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">تصنيف المورد</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="" {% if not supplier.category %}selected{% endif %}>-- اختر التصنيف --</option>
+                                    <option value="مورد رئيسي" {% if supplier.category == 'مورد رئيسي' %}selected{% endif %}>مورد رئيسي</option>
+                                    <option value="مورد ثانوي" {% if supplier.category == 'مورد ثانوي' %}selected{% endif %}>مورد ثانوي</option>
+                                    <option value="مورد محلي" {% if supplier.category == 'مورد محلي' %}selected{% endif %}>مورد محلي</option>
+                                    <option value="مورد خارجي" {% if supplier.category == 'مورد خارجي' %}selected{% endif %}>مورد خارجي</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="performance_rating" class="form-label">تقييم الأداء</label>
+                                <select class="form-select" id="performance_rating" name="performance_rating">
+                                    <option value="" {% if not supplier.performance_rating %}selected{% endif %}>-- اختر التقييم --</option>
+                                    <option value="ممتاز" {% if supplier.performance_rating == 'ممتاز' %}selected{% endif %}>ممتاز</option>
+                                    <option value="جيد" {% if supplier.performance_rating == 'جيد' %}selected{% endif %}>جيد</option>
+                                    <option value="متوسط" {% if supplier.performance_rating == 'متوسط' %}selected{% endif %}>متوسط</option>
+                                    <option value="ضعيف" {% if supplier.performance_rating == 'ضعيف' %}selected{% endif %}>ضعيف</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end mt-4">
+                            <a href="{{ url_for('suppliers.view', id=supplier.id) }}" class="btn btn-outline-secondary me-2">إلغاء</a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i> حفظ التغييرات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

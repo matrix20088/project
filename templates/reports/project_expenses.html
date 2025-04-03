@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+
+{% block title %}تقرير مصاريف المشاريع{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .expenses-table {
+        min-width: 100%;
+    }
+    .expenses-table th {
+        background-color: #f2f2f2;
+    }
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+    .status-approved {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .total-row {
+        font-weight: bold;
+        background-color: #f8f9fa;
+    }
+    .chart-container {
+        height: 400px;
+        margin-bottom: 2rem;
+    }
+    .filter-card {
+        margin-bottom: 1.5rem;
+    }
+    .no-data-message {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+    
+    /* أنماط الطباعة */
+    @media print {
+        .filter-card,
+        .btn-group,
+        .navbar,
+        .sidebar,
+        footer,
+        .no-print {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        .card-header {
+            background-color: white !important;
+            color: black !important;
+            text-align: center;
+            padding-top: 0;
+        }
+        
+        .container-fluid {
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .expenses-table th {
+            background-color: #f2f2f2 !important;
+            color: black !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .chart-container {
+            height: 350px;
+            page-break-inside: avoid;
+        }
+        
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        
+        .table-responsive {
+            overflow: visible !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">تقرير مصاريف المشاريع</h5>
+                </div>
+                <div class="card-body">
+                    <!-- بطاقة الفلتر -->
+                    <div class="card filter-card">
+                        <div class="card-body">
+                            <form method="GET" action="{{ url_for('reports.project_expenses') }}" class="row align-items-end">
+                                <div class="col-md-4 form-group">
+                                    <label for="project_id">المشروع</label>
+                                    <select name="project_id" id="project_id" class="form-control" required>
+                                        <option value="">-- اختر المشروع --</option>
+                                        {% for project in projects %}
+                                        <option value="{{ project.id }}" {% if selected_project and selected_project.id == project.id %}selected{% endif %}>{{ project.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3 form-group">
+                                    <label for="start_date">من تاريخ</label>
+                                    <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
+                                </div>
+                                <div class="col-md-3 form-group">
+                                    <label for="end_date">إلى تاريخ</label>
+                                    <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
+                                </div>
+                                <div class="col-md-2 form-group">
+                                    <button type="submit" class="btn btn-primary btn-block">عرض</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    {% if selected_project %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4>تقرير مصاريف مشروع: {{ selected_project.name }}</h4>
+                                
+                                <div class="btn-group">
+                                    <a href="{{ url_for('reports.project_expenses', project_id=selected_project.id, start_date=start_date, end_date=end_date, export='excel') }}" class="btn btn-success">
+                                        <i class="fas fa-file-excel mr-1"></i> تصدير إلى إكسيل
+                                    </a>
+                                    <button class="btn btn-info" onclick="window.print()">
+                                        <i class="fas fa-print mr-1"></i> طباعة
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- ملخص إحصائيات المشروع -->
+                            <div class="card mt-3 mb-4">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3 text-center">
+                                            <h6 class="text-muted">قيمة العقد</h6>
+                                            <h4>{{ "{:,.2f}".format(selected_project.contract_value or 0) }} {{ selected_project.currency }}</h4>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <h6 class="text-muted">الميزانية التقديرية</h6>
+                                            <h4>{{ "{:,.2f}".format(selected_project.estimated_budget or 0) }} {{ selected_project.currency }}</h4>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <h6 class="text-muted">إجمالي المصاريف</h6>
+                                            <h4>{{ "{:,.2f}".format(total_amount) }} {{ selected_project.currency }}</h4>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <h6 class="text-muted">نسبة الإنفاق</h6>
+                                            {% if selected_project.estimated_budget and selected_project.estimated_budget > 0 %}
+                                                {% set expense_percentage = (total_amount / selected_project.estimated_budget) * 100 %}
+                                                <h4 class="{% if expense_percentage > 100 %}text-danger{% elif expense_percentage > 80 %}text-warning{% else %}text-success{% endif %}">
+                                                    {{ "{:.1f}".format(expense_percentage) }}%
+                                                </h4>
+                                                <div class="progress mt-2">
+                                                    <div class="progress-bar 
+                                                        {% if expense_percentage > 100 %}bg-danger{% elif expense_percentage > 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                        role="progressbar" 
+                                                        style="width: {{ min(100, expense_percentage) }}%" 
+                                                        aria-valuenow="{{ expense_percentage }}" 
+                                                        aria-valuemin="0" 
+                                                        aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <h4 class="text-muted">غير محدد</h4>
+                                                <small>(الميزانية التقديرية غير محددة)</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- الرسم البياني -->
+                            <div class="chart-container mt-4">
+                                <canvas id="expensesChart"></canvas>
+                            </div>
+                            
+                            {% if expenses_data %}
+                            <!-- جدول المصاريف -->
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped expenses-table">
+                                    <thead>
+                                        <tr>
+                                            <th>النوع</th>
+                                            <th>الرقم المرجعي</th>
+                                            <th>التاريخ</th>
+                                            <th>الوصف</th>
+                                            <th>المبلغ (ريال)</th>
+                                            <th>شامل ضريبة القيمة المضافة</th>
+                                            <th>الحالة</th>
+                                            <th>الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for expense in expenses_data %}
+                                        <tr>
+                                            <td>{{ expense.type }}</td>
+                                            <td>{{ expense.reference_number }}</td>
+                                            <td>{{ expense.date }}</td>
+                                            <td>{{ expense.description }}</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(expense.amount) }}</td>
+                                            <td>{{ "نعم" if expense.vat_inclusive else "لا" }}</td>
+                                            <td>
+                                                <span class="status-badge status-approved">{{ expense.status }}</span>
+                                            </td>
+                                            <td>
+                                                <a href="{{ expense.url }}" class="btn btn-sm btn-info">عرض</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        <tr class="total-row">
+                                            <td colspan="4" class="text-center">الإجمالي</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(total_amount) }}</td>
+                                            <td colspan="3"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="no-data-message">
+                                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                                <h5>لا توجد مصاريف في الفترة المحددة</h5>
+                                <p>يمكنك تغيير معايير البحث أو اختيار مشروع آخر</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="no-data-message">
+                        <i class="fas fa-project-diagram fa-3x mb-3"></i>
+                        <h5>الرجاء اختيار مشروع لعرض التقرير</h5>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if selected_project %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // إعداد متغيرات API
+        const projectId = {{ selected_project.id }};
+        const startDate = '{{ start_date }}';
+        const endDate = '{{ end_date }}';
+        
+        // استدعاء API لجلب بيانات الرسم البياني
+        fetch(`/reports/expenses/api?project_id=${projectId}&start_date=${startDate}&end_date=${endDate}`)
+            .then(response => response.json())
+            .then(data => {
+                const chartData = data.chart_data;
+                
+                // إعداد البيانات للرسم البياني
+                const months = chartData.map(item => item.month);
+                const purchaseOrdersData = chartData.map(item => item.purchase_orders);
+                const invoicesData = chartData.map(item => item.invoices);
+                const otherTransactionsData = chartData.map(item => item.other_transactions);
+                
+                // إنشاء الرسم البياني
+                const ctx = document.getElementById('expensesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: months,
+                        datasets: [
+                            {
+                                label: 'أوامر الشراء',
+                                data: purchaseOrdersData,
+                                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'المستخلصات',
+                                data: invoicesData,
+                                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'المعاملات الأخرى',
+                                data: otherTransactionsData,
+                                backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                                borderColor: 'rgba(255, 159, 64, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                stacked: false
+                            },
+                            y: {
+                                stacked: false,
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'مصاريف المشروع حسب الشهر'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('حدث خطأ أثناء جلب بيانات الرسم البياني:', error);
+                document.getElementById('expensesChart').innerHTML = `
+                    <div class="alert alert-danger">
+                        تعذر تحميل بيانات الرسم البياني. الرجاء المحاولة مرة أخرى لاحقًا.
+                    </div>
+                `;
+            });
+    });
+</script>
+{% endif %}
+{% endblock %}

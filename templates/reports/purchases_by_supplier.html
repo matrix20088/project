@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}تقرير المشتريات حسب المورد{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">تقرير المشتريات حسب المورد</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>بحث</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('reports.purchases_by_supplier') }}">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="supplier_id" class="form-label">المورد</label>
+                        <select class="form-select" id="supplier_id" name="supplier_id" required>
+                            <option value="">اختر المورد</option>
+                            {% for s in suppliers %}
+                            <option value="{{ s.id }}" {% if supplier and supplier.id == s.id %}selected{% endif %}>{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="start_date" class="form-label">تاريخ البدء</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date.isoformat() if start_date else '' }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="end_date" class="form-label">تاريخ الانتهاء</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date.isoformat() if end_date else '' }}">
+                    </div>
+                    <div class="col-md-2 mb-3 d-flex align-items-end">
+                        <div class="btn-group" role="group">
+                            <button type="submit" class="btn btn-primary">بحث</button>
+                            {% if purchases and purchases|length > 0 %}
+                            <button type="submit" name="export" value="true" class="btn btn-success">تصدير إلى CSV</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% if supplier %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>معلومات المورد</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>اسم المورد:</strong> {{ supplier.name }}</p>
+                    <p><strong>العنوان:</strong> {{ supplier.address }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>رقم الهاتف:</strong> {{ supplier.phone }}</p>
+                    <p><strong>البريد الإلكتروني:</strong> {{ supplier.email }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if purchases %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5>أوامر الشراء المعتمدة</h5>
+            <h6>إجمالي قيمة المشتريات (شامل الضريبة): {{ '{:,.2f}'.format((total_amount or 0) * 1.15) }} ريال</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>رقم أمر الشراء</th>
+                            <th>تاريخ الأمر</th>
+                            <th>إجمالي القيمة (شامل الضريبة)</th>
+                            <th>تاريخ التسليم</th>
+                            <th>عرض</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in purchases %}
+                        <tr>
+                            <td>{{ order.order_number }}</td>
+                            <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ '{:,.2f}'.format((order.total_price or 0) * 1.15) }}</td>
+                            <td>{{ order.delivery_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <a href="{{ url_for('purchase_orders.view_order', id=order.id) }}" class="btn btn-sm btn-info">عرض</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% elif supplier %}
+    <div class="alert alert-info">
+        لا توجد أوامر شراء معتمدة لهذا المورد ضمن الفترة المحددة.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

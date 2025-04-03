@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}نتيجة السؤال - مساعد الذكاء الاصطناعي{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .result-header {
+        background: linear-gradient(135deg, #3498db, #2c3e50);
+        color: white;
+        padding: 20px 0;
+        margin-bottom: 30px;
+        border-radius: 0 0 15px 15px;
+    }
+    
+    .result-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .question-box {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-right: 4px solid #3498db;
+    }
+    
+    .answer-box {
+        background-color: #f0f9ff;
+        border-radius: 10px;
+        padding: 20px;
+        border-right: 4px solid #2ecc71;
+    }
+    
+    .context-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        border-radius: 5px;
+        background-color: #e9ecef;
+        color: #495057;
+        font-size: 0.85rem;
+    }
+    
+    .sources-section {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .source-item {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-right: 3px solid #6c757d;
+    }
+    
+    .related-questions {
+        margin-top: 30px;
+    }
+    
+    .related-question {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 10px 15px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+    
+    .related-question:hover {
+        background-color: #e9ecef;
+        border-color: #3498db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-header text-center">
+    <div class="container">
+        <h1><i class="fa fa-comment-dots ml-2"></i>إجابة المساعد الذكي</h1>
+        <p class="lead">نتيجة التحليل والإجابة على سؤالك</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('ai_assistant.index') }}">مساعد الذكاء الاصطناعي</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('ai_assistant.ask_question') }}">اسأل المساعد</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">نتيجة السؤال</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-9">
+            <div class="card result-card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fa fa-question-circle ml-2"></i>السؤال والإجابة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="question-box">
+                        <h5 class="mb-3">سؤالك:</h5>
+                        <p class="mb-0">{{ question }}</p>
+                        
+                        {% if context %}
+                        <div class="mt-3">
+                            <h6 class="mb-2">السياق المستخدم:</h6>
+                            <div>
+                                {% if context.order_id %}
+                                <span class="context-badge">
+                                    <i class="fa fa-file-invoice-dollar ml-1"></i>
+                                    أمر شراء #{{ context.order_id }}
+                                </span>
+                                {% endif %}
+                                
+                                {% if context.request_id %}
+                                <span class="context-badge">
+                                    <i class="fa fa-clipboard-list ml-1"></i>
+                                    طلب شراء #{{ context.request_id }}
+                                </span>
+                                {% endif %}
+                                
+                                {% if context.supplier_id %}
+                                <span class="context-badge">
+                                    <i class="fa fa-user-tie ml-1"></i>
+                                    مورد #{{ context.supplier_id }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="answer-box">
+                        <h5 class="mb-3">إجابة المساعد:</h5>
+                        {% if answer.status == 'error' %}
+                            <div class="alert alert-danger">
+                                <i class="fa fa-exclamation-circle ml-2"></i>
+                                <strong>خطأ:</strong> {{ answer.message }}
+                            </div>
+                        {% else %}
+                            <div>{{ answer.response|safe }}</div>
+                            
+                            {% if answer.data_points and answer.data_points|length > 0 %}
+                            <div class="mt-4">
+                                <h6 class="mb-3">نقاط البيانات الرئيسية:</h6>
+                                <ul>
+                                    {% for point in answer.data_points %}
+                                    <li>{{ point }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            
+                            {% if answer.sources and answer.sources|length > 0 %}
+                            <div class="sources-section">
+                                <h6 class="mb-3">المصادر:</h6>
+                                {% for source in answer.sources %}
+                                <div class="source-item">
+                                    <div class="font-weight-bold mb-1">{{ source.title }}</div>
+                                    <div class="small text-muted">{{ source.description }}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('ai_assistant.ask_question') }}" class="btn btn-primary">
+                        <i class="fa fa-question-circle ml-1"></i> طرح سؤال آخر
+                    </a>
+                    <a href="{{ url_for('ai_assistant.index') }}" class="btn btn-outline-secondary mr-2">
+                        <i class="fa fa-home ml-1"></i> العودة للرئيسية
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3">
+            {% if answer.related_questions and answer.related_questions|length > 0 %}
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fa fa-question ml-2"></i>أسئلة ذات صلة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="related-questions">
+                        {% for related_question in answer.related_questions %}
+                        <form action="{{ url_for('ai_assistant.ask_question') }}" method="post" class="mb-2">
+                            <input type="hidden" name="question" value="{{ related_question }}">
+                            {% if context.order_id %}
+                            <input type="hidden" name="order_id" value="{{ context.order_id }}">
+                            {% endif %}
+                            {% if context.request_id %}
+                            <input type="hidden" name="request_id" value="{{ context.request_id }}">
+                            {% endif %}
+                            {% if context.supplier_id %}
+                            <input type="hidden" name="supplier_id" value="{{ context.supplier_id }}">
+                            {% endif %}
+                            <button type="submit" class="btn btn-link p-0 text-right w-100">
+                                <div class="related-question">
+                                    <i class="fa fa-question-circle text-primary ml-2"></i>
+                                    {{ related_question }}
+                                </div>
+                            </button>
+                        </form>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fa fa-lightbulb text-warning ml-2"></i>استكشاف المزيد</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="mr-3 text-primary"><i class="fa fa-chart-line fa-lg"></i></div>
+                        <div>
+                            <a href="{{ url_for('ai_assistant.purchase_insights') }}">تحليلات المشتريات</a>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="mr-3 text-success"><i class="fa fa-file-invoice-dollar fa-lg"></i></div>
+                        <div>
+                            <a href="{{ url_for('purchase_orders.index') }}">أوامر الشراء</a>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="mr-3 text-warning"><i class="fa fa-clipboard-list fa-lg"></i></div>
+                        <div>
+                            <a href="{{ url_for('purchase_requests.index') }}">طلبات الشراء</a>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="mr-3 text-info"><i class="fa fa-truck fa-lg"></i></div>
+                        <div>
+                            <a href="{{ url_for('suppliers.index') }}">الموردين</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

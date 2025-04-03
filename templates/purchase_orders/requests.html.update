@@ -1,0 +1,10 @@
+function updatePrintLinks() {
+  const file = document.querySelector('pre');
+  if (file) {
+    const content = file.textContent;
+    const updated = content.replace(/url_for\('purchase_orders\.print_request', id=request\.id\)/g, 
+      "url_for('purchase_orders.view_request', id=request.id) + \"?print=1\"");
+    return updated;
+  }
+  return "";
+}

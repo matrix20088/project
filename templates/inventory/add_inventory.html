@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('inventory.items') }}">المخزون</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('inventory.view_item', id=inventory_item.id) }}">{{ inventory_item.item_name }}</a></li>
+                    <li class="breadcrumb-item active">إجراء جرد</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>إجراء جرد للمخزون
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">اسم المادة</p>
+                            <p class="fs-5">{{ inventory_item.item_name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">الكمية المسجلة حالياً</p>
+                            <p class="fs-5">{{ inventory_item.available_quantity }}</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        قم بإدخال الكمية الفعلية الموجودة في المخزون بعد الجرد. سيتم تعديل الكمية المتاحة تلقائياً وتسجيل الفرق كحركة مخزون.
+                    </div>
+
+                    <form method="POST" action="{{ url_for('inventory.add_inventory', id=inventory_item.id) }}">
+                        <div class="mb-3">
+                            <label for="actual_quantity" class="form-label">الكمية الفعلية <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control" id="actual_quantity" name="actual_quantity" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">الفرق</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="difference" readonly>
+                                <span class="input-group-text" id="difference_badge"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end mt-4">
+                            <a href="{{ url_for('inventory.view_item', id=inventory_item.id) }}" class="btn btn-outline-secondary me-2">إلغاء</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> حفظ نتيجة الجرد
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const actualQuantityEl = document.getElementById('actual_quantity');
+        const differenceEl = document.getElementById('difference');
+        const differenceBadgeEl = document.getElementById('difference_badge');
+        const recordedQuantity = {{ inventory_item.available_quantity }};
+        
+        // حساب الفرق عند تغيير الكمية الفعلية
+        function calculateDifference() {
+            if (actualQuantityEl.value) {
+                const actual = parseFloat(actualQuantityEl.value);
+                const diff = actual - recordedQuantity;
+                differenceEl.value = diff.toFixed(2);
+                
+                if (diff > 0) {
+                    differenceBadgeEl.className = 'input-group-text bg-success text-white';
+                    differenceBadgeEl.textContent = 'زيادة';
+                } else if (diff < 0) {
+                    differenceBadgeEl.className = 'input-group-text bg-danger text-white';
+                    differenceBadgeEl.textContent = 'نقص';
+                } else {
+                    differenceBadgeEl.className = 'input-group-text bg-secondary text-white';
+                    differenceBadgeEl.textContent = 'متطابق';
+                }
+            } else {
+                differenceEl.value = '';
+                differenceBadgeEl.className = 'input-group-text';
+                differenceBadgeEl.textContent = '';
+            }
+        }
+        
+        actualQuantityEl.addEventListener('input', calculateDifference);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // زر الطباعة
+        var printButton = document.getElementById('print-button');
+        if (printButton) {
+            printButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // بدلاً من فتح نافذة جديدة، نقوم بتوجيه المستخدم مباشرة إلى صفحة الطباعة
+                var printUrl = this.getAttribute('href');
+                window.location.href = printUrl;
+                
+                return false;
+            });
+        }
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('purchase_orders.orders') }}">أوامر الشراء</a></li>
+                    <li class="breadcrumb-item active">{{ purchase_order.order_number }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>تفاصيل أمر الشراء
+                    </h3>
+                    <div>
+                        <a href="{{ url_for('purchase_orders.print_order', id=purchase_order.id) }}" class="btn btn-sm btn-info me-1" id="print-button">
+                            <i class="fas fa-print me-1"></i>طباعة
+                        </a>
+                        {% if purchase_order.approval_status == 'قيد الانتظار' %}
+                        <a href="{{ url_for('purchase_orders.edit_order', id=purchase_order.id) }}" class="btn btn-sm btn-warning me-1">
+                            <i class="fas fa-edit me-1"></i>تعديل
+                        </a>
+                        <a href="{{ url_for('purchase_orders.delete_order', id=purchase_order.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد من حذف هذا الأمر؟')">
+                            <i class="fas fa-trash me-1"></i>حذف
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">رقم الأمر</p>
+                            <p class="fs-5">{{ purchase_order.order_number }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تاريخ الأمر</p>
+                            <p class="fs-5">{{ purchase_order.order_date.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">المورد</p>
+                            <p class="fs-5">
+                                <a href="{{ url_for('suppliers.view', id=purchase_order.supplier_id) }}">{{ supplier.name }}</a>
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">حالة الاعتماد</p>
+                            <p class="fs-5">
+                                {% if purchase_order.approval_status == 'قيد الانتظار' %}
+                                <span class="badge bg-warning text-dark">{{ purchase_order.approval_status }}</span>
+                                {% elif purchase_order.approval_status == 'معتمد' %}
+                                <span class="badge bg-success">{{ purchase_order.approval_status }}</span>
+                                {% else %}
+                                <span class="badge bg-danger">{{ purchase_order.approval_status }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <p class="text-muted mb-1">تاريخ التسليم</p>
+                            <p class="fs-5">{{ purchase_order.delivery_date.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <p class="text-muted mb-1">الإجمالي قبل الضريبة</p>
+                            <p class="fs-5">{{ '{:,.2f}'.format(purchase_order.total_price or 0) }} ريال</p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <p class="text-muted mb-1">المشروع</p>
+                            <p class="fs-5">
+                                {% if purchase_order.project_id %}
+                                <a href="{{ url_for('projects.view_project', project_id=purchase_order.project_id) }}">{{ purchase_order.project.name }}</a>
+                                {% else %}
+                                <span class="text-muted">غير مرتبط بمشروع</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- طلب الشراء المرتبط -->
+                    {% if purchase_request %}
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">طلب الشراء المرتبط</p>
+                            <p class="fs-5">
+                                <a href="{{ url_for('purchase_orders.view_request', id=purchase_request.id) }}">{{ purchase_request.request_number }}</a>
+                                <span class="badge bg-{{ 'success' if purchase_request.status == 'تم التنفيذ' else 'info' }}">{{ purchase_request.status }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- إضافة قسم حالة الاعتمادات بشكل تفصيلي -->
+                    <div class="card mb-3 border shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>حالة الاعتمادات</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>مدير المكتب الهندسي:</span>
+                                            {% if purchase_order.engineering_approval == 'قيد الانتظار' %}
+                                                <span class="badge rounded-pill bg-warning text-dark px-3 py-2">قيد الانتظار</span>
+                                            {% elif purchase_order.engineering_approval == 'معتمد' %}
+                                                <span class="badge rounded-pill bg-success px-3 py-2">معتمد</span>
+                                            {% else %}
+                                                <span class="badge rounded-pill bg-danger px-3 py-2">مرفوض</span>
+                                            {% endif %}
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>مدير المشاريع:</span>
+                                            {% if purchase_order.projects_approval == 'قيد الانتظار' %}
+                                                <span class="badge rounded-pill bg-warning text-dark px-3 py-2">قيد الانتظار</span>
+                                            {% elif purchase_order.projects_approval == 'معتمد' %}
+                                                <span class="badge rounded-pill bg-success px-3 py-2">معتمد</span>
+                                            {% else %}
+                                                <span class="badge rounded-pill bg-danger px-3 py-2">مرفوض</span>
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>المدير التنفيذي:</span>
+                                            {% if purchase_order.executive_approval == 'قيد الانتظار' %}
+                                                <span class="badge rounded-pill bg-warning text-dark px-3 py-2">قيد الانتظار</span>
+                                            {% elif purchase_order.executive_approval == 'معتمد' %}
+                                                <span class="badge rounded-pill bg-success px-3 py-2">معتمد</span>
+                                            {% else %}
+                                                <span class="badge rounded-pill bg-danger px-3 py-2">مرفوض</span>
+                                            {% endif %}
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>الحالة النهائية:</span>
+                                            {% if purchase_order.approval_status == 'قيد الانتظار' %}
+                                                <span class="badge rounded-pill bg-warning text-dark px-3 py-2">قيد الانتظار</span>
+                                            {% elif purchase_order.approval_status == 'معتمد' %}
+                                                <span class="badge rounded-pill bg-success px-3 py-2">معتمد</span>
+                                            {% else %}
+                                                <span class="badge rounded-pill bg-danger px-3 py-2">مرفوض</span>
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3 text-muted small">
+                                <div class="alert alert-light shadow-sm">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    يمكن اعتماد أمر الشراء فقط بواسطة المستخدمين المصرح لهم (مدير المكتب الهندسي، مدير المشاريع، المدير التنفيذي).
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <p class="text-muted mb-1">الغرض من الطلب</p>
+                            <p class="fs-5">{{ purchase_order.purpose|default('--', true) }}</p>
+                        </div>
+                    </div>
+
+                    <!-- بنود أمر الشراء -->
+                    <div class="mt-4 mb-3">
+                        <h5 class="border-bottom pb-2">بنود أمر الشراء</h5>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-hover table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>اسم الصنف</th>
+                                        <th>الكمية</th>
+                                        <th>الوحدة</th>
+                                        <th>السعر (ريال)</th>
+                                        <th>الإجمالي (ريال)</th>
+                                        <th>الإجمالي شامل الضريبة (ريال)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in order_items %}
+                                    {% set item_total = calculate_item_total(item.price, item.quantity) %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ item.item_name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ item.unit }}</td>
+                                        <td>{{ '{:,.2f}'.format(item.price) }}</td>
+                                        <td>{{ '{:,.2f}'.format(item_total) }}</td>
+                                        <td>{{ '{:,.2f}'.format(item_total * 1.15) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">تفاصيل الإجمالي والضريبة</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <p class="text-muted mb-1">إجمالي القيمة قبل الضريبة</p>
+                                    <p class="fs-5">{{ '{:,.2f}'.format(correct_total or 0) }} ريال</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <p class="text-muted mb-1">ضريبة القيمة المضافة (15%)</p>
+                                    <p class="fs-5">{{ '{:,.2f}'.format((correct_total or 0) * 0.15) }} ريال</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <p class="text-muted mb-1">إجمالي القيمة النهائي (شامل الضريبة)</p>
+                                    <p class="fs-5 fw-bold">{{ '{:,.2f}'.format((correct_total or 0) * 1.15) }} ريال</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تاريخ الإنشاء</p>
+                            <p class="fs-5">{{ purchase_order.created_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تم الإنشاء بواسطة</p>
+                            <p class="fs-5">{{ purchase_order.creator.username }}</p>
+                        </div>
+                        {% if purchase_request and purchase_request.purpose %}
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">الغرض من الطلب</p>
+                            <p class="fs-5">{{ purchase_request.purpose }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if purchase_order.attachment_path %}
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">الملف المرفق</p>
+                            <p class="fs-5">
+                                {% set file_path = purchase_order.attachment_path %}
+                                {% set file_extension = file_path.split('.')[-1].lower() if file_path else '' %}
+                                
+                                {# استخراج المسار النسبي #}
+                                {% if 'static/' in file_path %}
+                                    {% set relative_path = file_path.replace('static/', '') %}
+                                {% else %}
+                                    {% set relative_path = file_path %}
+                                {% endif %}
+                                
+                                {# عرض الملف وفقًا لنوع الامتداد #}
+                                {% if file_extension in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                    <div class="text-center py-2">
+                                    <img src="{{ url_for('static', filename=relative_path) }}" 
+                                         class="img-fluid mb-2 border rounded" 
+                                         alt="المرفق" 
+                                         style="max-height: 400px;">
+                                    </div>
+                                {% elif file_extension == 'pdf' %}
+                                    <div class="border rounded">
+                                    <iframe src="{{ url_for('static', filename=relative_path) }}#toolbar=0" 
+                                            width="100%" 
+                                            height="500px" 
+                                            class="mb-2"
+                                            style="border: none;">
+                                    </iframe>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4 border rounded">
+                                        <div class="display-1 text-muted mb-3">
+                                            <i class="fas fa-file"></i>
+                                        </div>
+                                        <p class="lead">ملف مرفق ({{ file_extension }})</p>
+                                    </div>
+                                {% endif %}
+                                <br>
+                                <a href="{{ url_for('static', filename=relative_path) }}" 
+                                   target="_blank" class="btn btn-sm btn-primary mt-2">
+                                    <i class="fas fa-download me-1"></i> تحميل الملف
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if purchase_order.approval_status == 'قيد الانتظار' and current_user.role in ['مدير', 'محاسب'] %}
+                    <div class="mt-4 mb-3">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            يمكنك اعتماد أو رفض أمر الشراء هذا من خلال صفحة الاعتمادات.
+                        </div>
+                        <div class="text-center">
+                            <a href="{{ url_for('approvals.view_purchase_order', id=purchase_order.id) }}" class="btn btn-primary">
+                                <i class="fas fa-check-circle me-1"></i> الذهاب إلى صفحة الاعتماد
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent text-center">
+                    <a href="{{ url_for('purchase_orders.orders') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-right me-1"></i> العودة إلى أوامر الشراء
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card">
+        <div class="card-header bg-transparent">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-shopping-cart me-2"></i>إنشاء أمر شراء
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="delivery_date" class="form-label">تاريخ التسليم المطلوب</label>
+                        <input type="date" class="form-control" id="delivery_date" name="delivery_date" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="project_id" class="form-label">المشروع (اختياري)</label>
+                        <select class="form-select" id="project_id" name="project_id">
+                            <option value="">-- اختر المشروع --</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>اسم الصنف</th>
+                                <th>الكمية</th>
+                                <th>الوحدة</th>
+                                <th>السعر (ريال)</th>
+                                <th>الإجمالي</th>
+                                <th>الإجمالي شامل الضريبة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in request_items %}
+                            {# استخدام قاموس الأسعار المُمرر من وجهة التحكم #}
+                            {% set item_price = item_prices.get(item.id, 0.00) %}
+                            {% set item_subtotal = item_price * item.quantity %}
+                            {% set item_total_vat = item_subtotal * 1.15 %}
+                            <tr class="item-row" data-price="{{ item_price }}" data-quantity="{{ item.quantity }}">
+                                <td>
+                                    <input type="checkbox" class="item-checkbox" name="item_ids[]" value="{{ item.id }}" checked onchange="updateTotals()">
+                                </td>
+                                <td>{{ item.item_name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.unit }}</td>
+                                <td class="item-price">{{ "%.2f"|format(item_price) }}</td>
+                                <td class="item-subtotal">{{ "%.2f"|format(item_subtotal) }}</td>
+                                <td class="item-total">{{ "%.2f"|format(item_total_vat) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" class="text-start fw-bold">الإجمالي</td>
+                                <td id="subtotal" class="fw-bold">{{ "%.2f"|format(price_quote.total_price) }}</td>
+                                <td id="total" class="fw-bold">{{ "%.2f"|format(price_quote.total_price * 1.15) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="mb-3">
+                    <label for="attachment" class="form-label">إرفاق ملف</label>
+                    <input type="file" class="form-control" id="attachment" name="attachment">
+                </div>
+
+                <div class="text-end">
+                    <a href="{{ url_for('purchase_orders.view_request', id=purchase_request.id) }}" class="btn btn-secondary">رجوع</a>
+                    <button type="submit" class="btn btn-primary">إنشاء أمر الشراء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // تحديث المجاميع عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+        updateTotals();
+    });
+
+    // دالة لتحديث المجاميع (السعر × الكمية) و(السعر × الكمية × 1.15)
+    function updateTotals() {
+        let totalSubtotal = 0;
+        let totalVat = 0;
+
+        // الحصول على جميع صفوف العناصر المحددة
+        const itemRows = document.querySelectorAll('.item-row');
+        itemRows.forEach(row => {
+            const checkbox = row.querySelector('.item-checkbox');
+            if (checkbox && checkbox.checked) {
+                const price = parseFloat(row.getAttribute('data-price') || 0);
+                const quantity = parseFloat(row.getAttribute('data-quantity') || 0);
+                
+                // حساب إجمالي السعر للعنصر
+                const subtotal = price * quantity;
+                const total = subtotal * 1.15;
+                
+                // تحديث الإجماليات في الصف
+                row.querySelector('.item-subtotal').textContent = subtotal.toFixed(2);
+                row.querySelector('.item-total').textContent = total.toFixed(2);
+                
+                // إضافة إلى الإجمالي الكلي
+                totalSubtotal += subtotal;
+                totalVat += total;
+            } else if (checkbox) {
+                // إذا لم يكن العنصر محدداً، نعيد تعيين الإجماليات إلى صفر
+                row.querySelector('.item-subtotal').textContent = "0.00";
+                row.querySelector('.item-total').textContent = "0.00";
+            }
+        });
+
+        // تحديث الإجمالي الكلي في القائمة
+        document.getElementById('subtotal').textContent = totalSubtotal.toFixed(2);
+        document.getElementById('total').textContent = totalVat.toFixed(2);
+    }
+</script>
+{% endblock %}

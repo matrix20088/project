@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-primary shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-project-diagram me-2"></i>
+                        نظرة عامة على دورة المشتريات
+                    </h3>
+                    <span class="badge bg-light text-primary">الخطوة {{ current_step }} من {{ total_steps }}</span>
+                </div>
+                <div class="card-body p-4">
+                    <!-- شريط التقدم -->
+                    <div class="progress mb-4" style="height: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ (current_step / total_steps) * 100 }}%;" 
+                            aria-valuenow="{{ (current_step / total_steps) * 100 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='img/overview.svg') }}" alt="نظرة عامة" class="img-fluid mb-3" style="max-height: 200px;">
+                        <h2 class="text-primary">فهم دورة المشتريات الكاملة</h2>
+                        <p class="text-muted">نظرة عامة على جميع مراحل عملية الشراء من بدايتها وحتى اكتمالها</p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-lg-12">
+                            <div class="card border-light mb-3">
+                                <div class="card-body">
+                                    <h4 class="text-primary mb-3">مراحل دورة المشتريات</h4>
+                                    
+                                    <div class="purchase-cycle">
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <div class="phase-card">
+                                                    <div class="phase-header bg-primary">
+                                                        <h5 class="mb-0">
+                                                            <i class="fas fa-file-alt me-2"></i>
+                                                            طلب الشراء
+                                                        </h5>
+                                                    </div>
+                                                    <div class="phase-body">
+                                                        <p>تبدأ دورة المشتريات بإنشاء طلب شراء من قبل المهندس أو مدير المشروع يتضمن:</p>
+                                                        <ul>
+                                                            <li>وصف المواد أو الخدمات المطلوبة</li>
+                                                            <li>الكميات والمواصفات</li>
+                                                            <li>المشروع المرتبط بالطلب</li>
+                                                            <li>تاريخ الاحتياج وأهمية الطلب</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="phase-card">
+                                                    <div class="phase-header bg-purple">
+                                                        <h5 class="mb-0">
+                                                            <i class="fas fa-check-double me-2"></i>
+                                                            الموافقات
+                                                        </h5>
+                                                    </div>
+                                                    <div class="phase-body">
+                                                        <p>يمر طلب الشراء عبر سلسلة من الموافقات الإدارية:</p>
+                                                        <ol>
+                                                            <li>موافقة مدير المكتب الهندسي</li>
+                                                            <li>موافقة مدير المشاريع</li>
+                                                            <li>موافقة المدير التنفيذي</li>
+                                                        </ol>
+                                                        <p class="small text-muted">* قد تختلف المستويات حسب قيمة الطلب والهيكل التنظيمي</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <div class="phase-card">
+                                                    <div class="phase-header bg-warning">
+                                                        <h5 class="mb-0 text-dark">
+                                                            <i class="fas fa-shopping-cart me-2"></i>
+                                                            أمر الشراء
+                                                        </h5>
+                                                    </div>
+                                                    <div class="phase-body">
+                                                        <p>بعد اعتماد طلب الشراء، يقوم قسم المشتريات بـ:</p>
+                                                        <ul>
+                                                            <li>تحويل الطلب إلى أمر شراء رسمي</li>
+                                                            <li>تحديد المورد وشروط التوريد</li>
+                                                            <li>تحديد الأسعار والتكاليف</li>
+                                                            <li>إرسال أمر الشراء للمورد</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="phase-card">
+                                                    <div class="phase-header bg-info">
+                                                        <h5 class="mb-0">
+                                                            <i class="fas fa-truck me-2"></i>
+                                                            الاستلام والتسليم
+                                                        </h5>
+                                                    </div>
+                                                    <div class="phase-body">
+                                                        <p>تتضمن هذه المرحلة:</p>
+                                                        <ul>
+                                                            <li>استلام المواد أو الخدمات من المورد</li>
+                                                            <li>فحص وتدقيق المواد المستلمة</li>
+                                                            <li>توثيق الاستلام في النظام</li>
+                                                            <li>تسليم المواد للمشروع</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="phase-card">
+                                                    <div class="phase-header bg-success">
+                                                        <h5 class="mb-0">
+                                                            <i class="fas fa-file-invoice-dollar me-2"></i>
+                                                            المستخلصات والدفع
+                                                        </h5>
+                                                    </div>
+                                                    <div class="phase-body">
+                                                        <p>الخطوة الأخيرة في الدورة:</p>
+                                                        <ul>
+                                                            <li>إنشاء مستخلص لأمر الشراء</li>
+                                                            <li>اعتماد المستخلص من الإدارة المالية</li>
+                                                            <li>إجراءات الدفع للمورد</li>
+                                                            <li>إغلاق أمر الشراء</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="phase-card">
+                                                    <div class="phase-header bg-dark">
+                                                        <h5 class="mb-0">
+                                                            <i class="fas fa-chart-bar me-2"></i>
+                                                            التقارير والمتابعة
+                                                        </h5>
+                                                    </div>
+                                                    <div class="phase-body">
+                                                        <p>الرقابة والمتابعة المستمرة:</p>
+                                                        <ul>
+                                                            <li>متابعة حالة الطلبات وأوامر الشراء</li>
+                                                            <li>تقارير المشتريات حسب المشروع</li>
+                                                            <li>تحليل الإنفاق ومراقبة الميزانية</li>
+                                                            <li>تقييم أداء الموردين</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-info mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-key me-2"></i>مفاتيح نجاح إدارة المشتريات</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="success-key">
+                                        <div class="key-icon"><i class="fas fa-tasks"></i></div>
+                                        <div class="key-content">
+                                            <h6>التخطيط المسبق</h6>
+                                            <p>تخطيط احتياجات المشروع مقدماً يقلل من الطلبات العاجلة ويحسن التفاوض</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="success-key">
+                                        <div class="key-icon"><i class="fas fa-comments"></i></div>
+                                        <div class="key-content">
+                                            <h6>التواصل الفعال</h6>
+                                            <p>التواصل المستمر بين الأقسام المختلفة لتسريع دورة الموافقات</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="success-key">
+                                        <div class="key-icon"><i class="fas fa-file-alt"></i></div>
+                                        <div class="key-content">
+                                            <h6>التوثيق الدقيق</h6>
+                                            <p>تسجيل جميع التفاصيل والمستندات لضمان دقة المعلومات وسهولة المتابعة</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="success-key">
+                                        <div class="key-icon"><i class="fas fa-chart-line"></i></div>
+                                        <div class="key-content">
+                                            <h6>المتابعة المستمرة</h6>
+                                            <p>متابعة تنفيذ الطلبات وأوامر الشراء في كل مرحلة لتجنب التأخير</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('onboarding.wizard_step', step_num=current_step) }}">
+                        <div class="d-flex justify-content-between mt-4">
+                            {% if prev_step %}
+                            <a href="{{ url_for('onboarding.wizard_step', step_num=prev_step) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-right me-1"></i>
+                                السابق
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('onboarding.wizard_index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-right me-1"></i>
+                                العودة للصفحة الرئيسية
+                            </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                التالي
+                                <i class="fas fa-arrow-left ms-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* تنسيق بطاقات المراحل */
+    .phase-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        height: 100%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .phase-header {
+        padding: 12px 15px;
+        color: white;
+    }
+    
+    .phase-body {
+        padding: 15px;
+        background-color: #fff;
+    }
+    
+    .bg-purple {
+        background-color: #673AB7;
+    }
+    
+    /* تنسيق مفاتيح النجاح */
+    .success-key {
+        display: flex;
+        margin-bottom: 20px;
+    }
+    
+    .key-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #e3f2fd;
+        color: #0288d1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-left: 15px;
+    }
+    
+    .key-content {
+        flex: 1;
+    }
+    
+    .key-content h6 {
+        margin-bottom: 5px;
+        color: #0288d1;
+    }
+    
+    .key-content p {
+        margin-bottom: 0;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    /* توافق للشاشات الصغيرة */
+    @media (max-width: 768px) {
+        .success-key {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .key-icon {
+            margin: 0 0 10px 0;
+        }
+    }
+</style>
+{% endblock %}

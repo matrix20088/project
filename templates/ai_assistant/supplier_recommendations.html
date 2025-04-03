@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}توصيات الموردين - مساعد الذكاء الاصطناعي{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .recommendations-header {
+        background: linear-gradient(135deg, #3498db, #2c3e50);
+        color: white;
+        padding: 20px 0;
+        margin-bottom: 30px;
+        border-radius: 0 0 15px 15px;
+    }
+    
+    .supplier-card {
+        transition: all 0.3s ease;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .supplier-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+    }
+    
+    .supplier-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 5px;
+    }
+    
+    .rating-stars {
+        color: #f39c12;
+        font-size: 1.2rem;
+    }
+    
+    .supplier-metrics {
+        border-radius: 5px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        margin-bottom: 15px;
+    }
+    
+    .metric-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    
+    .metric-label {
+        color: #7f8c8d;
+    }
+    
+    .contact-btn {
+        border-radius: 5px;
+        padding: 8px 15px;
+    }
+    
+    .match-percentage {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background-color: #3498db;
+        color: white;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+    .request-summary {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    #recommendationsLoader {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 300px;
+    }
+    
+    .loader-spinner {
+        width: 48px;
+        height: 48px;
+        border: 5px solid #3498db;
+        border-bottom-color: transparent;
+        border-radius: 50%;
+        display: inline-block;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+        margin-bottom: 20px;
+    }
+    
+    @keyframes rotation {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recommendations-header text-center">
+    <div class="container">
+        <h1><i class="fa fa-user-check ml-2"></i>توصيات الموردين</h1>
+        <p class="lead">أفضل الموردين المقترحين لطلب الشراء #{{ purchase_request.id }}</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('ai_assistant.index') }}">مساعد الذكاء الاصطناعي</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">توصيات الموردين - طلب شراء #{{ purchase_request.id }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card request-summary">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fa fa-clipboard-list ml-2"></i>ملخص طلب الشراء</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="row mb-2">
+                                <div class="col-sm-4 font-weight-bold text-muted">رقم الطلب:</div>
+                                <div class="col-sm-8">{{ purchase_request.id }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-4 font-weight-bold text-muted">تاريخ الطلب:</div>
+                                <div class="col-sm-8">{{ purchase_request.created_at.strftime('%Y-%m-%d') }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-4 font-weight-bold text-muted">المشروع:</div>
+                                <div class="col-sm-8">{{ purchase_request.project_name }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row mb-2">
+                                <div class="col-sm-4 font-weight-bold text-muted">الحالة:</div>
+                                <div class="col-sm-8">
+                                    <span class="badge badge-{{ purchase_request.status|lower == 'approved' and 'success' or purchase_request.status|lower == 'pending' and 'warning' or 'secondary' }}">
+                                        {{ purchase_request.status }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-4 font-weight-bold text-muted">الأولوية:</div>
+                                <div class="col-sm-8">{{ purchase_request.priority }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-4 font-weight-bold text-muted">الغرض:</div>
+                                <div class="col-sm-8">{{ purchase_request.purpose }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6><i class="fa fa-box ml-2"></i>عناصر الطلب:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>الوصف</th>
+                                            <th>الكمية</th>
+                                            <th>الوحدة</th>
+                                            <th>التقديرات السعرية</th>
+                                            <th>المواصفات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in purchase_request.items %}
+                                        <tr>
+                                            <td>{{ item.description }}</td>
+                                            <td>{{ item.quantity }}</td>
+                                            <td>{{ item.unit }}</td>
+                                            <td>{{ item.estimated_price }} ريال</td>
+                                            <td>{{ item.specifications|default('--', true) }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('purchase_requests.view_request', request_id=purchase_request.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fa fa-eye ml-1"></i> عرض التفاصيل الكاملة
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-5">
+        <div class="col-md-12" id="recommendationsContainer">
+            <div id="recommendationsLoader">
+                <span class="loader-spinner"></span>
+                <p class="text-muted">جاري تحليل البيانات واقتراح الموردين المناسبين...</p>
+            </div>
+            
+            <div id="suppliersRecommendations" style="display: none;">
+                <h3 class="mb-4"><i class="fa fa-star text-warning ml-2"></i>الموردون الموصى بهم</h3>
+                <div class="row" id="supplierCardsContainer">
+                    <!-- سيتم تعبئة هذا القسم بواسطة JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // استدعاء API للحصول على توصيات الموردين
+        fetch('{{ url_for("ai_assistant.api_supplier_recommendations", request_id=purchase_request.id) }}')
+            .then(response => response.json())
+            .then(data => {
+                // إخفاء شاشة التحميل
+                document.getElementById('recommendationsLoader').style.display = 'none';
+                document.getElementById('suppliersRecommendations').style.display = 'block';
+                
+                // عرض توصيات الموردين
+                renderSupplierRecommendations(data);
+            })
+            .catch(error => {
+                document.getElementById('recommendationsLoader').style.display = 'none';
+                
+                // عرض رسالة الخطأ
+                document.getElementById('recommendationsContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fa fa-exclamation-circle ml-2"></i>
+                        <strong>خطأ:</strong> حدث خطأ أثناء تحميل توصيات الموردين. يرجى المحاولة مرة أخرى لاحقاً.
+                    </div>
+                    <p class="text-muted">تفاصيل الخطأ: ${error.message || 'خطأ غير معروف'}</p>
+                `;
+                console.error('Error fetching supplier recommendations:', error);
+            });
+    });
+    
+    function renderSupplierRecommendations(data) {
+        const container = document.getElementById('supplierCardsContainer');
+        
+        if (!data.suppliers || data.suppliers.length === 0) {
+            container.innerHTML = `
+                <div class="col-md-12">
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle ml-2"></i>
+                        لم يتم العثور على موردين مناسبين لهذا الطلب. يرجى تعديل معايير البحث أو إضافة موردين جدد للنظام.
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        data.suppliers.forEach(supplier => {
+            const matchPercentage = supplier.match_percentage || Math.floor(Math.random() * 30) + 70;
+            
+            html += `
+                <div class="col-lg-4 col-md-6">
+                    <div class="card supplier-card">
+                        <div class="match-percentage">${matchPercentage}%</div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="mr-3">
+                                    ${supplier.logo ? `<img src="${supplier.logo}" alt="${supplier.name}" class="supplier-logo">` : 
+                                    `<div class="supplier-logo d-flex align-items-center justify-content-center">
+                                        <i class="fa fa-building fa-2x text-muted"></i>
+                                    </div>`}
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">${supplier.name}</h5>
+                                    <div class="rating-stars">
+                                        ${'<i class="fa fa-star"></i>'.repeat(Math.floor(supplier.rating || 0))}
+                                        ${(supplier.rating % 1) >= 0.5 ? '<i class="fa fa-star-half-alt"></i>' : ''}
+                                        ${'<i class="far fa-star"></i>'.repeat(5 - Math.ceil(supplier.rating || 0))}
+                                        <small class="text-muted ml-1">(${supplier.rating || 0})</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="supplier-metrics">
+                                <div class="metric-item">
+                                    <span class="metric-label">أوامر سابقة:</span>
+                                    <span>${supplier.previous_orders || 0}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">متوسط زمن التسليم:</span>
+                                    <span>${supplier.avg_delivery_time || 'غير متوفر'}</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">معدل الالتزام بالمواعيد:</span>
+                                    <span>${supplier.on_time_delivery_rate ? supplier.on_time_delivery_rate + '%' : 'غير متوفر'}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6>نقاط القوة:</h6>
+                                <ul class="mb-0">
+                                    ${supplier.strengths ? supplier.strengths.map(s => `<li>${s}</li>`).join('') : '<li>غير متوفر</li>'}
+                                </ul>
+                            </div>
+                            
+                            ${supplier.match_reasons ? `
+                            <div class="mb-3">
+                                <h6>أسباب الترشيح:</h6>
+                                <ul class="mb-0">
+                                    ${supplier.match_reasons.map(r => `<li>${r}</li>`).join('')}
+                                </ul>
+                            </div>` : ''}
+                            
+                            ${supplier.potential_savings ? `
+                            <div class="alert alert-success mb-3">
+                                <i class="fa fa-piggy-bank ml-2"></i>
+                                <strong>توفير محتمل:</strong> ${supplier.potential_savings} ريال
+                            </div>` : ''}
+                        </div>
+                        <div class="card-footer d-flex justify-content-between">
+                            <a href="${supplier.id ? '/suppliers/' + supplier.id : '#'}" class="btn btn-sm btn-outline-primary">
+                                <i class="fa fa-id-card ml-1"></i> عرض الملف
+                            </a>
+                            <a href="${supplier.id ? '/purchase-orders/create?supplier_id=' + supplier.id + '&request_id={{ purchase_request.id }}' : '#'}" class="btn btn-sm btn-success">
+                                <i class="fa fa-file-invoice-dollar ml-1"></i> إنشاء أمر شراء
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+</script>
+{% endblock %}

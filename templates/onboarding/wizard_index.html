@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-primary shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-magic me-2"></i>
+                        معالج التعريف بنظام المشتريات
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-chart-line fa-5x text-primary mb-3"></i>
+                        <h2 class="text-primary">أهلاً بك في نظام إدارة المشتريات</h2>
+                        <p class="text-muted">
+                            سيساعدك هذا المعالج التفاعلي على فهم دورة العمل الكاملة لعملية المشتريات في النظام
+                        </p>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h4 class="text-primary mb-3">تعرف على دورة المشتريات الكاملة</h4>
+                            <p>سوف يرشدك المعالج خلال المراحل الخمس الأساسية لإدارة المشتريات:</p>
+                            
+                            <div class="wizard-steps">
+                                <div class="wizard-step">
+                                    <div class="wizard-step-number">1</div>
+                                    <div class="wizard-step-content">
+                                        <h5>نظرة عامة على عملية المشتريات</h5>
+                                        <p>فهم العملية الكاملة وكيفية عملها في النظام</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="wizard-step">
+                                    <div class="wizard-step-number">2</div>
+                                    <div class="wizard-step-content">
+                                        <h5>إنشاء طلب شراء</h5>
+                                        <p>كيفية إنشاء وإدارة طلبات الشراء وإرفاق المستندات</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="wizard-step">
+                                    <div class="wizard-step-number">3</div>
+                                    <div class="wizard-step-content">
+                                        <h5>عملية الموافقة على الطلبات</h5>
+                                        <p>فهم مسار الموافقة متعدد المستويات والأذونات</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="wizard-step">
+                                    <div class="wizard-step-number">4</div>
+                                    <div class="wizard-step-content">
+                                        <h5>تحويل الطلب إلى أمر شراء</h5>
+                                        <p>إنشاء أوامر الشراء الرسمية وإرسالها للموردين</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="wizard-step">
+                                    <div class="wizard-step-number">5</div>
+                                    <div class="wizard-step-content">
+                                        <h5>استلام الطلبيات وإغلاق أوامر الشراء</h5>
+                                        <p>إدارة عمليات الاستلام وإنشاء المستخلصات وإغلاق الدورة</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0"><i class="fas fa-star me-2"></i>مميزات المعالج</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            شرح تفاعلي مدعم بالصور التوضيحية
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            نصائح وإرشادات لتحسين كفاءة العمل
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            شرح لجميع خطوات دورة المشتريات
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            يمكنك العودة للمعالج في أي وقت للمراجعة
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>هل تعلم؟</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>يمكنك التنقل بين خطوات المعالج في أي وقت، والعودة للوراء أو تخطي الخطوات حسب الحاجة.</p>
+                                    <p>يمكنك إكمال المعالج الآن أو العودة إليه لاحقاً من خلال قائمة "المساعدة" في لوحة التحكم.</p>
+                                    <div class="alert alert-info mt-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>نصيحة:</strong> قم بإكمال المعالج كاملاً للحصول على أفضل فهم لدورة المشتريات.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('auth.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-right me-1"></i>
+                            العودة للوحة التحكم
+                        </a>
+                        <div>
+                            <a href="{{ url_for('onboarding.wizard_skip') }}" class="btn btn-light me-2">
+                                تخطي المعالج
+                            </a>
+                            <a href="{{ url_for('onboarding.wizard_step', step_num=1) }}" class="btn btn-primary">
+                                ابدأ المعالج
+                                <i class="fas fa-arrow-left ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* تنسيق خطوات المعالج */
+    .wizard-steps {
+        padding: 20px 0;
+    }
+    
+    .wizard-step {
+        display: flex;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px dashed #e0e0e0;
+    }
+    
+    .wizard-step:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .wizard-step-number {
+        flex: 0 0 50px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #007bff;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin-left: 20px;
+    }
+    
+    .wizard-step-content {
+        flex: 1;
+    }
+    
+    .wizard-step-content h5 {
+        margin-bottom: 5px;
+        color: #007bff;
+    }
+    
+    .wizard-step-content p {
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+    
+    /* تنسيق يدعم الواجهة العربية RTL */
+    .wizard-step {
+        text-align: right;
+    }
+    
+    /* جعل القسم متجاوب مع الشاشات الصغيرة */
+    @media (max-width: 768px) {
+        .wizard-step {
+            flex-direction: column;
+        }
+        
+        .wizard-step-number {
+            margin-bottom: 15px;
+            margin-left: 0;
+        }
+    }
+</style>
+{% endblock %}

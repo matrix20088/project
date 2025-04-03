@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('purchase_orders.requests') }}">طلبات الشراء</a></li>
+                    <li class="breadcrumb-item active">إضافة طلب جديد</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>إضافة طلب شراء جديد
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('purchase_orders.add_request') }}" enctype="multipart/form-data">
+                        <!-- بيانات الطلب الأساسية -->
+                        <div class="mb-4">
+                            <div class="mb-3">
+                                <label for="project_id" class="form-label">المشروع <span class="text-danger">*</span></label>
+                                <select class="form-control" id="project_id" name="project_id" required>
+                                    <option value="">-- اختر المشروع --</option>
+                                    {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }} ({{ project.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="purpose" class="form-label">الغرض من الطلب</label>
+                                <textarea class="form-control" id="purpose" name="purpose" rows="3" placeholder="اذكر الغرض من طلب هذه المواد..."></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="attachment" class="form-label">إرفاق ملف (PDF أو صورة)</label>
+                                <input type="file" class="form-control" id="attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.gif">
+                                <div class="form-text text-muted">الأنواع المسموح بها: PDF، JPG، PNG، GIF. الحد الأقصى للحجم: 5 ميجابايت</div>
+                            </div>
+                        </div>
+                        
+                        <!-- قسم الأصناف -->
+                        <h4 class="mt-4 mb-3">الأصناف المطلوبة</h4>
+                        <div id="items-container">
+                            <div class="item-row border p-3 mb-3 rounded">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">اسم الصنف <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="item_name[]" required>
+                                    </div>
+                                    
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">الكمية <span class="text-danger">*</span></label>
+                                        <input type="number" step="0.01" class="form-control" name="quantity[]" required>
+                                    </div>
+                                    
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">الوحدة <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="unit[]" required>
+                                            <option value="">-- اختر الوحدة --</option>
+                                            <option value="متر">متر</option>
+                                            <option value="متر مربع">متر مربع</option>
+                                            <option value="متر مكعب">متر مكعب</option>
+                                            <option value="كجم">كجم</option>
+                                            <option value="طن">طن</option>
+                                            <option value="لتر">لتر</option>
+                                            <option value="قطعة">قطعة</option>
+                                            <option value="كرتون">كرتون</option>
+                                            <option value="حزمة">حزمة</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">السعر المقترح</label>
+                                        <div class="input-group">
+                                            <input type="number" step="0.01" class="form-control" name="estimated_price[]">
+                                            <span class="input-group-text">ريال</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-end mb-2">
+                                        <button type="button" class="btn btn-sm btn-danger remove-item-btn" style="display:none;">
+                                            <i class="fas fa-times"></i> حذف
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <button type="button" class="btn btn-secondary" id="add-item-btn">
+                                <i class="fas fa-plus"></i> إضافة صنف جديد
+                            </button>
+                        </div>
+                        
+                        <div class="text-end mt-4">
+                            <a href="{{ url_for('purchase_orders.requests') }}" class="btn btn-outline-secondary me-2">إلغاء</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> حفظ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const itemsContainer = document.getElementById('items-container');
+    const addItemBtn = document.getElementById('add-item-btn');
+    
+    // إضافة صنف جديد
+    addItemBtn.addEventListener('click', function() {
+        const itemRow = document.querySelector('.item-row').cloneNode(true);
+        
+        // إعادة تعيين القيم
+        const inputs = itemRow.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.value = '';
+        });
+        
+        // إعادة تعيين القائمة المنسدلة
+        const selects = itemRow.querySelectorAll('select');
+        selects.forEach(select => {
+            select.selectedIndex = 0;
+        });
+        
+        // إظهار زر الحذف
+        const removeBtn = itemRow.querySelector('.remove-item-btn');
+        removeBtn.style.display = 'block';
+        
+        // إضافة حدث الحذف
+        removeBtn.addEventListener('click', function() {
+            itemRow.remove();
+            updateRemoveButtons();
+        });
+        
+        // إضافة الصف الجديد
+        itemsContainer.appendChild(itemRow);
+        updateRemoveButtons();
+    });
+    
+    // تحديث أزرار الحذف
+    function updateRemoveButtons() {
+        const itemRows = document.querySelectorAll('.item-row');
+        if (itemRows.length === 1) {
+            itemRows[0].querySelector('.remove-item-btn').style.display = 'none';
+        } else {
+            itemRows.forEach(row => {
+                row.querySelector('.remove-item-btn').style.display = 'block';
+            });
+        }
+    }
+    
+    // تعيين الحدث الأول
+    const firstRemoveBtn = document.querySelector('.item-row .remove-item-btn');
+    if (firstRemoveBtn) {
+        firstRemoveBtn.addEventListener('click', function() {
+            this.closest('.item-row').remove();
+            updateRemoveButtons();
+        });
+    }
+    
+    updateRemoveButtons();
+});
+</script>
+{% endblock %}

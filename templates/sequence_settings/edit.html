@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}تعديل إعدادات التسلسل - {{ setting.entity_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-edit me-2"></i>
+            تعديل إعدادات التسلسل - {{ setting.entity_name }}
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('sequence_settings.edit', id=setting.id) }}">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="entity_type" class="form-label">نوع المعاملة</label>
+                    <input type="text" class="form-control" id="entity_type" name="entity_type" value="{{ setting.entity_type }}" readonly>
+                    <div class="form-text text-muted">لا يمكن تغيير نوع المعاملة</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="entity_name" class="form-label">اسم المعاملة</label>
+                    <input type="text" class="form-control" id="entity_name" name="entity_name" value="{{ setting.entity_name }}" readonly>
+                    <div class="form-text text-muted">لا يمكن تغيير اسم المعاملة</div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="prefix" class="form-label">البادئة</label>
+                    <input type="text" class="form-control text-start" dir="ltr" id="prefix" name="prefix" value="{{ setting.prefix or '' }}" placeholder="مثال: PO-">
+                    <div class="form-text text-muted">يمكن ترك هذا الحقل فارغاً إذا كنت لا تريد استخدام بادئة</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="next_number" class="form-label">الرقم التالي</label>
+                    <input type="number" class="form-control" id="next_number" name="next_number" value="{{ setting.next_number }}" min="1" required>
+                    <div class="form-text text-muted">يجب أن يكون الرقم التالي أكبر من أو يساوي 1</div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">مثال الرقم</label>
+                <div class="p-2 border rounded bg-light">
+                    <span class="fs-5 text-primary" dir="ltr">{{ (setting.prefix or '') }}<span id="number_preview">{{ setting.next_number }}</span></span>
+                </div>
+                <div class="form-text text-muted">هذا مثال على شكل الرقم التسلسلي الذي سيتم إنشاؤه للمعاملات الجديدة</div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('sequence_settings.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    رجوع
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>
+                    حفظ التغييرات
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // عرض معاينة مباشرة للرقم التسلسلي
+    document.addEventListener('DOMContentLoaded', function() {
+        const prefixInput = document.getElementById('prefix');
+        const nextNumberInput = document.getElementById('next_number');
+        const numberPreview = document.getElementById('number_preview');
+        
+        function updatePreview() {
+            numberPreview.textContent = nextNumberInput.value;
+        }
+        
+        nextNumberInput.addEventListener('input', updatePreview);
+    });
+</script>
+{% endblock %}

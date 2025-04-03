@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-success shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        تهانينا! لقد أكملت دليل استخدام النظام
+                    </h3>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <img src="{{ url_for('static', filename='img/success.svg') }}" alt="تم بنجاح" class="img-fluid mb-4" style="max-height: 200px;">
+                    
+                    <h2 class="text-success mb-3">أصبحت الآن على دراية كاملة بنظام إدارة المشتريات</h2>
+                    
+                    <p class="lead mb-4">
+                        لقد تعرفت على جميع المراحل الرئيسية لدورة المشتريات في النظام، من إنشاء طلب الشراء وحتى استلام المواد وإغلاق دورة الشراء. يمكنك الآن البدء في استخدام النظام بكفاءة.
+                    </p>
+                    
+                    <div class="completion-summary">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="summary-card">
+                                    <div class="summary-icon">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <h5>طلب الشراء</h5>
+                                    <p>تعلمت كيفية إنشاء وإرسال طلبات الشراء للموافقة</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="summary-card">
+                                    <div class="summary-icon">
+                                        <i class="fas fa-check-double"></i>
+                                    </div>
+                                    <h5>الموافقات</h5>
+                                    <p>فهمت دورة الموافقات ومستوياتها المختلفة</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="summary-card">
+                                    <div class="summary-icon">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </div>
+                                    <h5>أوامر الشراء</h5>
+                                    <p>تعرفت على كيفية إنشاء وإدارة أوامر الشراء</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="summary-card">
+                                    <div class="summary-icon">
+                                        <i class="fas fa-dolly"></i>
+                                    </div>
+                                    <h5>التسليم والاستلام</h5>
+                                    <p>تعلمت خطوات استلام المواد وفحصها وتوثيقها</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="summary-card">
+                                    <div class="summary-icon">
+                                        <i class="fas fa-chart-pie"></i>
+                                    </div>
+                                    <h5>إدارة الموارد</h5>
+                                    <p>فهمت كيفية تتبع المواد وإدارة المخزون</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="what-next mt-5">
+                        <h3 class="text-primary mb-4">ماذا بعد؟</h3>
+                        
+                        <div class="row justify-content-center">
+                            <div class="col-md-10">
+                                <div class="next-steps">
+                                    <div class="next-step">
+                                        <div class="step-icon">
+                                            <i class="fas fa-hand-point-right"></i>
+                                        </div>
+                                        <div class="step-content">
+                                            <h5>ابدأ بإنشاء طلب شراء</h5>
+                                            <p>قم بإنشاء أول طلب شراء لك وتتبع دورته في النظام</p>
+                                            <a href="{{ url_for('purchase_requests.add_request') }}" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-plus-circle me-1"></i>
+                                                إنشاء طلب شراء
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="next-step">
+                                        <div class="step-icon">
+                                            <i class="fas fa-search"></i>
+                                        </div>
+                                        <div class="step-content">
+                                            <h5>استكشاف لوحة التحكم</h5>
+                                            <p>تصفح لوحة التحكم وتعرف على المؤشرات والإحصائيات المتاحة</p>
+                                            <a href="{{ url_for('auth.dashboard') }}" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-tachometer-alt me-1"></i>
+                                                لوحة التحكم
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="next-step">
+                                        <div class="step-icon">
+                                            <i class="fas fa-user-cog"></i>
+                                        </div>
+                                        <div class="step-content">
+                                            <h5>تخصيص ملفك الشخصي</h5>
+                                            <p>قم بتحديث معلومات ملفك الشخصي وتفضيلاتك</p>
+                                            <a href="{{ url_for('auth.profile') }}" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-user me-1"></i>
+                                                الملف الشخصي
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="next-step">
+                                        <div class="step-icon">
+                                            <i class="fas fa-question-circle"></i>
+                                        </div>
+                                        <div class="step-content">
+                                            <h5>مراجعة الدليل مرة أخرى</h5>
+                                            <p>يمكنك دائماً العودة إلى هذا الدليل من قائمة المستخدم في أي وقت</p>
+                                            <a href="{{ url_for('onboarding.wizard_index') }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-book me-1"></i>
+                                                العودة للدليل
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-5">
+                        <a href="{{ url_for('auth.dashboard') }}" class="btn btn-lg btn-success px-5">
+                            <i class="fas fa-home me-2"></i>
+                            العودة إلى لوحة التحكم
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* تنسيق بطاقات الملخص */
+    .completion-summary {
+        margin-top: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .summary-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        height: 100%;
+        transition: transform 0.3s, box-shadow 0.3s;
+        text-align: center;
+    }
+    
+    .summary-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .summary-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background-color: #28a745;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        margin: 0 auto 15px;
+    }
+    
+    .summary-card h5 {
+        color: #343a40;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+    
+    .summary-card p {
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+    
+    /* تنسيق ما بعد الإكمال */
+    .what-next {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 30px;
+    }
+    
+    .next-steps {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .next-step {
+        display: flex;
+        margin-bottom: 25px;
+        padding-bottom: 25px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .next-step:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+    
+    .next-step .step-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #007bff;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-left: 20px;
+        flex-shrink: 0;
+    }
+    
+    .next-step .step-content {
+        flex: 1;
+    }
+    
+    .next-step .step-content h5 {
+        color: #343a40;
+        margin-bottom: 10px;
+    }
+    
+    .next-step .step-content p {
+        color: #6c757d;
+        margin-bottom: 15px;
+    }
+    
+    /* تنسيق يدعم الواجهة العربية RTL */
+    .next-step {
+        text-align: right;
+    }
+    
+    /* جعل القسم متجاوب مع الشاشات الصغيرة */
+    @media (max-width: 768px) {
+        .next-step {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .next-step .step-icon {
+            margin: 0 0 15px 0;
+        }
+    }
+</style>
+{% endblock %}

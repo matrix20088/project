@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}تعديل المشروع{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .section-title {
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid rtl">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-edit ml-2"></i> تعديل المشروع</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('projects.edit_project', project_id=project.id) }}" method="post">
+                        <!-- معلومات المشروع الأساسية -->
+                        <div class="form-section">
+                            <h5 class="section-title">معلومات المشروع الأساسية</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="required-field">اسم المشروع</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ project.name }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="code" class="required-field">كود المشروع</label>
+                                    <input type="text" class="form-control" id="code" name="code" value="{{ project.code }}" required>
+                                    <small class="form-text text-muted">يجب أن يكون الكود فريدًا لكل مشروع</small>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="description">وصف المشروع</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3">{{ project.description }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- معلومات العميل -->
+                        <div class="form-section">
+                            <h5 class="section-title">معلومات العميل</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="client_name" class="required-field">اسم العميل</label>
+                                    <input type="text" class="form-control" id="client_name" name="client_name" value="{{ project.client_name }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="client_contact_person">الشخص المسؤول لدى العميل</label>
+                                    <input type="text" class="form-control" id="client_contact_person" name="client_contact_person" value="{{ project.client_contact_person }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="client_email">البريد الإلكتروني للعميل</label>
+                                    <input type="email" class="form-control" id="client_email" name="client_email" value="{{ project.client_email }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="client_phone">رقم هاتف العميل</label>
+                                    <input type="text" class="form-control" id="client_phone" name="client_phone" value="{{ project.client_phone }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- معلومات المشروع الإضافية -->
+                        <div class="form-section">
+                            <h5 class="section-title">معلومات المشروع الإضافية</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="location">موقع المشروع</label>
+                                    <input type="text" class="form-control" id="location" name="location" value="{{ project.location }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="start_date">تاريخ بداية المشروع</label>
+                                    <input type="date" class="form-control" id="start_date" name="start_date" 
+                                        value="{% if project.start_date %}{{ project.start_date.strftime('%Y-%m-%d') }}{% endif %}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="expected_end_date">تاريخ الانتهاء المتوقع</label>
+                                    <input type="date" class="form-control" id="expected_end_date" name="expected_end_date"
+                                        value="{% if project.expected_end_date %}{{ project.expected_end_date.strftime('%Y-%m-%d') }}{% endif %}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="actual_end_date">تاريخ الانتهاء الفعلي</label>
+                                    <input type="date" class="form-control" id="actual_end_date" name="actual_end_date"
+                                        value="{% if project.actual_end_date %}{{ project.actual_end_date.strftime('%Y-%m-%d') }}{% endif %}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="status">حالة المشروع</label>
+                                    <select class="form-control" id="status" name="status">
+                                        <option value="نشط" {% if project.status == 'نشط' %}selected{% endif %}>نشط</option>
+                                        <option value="متوقف" {% if project.status == 'متوقف' %}selected{% endif %}>متوقف</option>
+                                        <option value="مكتمل" {% if project.status == 'مكتمل' %}selected{% endif %}>مكتمل</option>
+                                        <option value="ملغي" {% if project.status == 'ملغي' %}selected{% endif %}>ملغي</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="contract_value">قيمة العقد</label>
+                                    <input type="number" step="0.01" class="form-control" id="contract_value" name="contract_value" 
+                                        value="{{ project.contract_value if project.contract_value is not none }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="estimated_budget">الميزانية التقديرية</label>
+                                    <input type="number" step="0.01" class="form-control" id="estimated_budget" name="estimated_budget" 
+                                        value="{{ project.estimated_budget if project.estimated_budget is not none }}">
+                                    <small class="form-text text-muted">الميزانية المخصصة للمشروع لحساب نسب الإنفاق في التقارير</small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="currency">العملة</label>
+                                    <select class="form-control" id="currency" name="currency">
+                                        <option value="SAR" {% if project.currency == 'SAR' %}selected{% endif %}>ريال سعودي (SAR)</option>
+                                        <option value="USD" {% if project.currency == 'USD' %}selected{% endif %}>دولار أمريكي (USD)</option>
+                                        <option value="EUR" {% if project.currency == 'EUR' %}selected{% endif %}>يورو (EUR)</option>
+                                        <option value="AED" {% if project.currency == 'AED' %}selected{% endif %}>درهم إماراتي (AED)</option>
+                                        <option value="QAR" {% if project.currency == 'QAR' %}selected{% endif %}>ريال قطري (QAR)</option>
+                                        <option value="OMR" {% if project.currency == 'OMR' %}selected{% endif %}>ريال عماني (OMR)</option>
+                                        <option value="KWD" {% if project.currency == 'KWD' %}selected{% endif %}>دينار كويتي (KWD)</option>
+                                        <option value="BHD" {% if project.currency == 'BHD' %}selected{% endif %}>دينار بحريني (BHD)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- معلومات إدارية -->
+                        <div class="form-section">
+                            <h5 class="section-title">معلومات إدارية</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="manager_id">مدير المشروع (النظام القديم)</label>
+                                    <select class="form-control" id="manager_id" name="manager_id">
+                                        <option value="">-- اختر مدير المشروع --</option>
+                                        {% for manager in managers %}
+                                        <option value="{{ manager.id }}" {% if project.manager_id == manager.id %}selected{% endif %}>
+                                            {{ manager.username }} ({{ manager.role }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label for="project_managers">فريق إدارة المشروع (يمكن اختيار أكثر من مدير)</label>
+                                    <select class="form-control" id="project_managers" name="project_managers[]" multiple size="5">
+                                        {% for manager in managers %}
+                                        <option value="{{ manager.id }}" {% if manager.id in project.project_managers|map(attribute='user_id')|list %}selected{% endif %}>
+                                            {{ manager.username }} ({{ manager.role }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="form-text text-muted">يمكنك اختيار أكثر من مدير للمشروع باستخدام زر Ctrl أثناء النقر</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mt-3 text-center">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save ml-2"></i> حفظ التغييرات</button>
+                            <a href="{{ url_for('projects.view_project', project_id=project.id) }}" class="btn btn-secondary mr-2"><i class="fas fa-times ml-2"></i> إلغاء</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

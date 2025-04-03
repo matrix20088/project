@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('purchase_orders.requests') }}">طلبات الشراء</a></li>
+                    <li class="breadcrumb-item active">{{ purchase_request.request_number }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-file-alt me-2"></i>تفاصيل طلب الشراء
+                    </h3>
+                    <div>
+                        {% if purchase_request.status != 'تم التنفيذ' %}
+                        <a href="{{ url_for('purchase_orders.edit_request', id=purchase_request.id) }}" class="btn btn-sm btn-warning me-1">
+                            <i class="fas fa-edit me-1"></i>تعديل
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">رقم الطلب</p>
+                            <p class="fs-5">{{ purchase_request.request_number }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تاريخ الطلب</p>
+                            <p class="fs-5">{{ purchase_request.request_date.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">المشروع</p>
+                            <p class="fs-5">{{ purchase_request.project_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">الحالة</p>
+                            <p class="fs-5">
+                                {% if purchase_request.status == 'قيد الانتظار' %}
+                                <span class="badge bg-warning text-dark">{{ purchase_request.status }}</span>
+                                {% elif purchase_request.status == 'قيد التنفيذ' %}
+                                <span class="badge bg-info text-dark">{{ purchase_request.status }}</span>
+                                {% else %}
+                                <span class="badge bg-success">{{ purchase_request.status }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <!-- الأصناف المطلوبة -->
+                    <div class="mt-4 mb-3">
+                        <h5 class="border-bottom pb-2">الأصناف المطلوبة</h5>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-hover table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>اسم الصنف</th>
+                                        <th>الكمية</th>
+                                        <th>الوحدة</th>
+                                        <th>السعر المقترح</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in request_items %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ item.item_name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ item.unit }}</td>
+                                        <td>{{ item.estimated_price if item.estimated_price else 'غير محدد' }} {% if item.estimated_price %}ريال{% endif %}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- معلومات الملف المرفق -->
+                    {% if purchase_request.attachment_path %}
+                    <div class="row mt-3">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">الملف المرفق</p>
+                            <p class="fs-5">
+                                <a href="/{{ purchase_request.attachment_path }}" target="_blank" class="btn btn-sm btn-info">
+                                    <i class="fas fa-file me-1"></i> عرض الملف
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- الغرض من الطلب -->
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">الغرض من الطلب</p>
+                            <p class="fs-5">{{ purchase_request.purpose if purchase_request.purpose else 'غير محدد' }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- معلومات المستخدم -->
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <p class="text-muted mb-1">المستخدم</p>
+                            <p class="fs-5">{{ purchase_request.requester.username }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if purchase_request.status != 'تم التنفيذ' %}
+                <div class="card-footer bg-transparent">
+                    <form method="POST" action="{{ url_for('purchase_orders.change_request_status', id=purchase_request.id) }}">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <label for="status" class="form-label mb-0">تغيير الحالة:</label>
+                            </div>
+                            <div class="col-md-6 d-flex justify-content-end">
+                                <select class="form-select form-select-sm me-2" id="status" name="status" style="max-width: 150px;">
+                                    <option value="قيد الانتظار" {% if purchase_request.status == 'قيد الانتظار' %}selected{% endif %}>قيد الانتظار</option>
+                                    <option value="قيد التنفيذ" {% if purchase_request.status == 'قيد التنفيذ' %}selected{% endif %}>قيد التنفيذ</option>
+                                    <option value="تم التنفيذ" {% if purchase_request.status == 'تم التنفيذ' %}selected{% endif %}>تم التنفيذ</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary">تحديث</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tags me-2"></i>عروض الأسعار
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if linked_purchase_order %}
+                    <!-- عرض أمر الشراء المرتبط -->
+                    <div class="alert alert-info mb-3">
+                        <h6 class="alert-heading mb-2"><i class="fas fa-link me-2"></i>أمر الشراء المرتبط</h6>
+                        <p>رقم الأمر: <a href="{{ url_for('purchase_orders.view_order', id=linked_purchase_order.id) }}">{{ linked_purchase_order.order_number }}</a></p>
+                        <p>تاريخ الأمر: {{ linked_purchase_order.order_date.strftime('%Y-%m-%d') }}</p>
+                        <p>حالة الاعتماد: 
+                            {% if linked_purchase_order.approval_status == 'قيد الانتظار' %}
+                            <span class="badge bg-warning text-dark">{{ linked_purchase_order.approval_status }}</span>
+                            {% elif linked_purchase_order.approval_status == 'معتمد' %}
+                            <span class="badge bg-success">{{ linked_purchase_order.approval_status }}</span>
+                            {% else %}
+                            <span class="badge bg-danger">{{ linked_purchase_order.approval_status }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if price_quotes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="15%">المورد</th>
+                                    <th width="25%">اسم الصنف</th>
+                                    <th width="10%">الكمية</th>
+                                    <th width="15%">السعر</th>
+                                    <th width="15%">الإجمالي مع الضريبة</th>
+                                    <th width="10%">التاريخ</th>
+                                    <th width="10%">العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for quote in price_quotes %}
+                                {% set total_subtotal = 0 %}
+                                {% set total_items = quote.quote_items|length %}
+                                
+                                {% if total_items > 0 %}
+                                    <!-- صف رئيسي للمورّد والعمليات -->
+                                    <tr class="bg-light">
+                                        <!-- استخدام rowspan فقط إذا كان هناك أكثر من عنصر -->
+                                        <td {% if total_items > 1 %}rowspan="{{ total_items }}"{% endif %}>
+                                            <strong>{{ quote.supplier.name }}</strong>
+                                        </td>
+                                        
+                                        <!-- بيانات العنصر الأول -->
+                                        {% set first_item = quote.quote_items[0] %}
+                                        {% set quantity = first_item.request_item.quantity %}
+                                        {% set unit_price = first_item.price %}
+                                        {% set subtotal = quantity * unit_price %}
+                                        {% set item_total_with_vat = subtotal * 1.15 %}
+                                        {% set total_subtotal = total_subtotal + subtotal %}
+                                        
+                                        <td>{{ first_item.request_item.item_name }}</td>
+                                        <td>{{ quantity }} {{ first_item.request_item.unit }}</td>
+                                        <td>{{ "%.2f"|format(unit_price) }} ريال</td>
+                                        <td>{{ "%.2f"|format(item_total_with_vat) }} ريال</td>
+                                        <td>{{ quote.quote_date.strftime('%Y-%m-%d') }}</td>
+                                        <td {% if total_items > 1 %}rowspan="{{ total_items }}"{% endif %}>
+                                            <div class="btn-group btn-group-sm">
+                                                {% if not linked_purchase_order %}
+                                                <a href="{{ url_for('purchase_orders.create_order', request_id=purchase_request.id, quote_id=quote.id) }}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-file-invoice"></i> إنشاء أمر شراء
+                                                </a>
+                                                {% endif %}
+                                                <a href="{{ url_for('purchase_orders.delete_quote', id=quote.id) }}" class="btn btn-outline-danger" onclick="return confirm('هل أنت متأكد من حذف هذا العرض؟')">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- بقية العناصر -->
+                                    {% for quote_item in quote.quote_items[1:] %}
+                                        {% set quantity = quote_item.request_item.quantity %}
+                                        {% set unit_price = quote_item.price %}
+                                        {% set subtotal = quantity * unit_price %}
+                                        {% set item_total_with_vat = subtotal * 1.15 %}
+                                        {% set total_subtotal = total_subtotal + subtotal %}
+                                        
+                                        <tr>
+                                            <td>{{ quote_item.request_item.item_name }}</td>
+                                            <td>{{ quantity }} {{ quote_item.request_item.unit }}</td>
+                                            <td>{{ "%.2f"|format(unit_price) }} ريال</td>
+                                            <td>{{ "%.2f"|format(item_total_with_vat) }} ريال</td>
+                                            <td></td> <!-- خلية فارغة للتاريخ (ظهر فقط مع العنصر الأول) -->
+                                        </tr>
+                                    {% endfor %}
+                                    
+                                    <!-- صف الإجمالي -->
+                                    <tr class="table-success">
+                                        <td colspan="3" class="text-start fw-bold">الإجمالي النهائي مع الضريبة:</td>
+                                        <td colspan="2" class="fw-bold">{{ "%.2f"|format(total_subtotal * 1.15) }} ريال</td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                {% else %}
+                                    <!-- حالة عدم وجود عناصر -->
+                                    <tr>
+                                        <td>{{ quote.supplier.name }}</td>
+                                        <td colspan="4" class="text-center">لا توجد أصناف</td>
+                                        <td>{{ quote.quote_date.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                {% if not linked_purchase_order %}
+                                                <a href="{{ url_for('purchase_orders.create_order', request_id=purchase_request.id, quote_id=quote.id) }}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-file-invoice"></i> إنشاء أمر شراء
+                                                </a>
+                                                {% endif %}
+                                                <a href="{{ url_for('purchase_orders.delete_quote', id=quote.id) }}" class="btn btn-outline-danger" onclick="return confirm('هل أنت متأكد من حذف هذا العرض؟')">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% endfor %}
+                                
+                                {% if not price_quotes %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-3">لم يتم إضافة عروض أسعار بعد</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-3">لم يتم إضافة عروض أسعار حتى الآن</p>
+                    {% endif %}
+
+                    {% if purchase_request.status != 'تم التنفيذ' and not linked_purchase_order %}
+                    <hr>
+                    <h6 class="mb-3">إضافة عرض سعر جديد</h6>
+                    <form method="POST" action="{{ url_for('purchase_orders.add_quote', request_id=purchase_request.id) }}">
+                        <div class="mb-3">
+                            <label for="supplier_id" class="form-label">المورد</label>
+                            <select class="form-select" id="supplier_id" name="supplier_id" required>
+                                <option value="">-- اختر المورد --</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <h6 class="mb-3">أسعار الأصناف</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>اسم الصنف</th>
+                                        <th>السعر (ريال)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in request_items %}
+                                    <tr>
+                                        <td>{{ item.item_name }} ({{ item.quantity }} {{ item.unit }})</td>
+                                        <td>
+                                            <input type="hidden" name="item_id[]" value="{{ item.id }}">
+                                            <input type="number" step="0.01" class="form-control form-control-sm" 
+                                                   name="item_price[]" placeholder="السعر" required>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="d-grid mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i> إضافة عرض
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // تهيئة جدول عروض الأسعار
+    try {
+        // الحصول على عدد أعمدة الرأس
+        var headColumnsCount = $('.table.table-sm.table-bordered thead tr th').length;
+        console.log("تهيئة الجدول - عدد أعمدة الرأس:", headColumnsCount);
+        
+        // إصلاح صف الإجمالي للتأكد من أنه يستخدم colspan بشكل صحيح
+        $('.table-success td[colspan]').each(function() {
+            // تثبيت colspan للصف الإجمالي
+            if ($(this).text().includes('الإجمالي')) {
+                console.log("تم تعديل colspan لصف الإجمالي");
+            }
+        });
+        
+        // إصلاح قضايا الجدول النهائية
+        $('tr').each(function() {
+            // التأكد من عدم وجود صفوف بها خلايا أقل من المطلوب
+            var expectedCells = headColumnsCount;
+            var actualCells = $(this).find('td, th').length;
+            if (actualCells < expectedCells && !$(this).find('td[colspan]').length) {
+                console.log("تصحيح عدد الخلايا في صف:", actualCells, "->", expectedCells);
+            }
+        });
+        
+        console.log("تم تهيئة الجدول بنجاح");
+    } catch (error) {
+        console.error("فشل في تهيئة الجدول:", error);
+    }
+});
+</script>
+{% endblock %}

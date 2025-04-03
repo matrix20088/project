@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+
+{% block title %}المعاملات الأخرى{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .badge.bg-primary {
+        background-color: #0d6efd !important;
+    }
+    .badge.bg-success {
+        background-color: #198754 !important;
+    }
+    .badge.bg-danger {
+        background-color: #dc3545 !important;
+    }
+    .badge.bg-warning {
+        background-color: #ffc107 !important;
+        color: #212529 !important;
+    }
+    .tab-content {
+        padding-top: 20px;
+    }
+    /* تحسين ظهور الطاولة */
+    .table-actions {
+        white-space: nowrap;
+    }
+    .table th {
+        background-color: #f8f9fa;
+    }
+    /* إضافة قسم للفلترة */
+    .filter-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>إدارة المعاملات الأخرى</h2>
+        </div>
+        <div class="col-md-4 text-start">
+            <a href="{{ url_for('other_transactions.add_transaction') }}" class="btn btn-success">
+                <i class="fas fa-plus me-1"></i> إضافة معاملة جديدة
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
+                        قيد الانتظار 
+                        <span class="badge bg-warning">{{ pending_transactions|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab" aria-controls="approved" aria-selected="false">
+                        معتمدة 
+                        <span class="badge bg-success">{{ approved_transactions|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab" aria-controls="rejected" aria-selected="false">
+                        مرفوضة 
+                        <span class="badge bg-danger">{{ rejected_transactions|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="false">
+                        الكل 
+                        <span class="badge bg-primary">{{ all_transactions|length }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="myTabContent">
+                <!-- قيد الانتظار -->
+                <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+                    {% if pending_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم المعاملة</th>
+                                    <th>تاريخ المعاملة</th>
+                                    <th>نوع المعاملة</th>
+                                    <th>الوصف</th>
+                                    <th>المبلغ</th>
+                                    <th>مقدم الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in pending_transactions %}
+                                <tr>
+                                    <td>{{ transaction.transaction_number }}</td>
+                                    <td>{{ transaction.transaction_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ transaction.transaction_type }}</td>
+                                    <td>{{ transaction.description|truncate(50) }}</td>
+                                    <td>{{ transaction.amount|default('0.00', true) }} {% if transaction.vat_inclusive %}(شامل الضريبة){% else %}(غير شامل الضريبة){% endif %}</td>
+                                    <td>{{ transaction.username }}</td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ transaction.status }}</span>
+                                    </td>
+                                    <td class="table-actions">
+                                        <a href="{{ url_for('other_transactions.view_transaction', id=transaction.id) }}" class="btn btn-sm btn-info me-1">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('other_transactions.edit_transaction', id=transaction.id) }}" class="btn btn-sm btn-primary me-1">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        لا توجد معاملات قيد الانتظار.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- معتمدة -->
+                <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
+                    {% if approved_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم المعاملة</th>
+                                    <th>تاريخ المعاملة</th>
+                                    <th>نوع المعاملة</th>
+                                    <th>الوصف</th>
+                                    <th>المبلغ</th>
+                                    <th>مقدم الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in approved_transactions %}
+                                <tr>
+                                    <td>{{ transaction.transaction_number }}</td>
+                                    <td>{{ transaction.transaction_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ transaction.transaction_type }}</td>
+                                    <td>{{ transaction.description|truncate(50) }}</td>
+                                    <td>{{ transaction.amount|default('0.00', true) }} {% if transaction.vat_inclusive %}(شامل الضريبة){% else %}(غير شامل الضريبة){% endif %}</td>
+                                    <td>{{ transaction.username }}</td>
+                                    <td>
+                                        <span class="badge bg-success">{{ transaction.status }}</span>
+                                    </td>
+                                    <td class="table-actions">
+                                        <a href="{{ url_for('other_transactions.view_transaction', id=transaction.id) }}" class="btn btn-sm btn-info me-1">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('other_transactions.view_transaction', id=transaction.id, print=1) }}" class="btn btn-sm btn-secondary me-1" target="_blank">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        لا توجد معاملات معتمدة.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- مرفوضة -->
+                <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
+                    {% if rejected_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم المعاملة</th>
+                                    <th>تاريخ المعاملة</th>
+                                    <th>نوع المعاملة</th>
+                                    <th>الوصف</th>
+                                    <th>المبلغ</th>
+                                    <th>مقدم الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in rejected_transactions %}
+                                <tr>
+                                    <td>{{ transaction.transaction_number }}</td>
+                                    <td>{{ transaction.transaction_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ transaction.transaction_type }}</td>
+                                    <td>{{ transaction.description|truncate(50) }}</td>
+                                    <td>{{ transaction.amount|default('0.00', true) }} {% if transaction.vat_inclusive %}(شامل الضريبة){% else %}(غير شامل الضريبة){% endif %}</td>
+                                    <td>{{ transaction.username }}</td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ transaction.status }}</span>
+                                    </td>
+                                    <td class="table-actions">
+                                        <a href="{{ url_for('other_transactions.view_transaction', id=transaction.id) }}" class="btn btn-sm btn-info me-1">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        لا توجد معاملات مرفوضة.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- الكل -->
+                <div class="tab-pane fade" id="all" role="tabpanel" aria-labelledby="all-tab">
+                    {% if all_transactions %}
+                    <div class="filter-section mb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-2">
+                                    <label for="type-filter">تصفية حسب النوع</label>
+                                    <input type="text" class="form-control" id="type-filter" placeholder="نوع المعاملة">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-2">
+                                    <label for="date-filter">تصفية حسب التاريخ</label>
+                                    <input type="date" class="form-control" id="date-filter">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-2">
+                                    <label for="status-filter">تصفية حسب الحالة</label>
+                                    <select class="form-control" id="status-filter">
+                                        <option value="">الكل</option>
+                                        <option value="قيد الانتظار">قيد الانتظار</option>
+                                        <option value="معتمد">معتمد</option>
+                                        <option value="مرفوض">مرفوض</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم المعاملة</th>
+                                    <th>تاريخ المعاملة</th>
+                                    <th>نوع المعاملة</th>
+                                    <th>الوصف</th>
+                                    <th>المبلغ</th>
+                                    <th>مقدم الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in all_transactions %}
+                                <tr>
+                                    <td>{{ transaction.transaction_number }}</td>
+                                    <td>{{ transaction.transaction_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ transaction.transaction_type }}</td>
+                                    <td>{{ transaction.description|truncate(50) }}</td>
+                                    <td>{{ transaction.amount|default('0.00', true) }} {% if transaction.vat_inclusive %}(شامل الضريبة){% else %}(غير شامل الضريبة){% endif %}</td>
+                                    <td>{{ transaction.username }}</td>
+                                    <td>
+                                        {% if transaction.status == 'قيد الانتظار' %}
+                                        <span class="badge bg-warning">{{ transaction.status }}</span>
+                                        {% elif transaction.status == 'معتمد' %}
+                                        <span class="badge bg-success">{{ transaction.status }}</span>
+                                        {% elif transaction.status == 'مرفوض' %}
+                                        <span class="badge bg-danger">{{ transaction.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="table-actions">
+                                        <a href="{{ url_for('other_transactions.view_transaction', id=transaction.id) }}" class="btn btn-sm btn-info me-1">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if transaction.status == 'قيد الانتظار' %}
+                                        <a href="{{ url_for('other_transactions.edit_transaction', id=transaction.id) }}" class="btn btn-sm btn-primary me-1">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if transaction.status == 'معتمد' %}
+                                        <a href="{{ url_for('other_transactions.view_transaction', id=transaction.id, print=1) }}" class="btn btn-sm btn-secondary me-1" target="_blank">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        لا توجد معاملات.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم البحث -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5>البحث في المعاملات</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('other_transactions.search_transactions') }}" method="get" class="row g-3">
+                <div class="col-md-10">
+                    <input type="text" name="query" class="form-control" placeholder="البحث بالرقم، النوع، أو الوصف" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">بحث</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // فلترة الجدول الرئيسي
+    $(document).ready(function() {
+        // فلترة حسب النوع
+        $('#type-filter').on('keyup', function() {
+            var value = $(this).val().toLowerCase();
+            $("#all tbody tr").filter(function() {
+                $(this).toggle($(this).children('td').eq(2).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+        
+        // فلترة حسب التاريخ
+        $('#date-filter').on('change', function() {
+            var value = $(this).val();
+            if(value) {
+                $("#all tbody tr").filter(function() {
+                    var rowDate = $(this).children('td').eq(1).text();
+                    $(this).toggle(rowDate == value);
+                });
+            } else {
+                $("#all tbody tr").show();
+            }
+        });
+        
+        // فلترة حسب الحالة
+        $('#status-filter').on('change', function() {
+            var value = $(this).val().toLowerCase();
+            if(value) {
+                $("#all tbody tr").filter(function() {
+                    $(this).toggle($(this).children('td').eq(6).text().trim().toLowerCase().indexOf(value) > -1)
+                });
+            } else {
+                $("#all tbody tr").show();
+            }
+        });
+    });
+</script>
+{% endblock %}

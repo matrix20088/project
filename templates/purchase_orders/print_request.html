@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طباعة طلب شراء - {{ purchase_request.request_number }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.rtl.min.css') }}">
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+            body {
+                font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-size: 14px;
+                color: #000;
+                background-color: #fff;
+            }
+            .container {
+                width: 100%;
+                max-width: 100%;
+                padding: 0;
+                margin: 0;
+            }
+            .print-header {
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .print-footer {
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                text-align: center;
+                font-size: 12px;
+                padding: 10px 0;
+                border-top: 1px solid #ddd;
+            }
+            .table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .table th, .table td {
+                border: 1px solid #000;
+                padding: 8px;
+                text-align: right;
+            }
+            .table th {
+                background-color: #f0f0f0;
+            }
+            .info-section {
+                margin-bottom: 20px;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .table-responsive {
+                overflow-x: visible !important;
+            }
+            .badge {
+                border: 1px solid #000;
+                padding: 5px;
+                border-radius: 3px;
+            }
+        }
+        /* التنسيقات للعرض على الشاشة */
+        body {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .print-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .print-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-bottom: 2px solid #2c3e50;
+        }
+        .print-header h2 {
+            margin: 10px 0;
+            color: #2c3e50;
+        }
+        .info-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+        .info-section h4 {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .table th {
+            background-color: #f8f9fa;
+        }
+        .print-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #777;
+        }
+        .no-print {
+            margin: 20px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .status-pending {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+        .status-processing {
+            background-color: #e1f5fe;
+            color: #0288d1;
+        }
+        .status-completed {
+            background-color: #e8f5e9;
+            color: #388e3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-container">
+        <div class="print-header">
+            <h2>شركة الإنشاءات المتكاملة</h2>
+            <h3>طلب شراء</h3>
+            <p>رقم الطلب: {{ purchase_request.request_number }}</p>
+        </div>
+
+        <div class="info-section">
+            <h4>معلومات الطلب</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>تاريخ الطلب:</strong> {{ purchase_request.request_date }}</p>
+                    <p><strong>اسم المشروع:</strong> {{ purchase_request.project_name }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>مقدم الطلب:</strong> {{ username }}</p>
+                    <p><strong>حالة الطلب:</strong> 
+                        <span class="status-badge 
+                            {% if purchase_request.status == 'قيد الانتظار' %}status-pending
+                            {% elif purchase_request.status == 'قيد التنفيذ' %}status-processing
+                            {% elif purchase_request.status == 'تم التنفيذ' %}status-completed{% endif %}">
+                            {{ purchase_request.status }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+            
+            {% if purchase_request.purpose %}
+            <div class="row mt-3">
+                <div class="col-12">
+                    <p><strong>الغرض من الطلب:</strong> {{ purchase_request.purpose }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="info-section">
+            <h4>الأصناف المطلوبة</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>اسم الصنف</th>
+                            <th>الكمية</th>
+                            <th>الوحدة</th>
+                            <th>السعر المتوقع (ر.س)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in request_items %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ item.item_name }}</td>
+                            <td>{{ "{:,.2f}".format(item.quantity) }}</td>
+                            <td>{{ item.unit }}</td>
+                            <td>{% if item.estimated_price %}{{ "{:,.2f}".format(item.estimated_price) }}{% else %}-{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>توقيع مقدم الطلب:</h5>
+                    <div style="height: 70px; border-bottom: 1px solid #ddd;"></div>
+                    <p>{{ username }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>اعتماد:</h5>
+                    <div style="height: 70px; border-bottom: 1px solid #ddd;"></div>
+                    <p>المدير المسؤول</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="print-footer">
+            <p>تم إنشاء هذا المستند بواسطة نظام إدارة المشتريات - {{ purchase_request.created_at.strftime('%Y-%m-%d') }}</p>
+        </div>
+
+        <div class="no-print text-center mt-4">
+            <button class="btn btn-primary" onclick="window.print();">طباعة</button>
+            <a href="{{ url_for('purchase_orders.view_request', id=purchase_request.id) }}" class="btn btn-secondary">العودة</a>
+        </div>
+    </div>
+
+    <script>
+        // تنفيذ الطباعة تلقائيًا عند فتح الصفحة
+        window.addEventListener('load', function() {
+            if ({{ print_layout|tojson }}) {
+                // إعطاء وقت قصير للنافذة للتحميل بشكل كامل
+                setTimeout(function() {
+                    window.print();
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>

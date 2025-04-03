@@ -1,0 +1,439 @@
+{% extends 'base.html' %}
+
+{% block title %}طباعة أمر الشراء - {{ purchase_order.order_number }}{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // عندما يكتمل تحميل الصفحة، نعرض زر الطباعة
+    document.addEventListener('DOMContentLoaded', function() {
+        // تلقائي للطباعة بعد ثانيتين من تحميل الصفحة
+        setTimeout(function() {
+            // التحقق من وجود أي أخطاء في تحميل الصور
+            var allImagesLoaded = true;
+            var signatures = document.querySelectorAll('.signature-img');
+            signatures.forEach(function(img) {
+                if (img.complete && img.naturalHeight === 0) {
+                    // الصورة لم تحمل بشكل صحيح، لكن نحن نتجاهل هذا ونستمر في الطباعة
+                    console.log('صورة توقيع لم تحمل: ' + img.src);
+                }
+            });
+            
+            // طباعة الصفحة إذا تم تحميل جميع الصور
+            if (allImagesLoaded) {
+                console.log('جاهز للطباعة - اضغط على زر الطباعة');
+            }
+        }, 2000);
+    });
+</script>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    @media print {
+        body {
+            font-size: 10pt;
+            margin: 0;
+            padding: 0;
+        }
+        .no-print {
+            display: none !important;
+        }
+        .container {
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .table {
+            font-size: 9pt;
+        }
+        .table thead th {
+            background-color: #f8f9fa !important;
+            color: #000 !important;
+            -webkit-print-color-adjust: exact;
+            padding: 3px !important;
+        }
+        .table td, .table th {
+            padding: 3px !important;
+        }
+        .badge {
+            border: 1px solid #000;
+            color: #000 !important;
+            background-color: transparent !important;
+            -webkit-print-color-adjust: exact;
+        }
+        .badge.bg-success {
+            border-color: #198754;
+        }
+        .badge.bg-warning {
+            border-color: #ffc107;
+        }
+        .badge.bg-danger {
+            border-color: #dc3545;
+        }
+        .approval-status-box {
+            border: 1px solid #ddd;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        h5 {
+            font-size: 10pt;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+        .mt-4 {
+            margin-top: 10px !important;
+        }
+        .mt-5 {
+            margin-top: 15px !important;
+        }
+        .mb-3 {
+            margin-bottom: 5px !important;
+        }
+        .row {
+            margin-left: -5px;
+            margin-right: -5px;
+        }
+        .col, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, .col-7, .col-8, .col-9, .col-10, .col-11, .col-12, .col-auto, .col-lg, .col-lg-1, .col-lg-2, .col-lg-3, .col-lg-4, .col-lg-5, .col-lg-6, .col-lg-7, .col-lg-8, .col-lg-9, .col-lg-10, .col-lg-11, .col-lg-12, .col-lg-auto, .col-md, .col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9, .col-md-10, .col-md-11, .col-md-12, .col-md-auto, .col-sm, .col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6, .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12, .col-sm-auto, .col-xl, .col-xl-1, .col-xl-2, .col-xl-3, .col-xl-4, .col-xl-5, .col-xl-6, .col-xl-7, .col-xl-8, .col-xl-9, .col-xl-10, .col-xl-11, .col-xl-12, .col-xl-auto {
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+    }
+    
+    /* تحسين تصميم الصفحة للطباعة */
+    .compact-print {
+        font-size: 10pt;
+    }
+    
+    /* شعار الشركة ومعلومات الهيدر */
+    .company-header {
+        text-align: center;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 5px;
+    }
+    
+    .company-logo {
+        max-width: 60px;
+        margin-bottom: 5px;
+    }
+    
+    .document-title {
+        text-align: center;
+        font-weight: bold;
+        font-size: 14pt;
+        margin: 10px 0;
+        border: 1px solid #333;
+        display: inline-block;
+        padding: 3px 10px;
+    }
+    
+    /* مربعات التوقيع */
+    .signature-section {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 3px;
+        border: 1px solid #ddd;
+        padding: 3px;
+        margin-bottom: 3px;
+    }
+    
+    .signature-column {
+        width: 33%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0 3px;
+        position: relative;
+    }
+    
+    .signature-column + .signature-column {
+        border-right: 1px dashed #ddd;
+    }
+    
+    .signature-title {
+        font-weight: bold;
+        margin-bottom: 3px;
+        text-align: center;
+        font-size: 8pt;
+    }
+    
+    .signature-box {
+        width: 100%;
+        min-height: 50px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .signature-img {
+        max-height: 38px;
+        max-width: 100px;
+        display: block;
+    }
+    
+    .signature-info {
+        text-align: center;
+        width: 100%;
+        font-size: 7pt;
+        color: #555;
+        margin-top: 2px;
+    }
+    
+    /* جدول التفاصيل */
+    .table-compact thead th {
+        padding: 3px;
+        font-size: 9pt;
+    }
+    
+    .table-compact td, .table-compact th {
+        padding: 3px;
+        font-size: 9pt;
+    }
+    
+    .terms-list {
+        padding-right: 20px;
+        margin-bottom: 5px;
+        font-size: 9pt;
+    }
+    
+    .terms-list li {
+        margin-bottom: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container compact-print">
+    <div class="row no-print text-center">
+        <div class="col-12">
+            <div class="alert alert-info py-2 mb-1">
+                <div>
+                    <button onclick="window.print()" class="btn btn-sm btn-primary me-1">
+                        <i class="fas fa-print me-1"></i> طباعة
+                    </button>
+                    <a href="{{ url_for('purchase_orders.view_order', id=purchase_order.id) }}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-arrow-right me-1"></i> العودة
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- معلومات الشركة والهيدر -->
+    <div class="company-header">
+        <div class="row">
+            <div class="col-4 text-start">
+                <p style="margin: 0; font-size: 9pt;">تاريخ الطباعة: {{ now.strftime('%Y-%m-%d') }}</p>
+                <p style="margin: 0; font-size: 9pt;">الوقت: {{ now.strftime('%H:%M') }}</p>
+            </div>
+            <div class="col-4 text-center">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" class="company-logo" alt="شعار الشركة" onerror="this.style.display='none'">
+                <h3 style="margin: 0; font-size: 14pt;">اسم الشركة</h3>
+                <p style="margin: 0; font-size: 9pt;">نظام إدارة المشتريات</p>
+            </div>
+            <div class="col-4 text-end">
+                <p style="margin: 0; font-size: 9pt;">هاتف: +966 XX XXX XXXX</p>
+                <p style="margin: 0; font-size: 9pt;">البريد الإلكتروني: info@company.com</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center">
+        <div class="document-title">أمر شراء رقم: {{ purchase_order.order_number }}</div>
+    </div>
+    
+    <div class="row mt-2">
+        <div class="col-md-6">
+            <h5 style="margin-top: 3px; margin-bottom: 3px;">معلومات أمر الشراء</h5>
+            <table class="table table-bordered table-sm table-compact" style="margin-bottom: 5px;">
+                <tbody>
+                    <tr>
+                        <th style="width: 40%">رقم أمر الشراء</th>
+                        <td>{{ purchase_order.order_number }}</td>
+                    </tr>
+                    <tr>
+                        <th>تاريخ أمر الشراء</th>
+                        <td>{{ purchase_order.order_date.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    <tr>
+                        <th>المشروع</th>
+                        <td>
+                            {% if purchase_order.project_id %}
+                                {{ purchase_order.project.name }}
+                            {% else %}
+                                غير مرتبط بمشروع
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>تاريخ التسليم المطلوب</th>
+                        <td>{{ purchase_order.delivery_date.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    <tr>
+                        <th>مرجع طلب الشراء</th>
+                        <td>{{ purchase_request.request_number if purchase_request else 'غير متاح' }}</td>
+                    </tr>
+                    {% if purchase_order.purpose %}
+                    <tr>
+                        <th>الغرض من الطلب</th>
+                        <td>{{ purchase_order.purpose }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h5 style="margin-top: 3px; margin-bottom: 3px;">معلومات المورد</h5>
+            <table class="table table-bordered table-sm table-compact" style="margin-bottom: 5px;">
+                <tbody>
+                    <tr>
+                        <th style="width: 40%">اسم المورد</th>
+                        <td>{{ supplier.name }}</td>
+                    </tr>
+                    {% if supplier.address %}
+                    <tr>
+                        <th>العنوان</th>
+                        <td>{{ supplier.address }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if supplier.phone %}
+                    <tr>
+                        <th>رقم الهاتف</th>
+                        <td>{{ supplier.phone }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if supplier.email %}
+                    <tr>
+                        <th>البريد الإلكتروني</th>
+                        <td>{{ supplier.email }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="row mt-2">
+        <div class="col-12">
+            <h5 style="margin-top: 3px; margin-bottom: 3px;">تفاصيل أمر الشراء</h5>
+            <div class="table-responsive" style="margin-top: 3px;">
+                <table class="table table-bordered table-sm table-compact" style="margin-bottom: 5px;">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="40%">اسم الصنف</th>
+                            <th width="10%">الكمية</th>
+                            <th width="10%">الوحدة</th>
+                            <th width="10%">السعر (ريال)</th>
+                            <th width="10%">الإجمالي (ريال)</th>
+                            <th width="15%">شامل الضريبة (ريال)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order_items %}
+                        {% set item_total = calculate_item_total(item.price, item.quantity) %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ item.item_name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.unit }}</td>
+                            <td>{{ "%.2f"|format(item.price) }}</td>
+                            <td>{{ "%.2f"|format(item_total) }}</td>
+                            <td>{{ "%.2f"|format(item_total * 1.15) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="5" class="text-start">الإجمالي قبل الضريبة</th>
+                            <th colspan="2">{{ "%.2f"|format(correct_total or 0) }} ريال</th>
+                        </tr>
+                        <tr>
+                            <th colspan="5" class="text-start">ضريبة القيمة المضافة (15%)</th>
+                            <th colspan="2">{{ "%.2f"|format((correct_total or 0) * 0.15) }} ريال</th>
+                        </tr>
+                        <tr>
+                            <th colspan="5" class="text-start">الإجمالي شامل الضريبة</th>
+                            <th colspan="2">{{ "%.2f"|format((correct_total or 0) * 1.15) }} ريال</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- حالة الاعتماد والتوقيعات في سطر واحد -->
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="approval-status-box text-center" style="margin-bottom: 5px; padding: 3px;">
+                <span style="font-weight: bold; margin-left: 10px;">الحالة النهائية:</span>
+                <span class="badge {{ 'bg-success' if purchase_order.approval_status == 'معتمد' 
+                                else 'bg-danger' if purchase_order.approval_status == 'مرفوض' 
+                                else 'bg-warning' }}">
+                    {{ purchase_order.approval_status }}
+                </span>
+            </div>
+            
+            <!-- التوقيعات بشكل مبسط -->
+            <div class="signature-section">
+                <!-- مدير المكتب الهندسي -->
+                <div class="signature-column">
+                    <div class="signature-title">مدير المكتب الهندسي</div>
+                    <div class="signature-box">
+                        {% if purchase_order.engineering_approval == 'معتمد' %}
+                            <img src="{{ url_for('static', filename=signatures_dict['engineering_manager_signature']) }}" 
+                                 alt="توقيع" class="signature-img">
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- مدير المشاريع -->
+                <div class="signature-column">
+                    <div class="signature-title">مدير المشاريع</div>
+                    <div class="signature-box">
+                        {% if purchase_order.projects_approval == 'معتمد' %}
+                            <img src="{{ url_for('static', filename=signatures_dict['projects_manager_signature']) }}" 
+                                 alt="توقيع" class="signature-img">
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- المدير التنفيذي -->
+                <div class="signature-column">
+                    <div class="signature-title">المدير التنفيذي</div>
+                    <div class="signature-box">
+                        {% if purchase_order.executive_approval == 'معتمد' %}
+                            <img src="{{ url_for('static', filename=signatures_dict['executive_manager_signature']) }}" 
+                                 alt="توقيع" class="signature-img">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- نصوص وشروط بتصميم مختصر -->
+    <div class="row mt-1">
+        <div class="col-12">
+            <p style="margin: 0; font-size: 8pt; font-weight: bold;">شروط وأحكام: </p>
+            <p style="margin: 0; font-size: 8pt;">1. يرجى توريد البضائع وفقًا للمواصفات المذكورة أعلاه. 2. جميع المواد خالية من العيوب ومطابقة للمواصفات. 3. الدفع خلال 30 يومًا من تاريخ استلام الفاتورة. 4. يرفق مع الفاتورة نسخة من أمر الشراء.</p>
+            <p style="margin-top: 3px; font-size: 7pt; text-align: center;">{{ now.strftime('%Y-%m-%d %H:%M') }} - تم إنشاء أمر الشراء هذا من خلال نظام إدارة المشتريات</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // طباعة معلومات التوقيعات للتشخيص
+        console.log("معلومات التوقيعات: ", {{ signatures_dict|tojson }});
+    });
+</script>
+{% endblock %}

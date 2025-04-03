@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}معاملة رقم: {{ transaction.transaction_number }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .badge.bg-primary {
+        background-color: #0d6efd !important;
+    }
+    .badge.bg-success {
+        background-color: #198754 !important;
+    }
+    .badge.bg-danger {
+        background-color: #dc3545 !important;
+    }
+    .badge.bg-warning {
+        background-color: #ffc107 !important;
+        color: #212529 !important;
+    }
+    .details-card {
+        background-color: #f9f9f9;
+    }
+    .details-header {
+        background-color: #eaeaea;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    .details-info {
+        font-size: 16px;
+    }
+    .details-info strong {
+        font-weight: bold;
+        color: #495057;
+    }
+    .status-approval-header {
+        background-color: #f0f7ff;
+    }
+    .approval-controls {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+    .document-preview {
+        max-height: 600px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .document-preview img {
+        max-width: 100%;
+    }
+    .document-preview iframe {
+        width: 100%;
+        height: 600px;
+        border: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>معاملة رقم: {{ transaction.transaction_number }}</h2>
+        </div>
+        <div class="col-md-4 text-start">
+            <div class="btn-group">
+                {% if transaction.approval_status == 'قيد الانتظار' %}
+                <a href="{{ url_for('other_transactions.edit_transaction', id=transaction.id) }}" class="btn btn-primary me-2">
+                    <i class="fas fa-edit me-1"></i> تعديل
+                </a>
+                {% endif %}
+                {% if transaction.approval_status == 'معتمد' %}
+                <a href="{{ url_for('other_transactions.view_transaction', id=transaction.id, print=1) }}" class="btn btn-secondary me-2" target="_blank">
+                    <i class="fas fa-print me-1"></i> طباعة
+                </a>
+                {% endif %}
+                <a href="{{ url_for('other_transactions.index') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-right me-1"></i> العودة للمعاملات
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- تفاصيل المعاملة -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">تفاصيل المعاملة</h5>
+                </div>
+                <div class="card-body details-card">
+                    <div class="details-header">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="details-info">
+                                    <strong>رقم المعاملة:</strong> {{ transaction.transaction_number }}
+                                </div>
+                                <div class="details-info">
+                                    <strong>تاريخ المعاملة:</strong> {{ transaction.transaction_date.strftime('%Y-%m-%d') }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="details-info">
+                                    <strong>نوع المعاملة:</strong> {{ transaction.transaction_type }}
+                                </div>
+                                <div class="details-info">
+                                    <strong>الحالة:</strong>
+                                    {% if transaction.approval_status == 'قيد الانتظار' %}
+                                    <span class="badge bg-warning">{{ transaction.approval_status }}</span>
+                                    {% elif transaction.approval_status == 'معتمد' %}
+                                    <span class="badge bg-success">{{ transaction.approval_status }}</span>
+                                    {% elif transaction.approval_status == 'مرفوض' %}
+                                    <span class="badge bg-danger">{{ transaction.approval_status }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if transaction.project_name %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="details-info">
+                                <strong>المشروع:</strong> 
+                                <div class="mt-2">{{ transaction.project_name }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if transaction.amount is not none %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="details-info">
+                                <strong>المبلغ:</strong> 
+                                <div class="mt-2">{{ transaction.amount|round(2) }} ريال سعودي 
+                                    {% if transaction.vat_inclusive %}<span class="badge bg-info">شامل ضريبة القيمة المضافة</span>{% else %}<span class="badge bg-secondary">غير شامل ضريبة القيمة المضافة</span>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if transaction.description %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="details-info">
+                                <strong>الوصف:</strong> 
+                                <div class="mt-2">{{ transaction.description|nl2br }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- المرفقات -->
+                    {% if transaction.attachment_path %}
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">المرفقات</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="document-preview">
+                                {% if transaction.attachment_path.endswith('.pdf') %}
+                                <iframe src="{{ url_for('static', filename=transaction.attachment_path.replace('static/', '', 1)) }}"></iframe>
+                                {% elif transaction.attachment_path.endswith(('.jpg', '.jpeg', '.png', '.gif')) %}
+                                <img src="{{ url_for('static', filename=transaction.attachment_path.replace('static/', '', 1)) }}" alt="مرفق المعاملة">
+                                {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-file me-2"></i> 
+                                    يوجد ملف مرفق لا يمكن عرضه مباشرة. 
+                                    <a href="{{ url_for('static', filename=transaction.attachment_path.replace('static/', '', 1)) }}" class="btn btn-sm btn-primary ms-2" target="_blank">تحميل الملف</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- حالة الاعتماد -->
+            <div class="card mb-4">
+                <div class="card-header status-approval-header">
+                    <h5 class="mb-0">حالة الاعتماد</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if transaction.approval_status == 'قيد الانتظار' %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-clock me-2"></i> المعاملة قيد الانتظار للاعتماد
+                        </div>
+                        {% elif transaction.approval_status == 'معتمد' %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i> تم اعتماد المعاملة
+                        </div>
+                        {% elif transaction.approval_status == 'مرفوض' %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle me-2"></i> تم رفض المعاملة
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- تحكم الاعتماد - للمدراء -->
+                    {% if current_user.role in ['مدير', 'مدير تنفيذي'] and transaction.approval_status == 'قيد الانتظار' %}
+                    <div class="approval-controls">
+                        <h6 class="mb-3">إجراءات الاعتماد</h6>
+                        <form method="POST" action="{{ url_for('other_transactions.change_status', id=transaction.id) }}">
+                            <div class="form-group mb-3">
+                                <label for="status">تغيير الحالة</label>
+                                <select class="form-control" id="status" name="status">
+                                    <option value="قيد الانتظار">قيد الانتظار</option>
+                                    <option value="معتمد">موافقة</option>
+                                    <option value="مرفوض">رفض</option>
+                                </select>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="comments">ملاحظات</label>
+                                <textarea class="form-control" id="comments" name="comments" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- معلومات إضافية -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">معلومات إضافية</h5>
+                </div>
+                <div class="card-body">
+                    <div class="details-info">
+                        <strong>تم الإنشاء بواسطة:</strong> 
+                        {% if transaction.creator %}{{ transaction.creator.username }}{% else %}غير معروف{% endif %}
+                    </div>
+                    <div class="details-info">
+                        <strong>تاريخ الإنشاء:</strong> {{ transaction.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

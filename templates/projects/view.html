@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+
+{% block title %}تفاصيل المشروع{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-header {
+        background-color: #f8f9fa;
+        border-right: 4px solid #007bff;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .info-section {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .section-title {
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .status-badge {
+        font-size: 0.9rem;
+        border-radius: 12px;
+        padding: 4px 10px;
+    }
+    
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-completed {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    
+    .status-hold {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-cancelled {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .transaction-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .transaction-item {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+        transition: all 0.2s ease;
+    }
+    
+    .transaction-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .delete-confirmation-modal .modal-header {
+        background-color: #dc3545;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid rtl">
+    <!-- عنوان المشروع والأزرار -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div class="d-flex align-items-center">
+                    <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-secondary ml-2">
+                        <i class="fas fa-arrow-right"></i> العودة للقائمة
+                    </a>
+                    <h2 class="mb-0 d-inline">{{ project.name }}</h2>
+                    <span class="mr-2 status-badge 
+                        {% if project.status == 'نشط' %}status-active
+                        {% elif project.status == 'مكتمل' %}status-completed
+                        {% elif project.status == 'متوقف' %}status-hold
+                        {% elif project.status == 'ملغي' %}status-cancelled
+                        {% endif %}
+                    ">{{ project.status }}</span>
+                </div>
+                <div>
+                    {% if can_update %}
+                    <a href="{{ url_for('projects.edit_project', project_id=project.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit ml-1"></i> تعديل
+                    </a>
+                    {% endif %}
+                    
+                    {% if can_delete %}
+                    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteConfirmationModal">
+                        <i class="fas fa-trash-alt ml-1"></i> حذف
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- معلومات المشروع -->
+    <div class="row">
+        <!-- المعلومات الأساسية -->
+        <div class="col-md-6 mb-4">
+            <div class="info-section">
+                <h5 class="section-title">معلومات المشروع الأساسية</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">كود المشروع:</span>
+                        <p>{{ project.code }}</p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">تاريخ الإنشاء:</span>
+                        <p>{{ project.created_at.strftime('%Y-%m-%d') }}</p>
+                    </div>
+                    <div class="col-md-12 mb-2">
+                        <span class="info-label">الوصف:</span>
+                        <p>{{ project.description or 'لا يوجد وصف' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">موقع المشروع:</span>
+                        <p>{{ project.location or 'غير محدد' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">قيمة العقد:</span>
+                        <p>{% if project.contract_value %}{{ project.contract_value|round(2) }} {{ project.currency }}{% else %}غير محدد{% endif %}</p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">الميزانية التقديرية:</span>
+                        <p>{% if project.estimated_budget %}{{ project.estimated_budget|round(2) }} {{ project.currency }}{% else %}غير محدد{% endif %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- معلومات العميل -->
+        <div class="col-md-6 mb-4">
+            <div class="info-section">
+                <h5 class="section-title">معلومات العميل</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">اسم العميل:</span>
+                        <p>{{ project.client_name }}</p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">الشخص المسؤول:</span>
+                        <p>{{ project.client_contact_person or 'غير محدد' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">البريد الإلكتروني:</span>
+                        <p>{{ project.client_email or 'غير محدد' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">رقم الهاتف:</span>
+                        <p>{{ project.client_phone or 'غير محدد' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- التواريخ المهمة -->
+        <div class="col-md-6 mb-4">
+            <div class="info-section">
+                <h5 class="section-title">التواريخ المهمة</h5>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <span class="info-label">تاريخ البدء:</span>
+                        <p>{% if project.start_date %}{{ project.start_date.strftime('%Y-%m-%d') }}{% else %}غير محدد{% endif %}</p>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <span class="info-label">تاريخ الانتهاء المتوقع:</span>
+                        <p>{% if project.expected_end_date %}{{ project.expected_end_date.strftime('%Y-%m-%d') }}{% else %}غير محدد{% endif %}</p>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <span class="info-label">تاريخ الانتهاء الفعلي:</span>
+                        <p>{% if project.actual_end_date %}{{ project.actual_end_date.strftime('%Y-%m-%d') }}{% else %}غير محدد{% endif %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- معلومات إدارية -->
+        <div class="col-md-6 mb-4">
+            <div class="info-section">
+                <h5 class="section-title">معلومات إدارية</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">مدير المشروع:</span>
+                        <p>{% if manager %}{{ manager.username }} ({{ manager.role }}){% else %}غير محدد{% endif %}</p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <span class="info-label">منشئ المشروع:</span>
+                        <p>{{ creator.username }} ({{ creator.role }})</p>
+                    </div>
+                    
+                    <div class="col-md-12 mb-2">
+                        <span class="info-label">فريق إدارة المشروع:</span>
+                        {% if project_managers %}
+                        <div class="mt-2">
+                            <ul class="list-group">
+                                {% for pm in project_managers %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ pm.user.username }} 
+                                    <span class="badge badge-primary badge-pill">{{ pm.user.role }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% else %}
+                        <p>لم يتم تعيين فريق إدارة للمشروع</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- المعاملات المرتبطة بالمشروع -->
+    <div class="row">
+        <!-- أوامر الشراء -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-file-invoice ml-2"></i> أوامر الشراء</h5>
+                </div>
+                <div class="card-body transaction-list p-0">
+                    {% if purchase_orders %}
+                        {% for order in purchase_orders %}
+                        <div class="transaction-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="{{ url_for('purchase_orders.view_order', id=order.id) }}" class="font-weight-bold">{{ order.order_number }}</a>
+                                    <div><small>{{ order.order_date.strftime('%Y-%m-%d') }}</small></div>
+                                </div>
+                                <div>
+                                    <span class="badge badge-pill 
+                                        {% if order.approval_status == 'معتمد' %}badge-success
+                                        {% elif order.approval_status == 'مرفوض' %}badge-danger
+                                        {% else %}badge-warning{% endif %}">
+                                        {{ order.approval_status }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center p-3">
+                            <p class="text-muted">لا توجد أوامر شراء مرتبطة بهذا المشروع</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{{ url_for('purchase_orders.orders') }}?project_id={{ project.id }}" class="btn btn-sm btn-outline-primary">
+                        عرض الكل <i class="fas fa-arrow-left mr-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- المستخلصات -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-file-invoice-dollar ml-2"></i> المستخلصات</h5>
+                </div>
+                <div class="card-body transaction-list p-0">
+                    {% if invoices %}
+                        {% for invoice in invoices %}
+                        <div class="transaction-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="{{ url_for('invoices.view_invoice', id=invoice.id) }}" class="font-weight-bold">{{ invoice.invoice_number }}</a>
+                                    <div><small>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</small></div>
+                                </div>
+                                <div>
+                                    <span class="badge badge-pill 
+                                        {% if invoice.approval_status == 'معتمد' %}badge-success
+                                        {% elif invoice.approval_status == 'مرفوض' %}badge-danger
+                                        {% else %}badge-warning{% endif %}">
+                                        {{ invoice.approval_status }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center p-3">
+                            <p class="text-muted">لا توجد مستخلصات مرتبطة بهذا المشروع</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{{ url_for('invoices.index') }}?project_id={{ project.id }}" class="btn btn-sm btn-outline-primary">
+                        عرض الكل <i class="fas fa-arrow-left mr-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- المعاملات الأخرى -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-file-alt ml-2"></i> المعاملات الأخرى</h5>
+                </div>
+                <div class="card-body transaction-list p-0">
+                    {% if other_transactions %}
+                        {% for transaction in other_transactions %}
+                        <div class="transaction-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="{{ url_for('other_transactions.view_transaction', id=transaction.id) }}" class="font-weight-bold">{{ transaction.transaction_number }}</a>
+                                    <div><small>{{ transaction.transaction_date.strftime('%Y-%m-%d') }} - {{ transaction.transaction_type }}</small></div>
+                                </div>
+                                <div>
+                                    <span class="badge badge-pill 
+                                        {% if transaction.approval_status == 'معتمد' %}badge-success
+                                        {% elif transaction.approval_status == 'مرفوض' %}badge-danger
+                                        {% else %}badge-warning{% endif %}">
+                                        {{ transaction.approval_status }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center p-3">
+                            <p class="text-muted">لا توجد معاملات أخرى مرتبطة بهذا المشروع</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{{ url_for('other_transactions.index') }}?project_id={{ project.id }}" class="btn btn-sm btn-outline-primary">
+                        عرض الكل <i class="fas fa-arrow-left mr-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال تأكيد الحذف -->
+<div class="modal fade delete-confirmation-modal" id="deleteConfirmationModal" tabindex="-1" role="dialog" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmationModalLabel">تأكيد الحذف</h5>
+                <button type="button" class="close mr-auto ml-0" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من رغبتك في حذف المشروع "{{ project.name }}"؟</p>
+                <p class="text-danger">
+                    <strong>تنبيه:</strong> لا يمكن حذف المشروع إذا كان مرتبطًا بأي أوامر شراء أو مستخلصات أو معاملات أخرى.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">إلغاء</button>
+                <form action="{{ url_for('projects.delete_project', project_id=project.id) }}" method="post">
+                    <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}تقرير المواد المخزنة{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">تقرير المواد المخزنة</h2>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>البيانات</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>رقم المادة</th>
+                            <th>اسم المادة</th>
+                            <th>المخزن</th>
+                            <th>الكمية المتاحة</th>
+                            <th>الكمية المطلوبة</th>
+                            <th>إجمالي الوارد</th>
+                            <th>إجمالي الصادر</th>
+                            <th>عدد الحركات</th>
+                            <th>آخر حركة</th>
+                            <th>عرض</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in report_data %}
+                        <tr>
+                            <td>{{ data.item.item_number }}</td>
+                            <td>{{ data.item.item_name }}</td>
+                            <td>
+                                {% if data.warehouse %}
+                                <a href="{{ url_for('inventory.view_warehouse', id=data.warehouse.id) }}">{{ data.warehouse.warehouse_name }}</a>
+                                {% else %}
+                                غير متوفر
+                                {% endif %}
+                            </td>
+                            <td>{{ data.item.available_quantity }} {{ data.item.unit }}</td>
+                            <td>{{ data.item.required_quantity|default('-', true) }} {{ data.item.unit }}</td>
+                            <td>{{ data.total_incoming }} {{ data.item.unit }}</td>
+                            <td>{{ data.total_outgoing }} {{ data.item.unit }}</td>
+                            <td>{{ data.movements_count }}</td>
+                            <td>
+                                {% if data.last_movement %}
+                                {{ data.last_movement.movement_date.strftime('%Y-%m-%d') }} ({{ data.last_movement.movement_type }})
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('inventory.view_item', id=data.item.id) }}" class="btn btn-sm btn-info">عرض</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                        {% if not report_data %}
+                        <tr>
+                            <td colspan="10" class="text-center">لا توجد بيانات متاحة.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

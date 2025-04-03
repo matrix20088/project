@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('inventory.warehouses') }}">المستودعات</a></li>
+                    <li class="breadcrumb-item active">{{ warehouse.warehouse_name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-warehouse me-2"></i>معلومات المستودع
+                    </h3>
+                    <div>
+                        <a href="{{ url_for('inventory.edit_warehouse', id=warehouse.id) }}" class="btn btn-sm btn-warning me-1">
+                            <i class="fas fa-edit me-1"></i>تعديل
+                        </a>
+                        <a href="{{ url_for('inventory.delete_warehouse', id=warehouse.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد من حذف هذا المستودع؟\nلا يمكن حذف المستودع إذا كان يحتوي على مواد.')">
+                            <i class="fas fa-trash me-1"></i>حذف
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">رقم المستودع</p>
+                            <p class="fs-5">{{ warehouse.warehouse_number }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">اسم المستودع</p>
+                            <p class="fs-5">{{ warehouse.warehouse_name }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">الموقع</p>
+                            <p class="fs-5">{{ warehouse.location or 'غير محدد' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تاريخ الإنشاء</p>
+                            <p class="fs-5">{{ warehouse.created_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>ملخص المستودع
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <p class="text-muted mb-1">عدد المواد</p>
+                        <h3>{{ inventory_items|length }}</h3>
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="{{ url_for('inventory.add_item') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-1"></i> إضافة مادة جديدة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم المواد في المستودع -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-boxes me-2"></i>المواد في المستودع
+                    </h4>
+                    <a href="{{ url_for('inventory.add_item') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i>إضافة مادة
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if inventory_items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>رقم المادة</th>
+                                    <th>اسم المادة</th>
+                                    <th>الكمية المتاحة</th>
+                                    <th>الكمية المطلوبة</th>
+                                    <th>الحالة</th>
+                                    <th>العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in inventory_items %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ item.item_number }}</td>
+                                    <td>{{ item.item_name }}</td>
+                                    <td>{{ item.available_quantity }}</td>
+                                    <td>{{ item.required_quantity or 'غير محدد' }}</td>
+                                    <td>
+                                        {% if item.required_quantity and item.available_quantity < item.required_quantity %}
+                                            <span class="badge bg-danger">ناقص</span>
+                                        {% elif item.required_quantity and item.available_quantity == item.required_quantity %}
+                                            <span class="badge bg-success">مكتمل</span>
+                                        {% elif item.required_quantity and item.available_quantity > item.required_quantity %}
+                                            <span class="badge bg-info">زائد</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">غير محدد</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('inventory.view_item', id=item.id) }}" class="btn btn-outline-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('inventory.edit_item', id=item.id) }}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('inventory.add_movement', id=item.id) }}" class="btn btn-outline-primary">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="display-5 text-muted mb-4">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <h4 class="text-muted">لا توجد مواد في المستودع</h4>
+                        <p class="text-muted mb-4">لم يتم إضافة أي مواد لهذا المستودع حتى الآن</p>
+                        <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i> إضافة مادة جديدة
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

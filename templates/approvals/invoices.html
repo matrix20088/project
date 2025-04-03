@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <h2 class="card-title mb-0">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>اعتماد المستخلصات
+                    </h2>
+                    <a href="{{ url_for('approvals.add_invoice') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> إضافة مستخلص جديد
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-body">
+                    {% if invoices %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>رقم المستخلص</th>
+                                    <th>تاريخ المستخلص</th>
+                                    <th>المشروع</th>
+                                    <th>القيمة</th>
+                                    <th>بواسطة</th>
+                                    <th>العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in invoices %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ invoice.invoice_number }}</td>
+                                    <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ invoice.project_name }}</td>
+                                    <td>{{ invoice.invoice_amount }} ريال</td>
+                                    <td>{{ invoice.creator.username }}</td>
+                                    <td>
+                                        <a href="{{ url_for('approvals.view_invoice', id=invoice.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-check me-1"></i> اعتماد
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="display-5 text-muted mb-4">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <h4 class="text-muted">لا توجد مستخلصات تحتاج للاعتماد</h4>
+                        <p class="text-muted mb-4">جميع المستخلصات تم اعتمادها أو رفضها</p>
+                        <a href="{{ url_for('approvals.add_invoice') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i> إضافة مستخلص جديد
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('approvals.other_transactions') }}">المعاملات الأخرى</a></li>
+                    <li class="breadcrumb-item active">إضافة معاملة جديدة</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>إضافة معاملة جديدة
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('approvals.add_other_transaction') }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="transaction_number" class="form-label">رقم المعاملة <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="transaction_number" name="transaction_number" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="transaction_date" class="form-label">تاريخ المعاملة <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="transaction_date" name="transaction_date" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="transaction_type" class="form-label">نوع المعاملة <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="transaction_type" name="transaction_type" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">وصف المعاملة</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="attachment" class="form-label">ملف المعاملة</label>
+                            <input type="file" class="form-control" id="attachment" name="attachment">
+                            <div class="form-text">يمكنك تحميل ملف PDF، Word، Excel أو صورة</div>
+                        </div>
+                        
+                        <div class="text-end mt-4">
+                            <a href="{{ url_for('approvals.other_transactions') }}" class="btn btn-outline-secondary me-2">إلغاء</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> حفظ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

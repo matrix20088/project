@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <h2 class="card-title mb-0">
+                        <i class="fas fa-boxes me-2"></i>إدارة المخزون
+                    </h2>
+                    <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> إضافة مادة جديدة
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-body">
+                    {% if inventory_items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>رقم المادة</th>
+                                    <th>اسم المادة</th>
+                                    <th>الكمية المتاحة</th>
+                                    <th>الكمية المطلوبة</th>
+                                    <th>المستودع</th>
+                                    <th>الحالة</th>
+                                    <th>العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in inventory_items %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ item.item_number }}</td>
+                                    <td>{{ item.item_name }}</td>
+                                    <td>{{ item.available_quantity }}</td>
+                                    <td>{{ item.required_quantity or 'غير محدد' }}</td>
+                                    <td>{{ item.warehouse.warehouse_name }}</td>
+                                    <td>
+                                        {% if item.required_quantity and item.available_quantity < item.required_quantity %}
+                                            <span class="badge bg-danger">ناقص</span>
+                                        {% elif item.required_quantity and item.available_quantity == item.required_quantity %}
+                                            <span class="badge bg-success">مكتمل</span>
+                                        {% elif item.required_quantity and item.available_quantity > item.required_quantity %}
+                                            <span class="badge bg-info">زائد</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">غير محدد</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('inventory.view_item', id=item.id) }}" class="btn btn-outline-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('inventory.edit_item', id=item.id) }}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('inventory.add_movement', id=item.id) }}" class="btn btn-outline-primary">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="display-5 text-muted mb-4">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <h4 class="text-muted">لا توجد مواد في المخزون</h4>
+                        <p class="text-muted mb-4">لم يتم إضافة أي مواد للمخزون حتى الآن</p>
+                        <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i> إضافة مادة جديدة
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

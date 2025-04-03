@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('approvals.purchase_orders') }}">اعتماد أوامر الشراء</a></li>
+                    <li class="breadcrumb-item active">{{ purchase_order.order_number }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>تفاصيل أمر الشراء
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">رقم الأمر</p>
+                            <p class="fs-5">{{ purchase_order.order_number }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تاريخ الأمر</p>
+                            <p class="fs-5">{{ purchase_order.order_date.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">المورد</p>
+                            <p class="fs-5">{{ purchase_order.supplier_backref.name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تاريخ التسليم</p>
+                            <p class="fs-5">{{ purchase_order.delivery_date.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>اسم المادة</th>
+                                    <th>الكمية</th>
+                                    <th>الوحدة</th>
+                                    <th>السعر</th>
+                                    <th>الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in purchase_order.order_items %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ item.item_name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.unit }}</td>
+                                    <td>{{ "%.2f"|format(item.price) }} ريال</td>
+                                    <td>{{ "%.2f"|format(calculate_item_total(item.price, item.quantity)) }} ريال</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">إجمالي القيمة قبل الضريبة</p>
+                            <p class="fs-5">{{ "%.2f"|format(correct_total or 0) }} ريال</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">ضريبة القيمة المضافة (15%)</p>
+                            <p class="fs-5">{{ "%.2f"|format((correct_total or 0) * 0.15) }} ريال</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">إجمالي القيمة النهائي (شامل الضريبة)</p>
+                            <p class="fs-5 fw-bold">{{ "%.2f"|format((correct_total or 0) * 1.15) }} ريال</p>
+                        </div>
+                    </div>
+                    {% if purchase_order.purpose %}
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">الغرض من الطلب</p>
+                            <p class="fs-5">{{ purchase_order.purpose }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">تم الإنشاء بواسطة</p>
+                            <p class="fs-5">{{ creator.username }}</p>
+                        </div>
+                    </div>
+                    {% if purchase_order.attachment_path %}
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">الملف المرفق</p>
+                            <div class="fs-5">
+                                {% set file_path = purchase_order.attachment_path %}
+                                {% set file_extension = file_path.split('.')[-1].lower() if file_path else '' %}
+                                
+                                {# استخراج المسار النسبي #}
+                                {% if 'static/' in file_path %}
+                                    {% set relative_path = file_path.replace('static/', '') %}
+                                {% else %}
+                                    {% set relative_path = file_path %}
+                                {% endif %}
+                                
+                                {# عرض الملف وفقًا لنوع الامتداد #}
+                                {% if file_extension in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                    <div class="text-center py-2">
+                                    <img src="{{ url_for('static', filename=relative_path) }}" 
+                                         class="img-fluid mb-2 border rounded" 
+                                         alt="المرفق" 
+                                         style="max-height: 400px;">
+                                    </div>
+                                {% elif file_extension == 'pdf' %}
+                                    <div class="border rounded">
+                                    <iframe src="{{ url_for('static', filename=relative_path) }}#toolbar=0" 
+                                            width="100%" 
+                                            height="500px" 
+                                            class="mb-2"
+                                            style="border: none;">
+                                    </iframe>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4 border rounded">
+                                        <div class="display-1 text-muted mb-3">
+                                            <i class="fas fa-file"></i>
+                                        </div>
+                                        <p class="lead">ملف مرفق ({{ file_extension }})</p>
+                                    </div>
+                                {% endif %}
+                                <br>
+                                <a href="{{ url_for('static', filename=relative_path) }}" 
+                                   target="_blank" class="btn btn-sm btn-primary mt-2">
+                                    <i class="fas fa-download me-1"></i> تحميل الملف
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-check-circle me-2"></i>اعتماد أمر الشراء
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- عرض حالة الاعتمادات بشكل واضح -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">حالة الاعتمادات</h5>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>مدير المكتب الهندسي:</span>
+                                <span class="badge {{ 'bg-success' if purchase_order.engineering_approval == 'معتمد' 
+                                                    else 'bg-danger' if purchase_order.engineering_approval == 'مرفوض' 
+                                                    else 'bg-warning' }}">
+                                    {{ purchase_order.engineering_approval }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>مدير المشاريع:</span>
+                                <span class="badge {{ 'bg-success' if purchase_order.projects_approval == 'معتمد' 
+                                                    else 'bg-danger' if purchase_order.projects_approval == 'مرفوض' 
+                                                    else 'bg-warning' }}">
+                                    {{ purchase_order.projects_approval }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>المدير التنفيذي:</span>
+                                <span class="badge {{ 'bg-success' if purchase_order.executive_approval == 'معتمد' 
+                                                    else 'bg-danger' if purchase_order.executive_approval == 'مرفوض' 
+                                                    else 'bg-warning' }}">
+                                    {{ purchase_order.executive_approval }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>الحالة النهائية:</span>
+                                <span class="badge {{ 'bg-success' if purchase_order.approval_status == 'معتمد' 
+                                                    else 'bg-danger' if purchase_order.approval_status == 'مرفوض' 
+                                                    else 'bg-warning' }}">
+                                    {{ purchase_order.approval_status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- نموذج الاعتماد - يظهر فقط للمستخدمين المصرح لهم -->
+                    {% if current_user.role in ['مدير مكتب هندسي', 'مدير مشاريع', 'مدير تنفيذي'] %}
+                    <form method="POST" action="{{ url_for('approvals.approve_purchase_order', id=purchase_order.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">الإجراء</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="action" id="action-approve" value="معتمد" checked>
+                                    <label class="form-check-label" for="action-approve">
+                                        اعتماد
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="action" id="action-reject" value="مرفوض">
+                                    <label class="form-check-label" for="action-reject">
+                                        رفض
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="comments" class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="comments" name="comments" rows="4"></textarea>
+                        </div>
+                        
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check me-1"></i> تأكيد الإجراء
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        يمكن اعتماد أمر الشراء فقط بواسطة المستخدمين المصرح لهم (مدير المكتب الهندسي، مدير المشاريع، المدير التنفيذي).
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

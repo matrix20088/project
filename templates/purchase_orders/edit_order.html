@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('purchase_orders.orders') }}">أوامر الشراء</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('purchase_orders.view_order', id=purchase_order.id) }}">{{ purchase_order.order_number }}</a></li>
+                    <li class="breadcrumb-item active">تعديل</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>تعديل أمر الشراء
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        يمكنك تعديل تاريخ التسليم وإضافة ملف مرفق. لتعديل معلومات أخرى، يجب حذف الأمر وإصدار أمر جديد.
+                    </div>
+
+                    <form method="POST" action="{{ url_for('purchase_orders.edit_order', id=purchase_order.id) }}" enctype="multipart/form-data">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">رقم الأمر</p>
+                                <p class="form-control-plaintext">{{ purchase_order.order_number }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">تاريخ الأمر</p>
+                                <p class="form-control-plaintext">{{ purchase_order.order_date.strftime('%Y-%m-%d') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">المورد</p>
+                                <p class="form-control-plaintext">{{ purchase_order.supplier_backref.name }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">الإجمالي</p>
+                                <p class="form-control-plaintext">{{ purchase_order.total_price }} ريال (شامل الضريبة: {{ "%.2f"|format(calculate_total_with_vat(purchase_order.total_price)) }} ريال)</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <p class="text-muted mb-1">عدد البنود</p>
+                                <p class="form-control-plaintext">
+                                    {% set order_items = purchase_order.order_items|list %}
+                                    {{ order_items|length }} بند
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="delivery_date" class="form-label">تاريخ التسليم <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="delivery_date" name="delivery_date" value="{{ purchase_order.delivery_date.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="project_id" class="form-label">المشروع (اختياري)</label>
+                                <select class="form-select" id="project_id" name="project_id">
+                                    <option value="">-- اختر المشروع --</option>
+                                    {% for project in projects %}
+                                    <option value="{{ project.id }}" {% if purchase_order.project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="attachment" class="form-label">إرفاق ملف (PDF أو صورة)</label>
+                            <input type="file" class="form-control" id="attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.gif">
+                            <div class="form-text text-muted">الأنواع المسموح بها: PDF، JPG، PNG، GIF. الحد الأقصى للحجم: 5 ميجابايت</div>
+                            
+                            {% if purchase_order.attachment_path %}
+                            <div class="mt-2">
+                                <span class="text-muted">الملف المرفق الحالي:</span>
+                                <a href="{{ url_for('static', filename=purchase_order.attachment_path.replace('static/', '')) }}" 
+                                   target="_blank" class="link-info">
+                                    <i class="fas fa-file me-1"></i> عرض الملف المرفق
+                                </a>
+                                <small class="text-muted">(سيتم استبدال الملف الحالي إذا قمت بتحميل ملف جديد)</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-end mt-4">
+                            <a href="{{ url_for('purchase_orders.view_order', id=purchase_order.id) }}" class="btn btn-outline-secondary me-2">إلغاء</a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i> حفظ التغييرات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

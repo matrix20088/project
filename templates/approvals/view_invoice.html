@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('approvals.invoices') }}">اعتماد المستخلصات</a></li>
+                    <li class="breadcrumb-item active">{{ invoice.invoice_number }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>تفاصيل المستخلص
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">رقم المستخلص</p>
+                            <p class="fs-5">{{ invoice.invoice_number }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تاريخ المستخلص</p>
+                            <p class="fs-5">{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">المشروع</p>
+                            <p class="fs-5">{{ invoice.project_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">قيمة المستخلص</p>
+                            <p class="fs-5">{{ invoice.invoice_amount }} ريال</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">تم الإنشاء بواسطة</p>
+                            <p class="fs-5">{{ creator.username }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if invoice.attachment_path %}
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">الملف المرفق</p>
+                            <a href="{{ url_for('static', filename=invoice.attachment_path) }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="fas fa-download me-1"></i> عرض وتنزيل الملف
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-check-circle me-2"></i>اعتماد المستخلص
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('approvals.approve_invoice', id=invoice.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">الإجراء</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="action" id="action-approve" value="معتمد" checked>
+                                    <label class="form-check-label" for="action-approve">
+                                        اعتماد
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="action" id="action-reject" value="مرفوض">
+                                    <label class="form-check-label" for="action-reject">
+                                        رفض
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="comments" class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="comments" name="comments" rows="4"></textarea>
+                        </div>
+                        
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check me-1"></i> تأكيد الإجراء
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

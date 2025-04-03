@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+
+{% block title %}المستخلصات{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .badge.bg-primary {
+        background-color: #0d6efd !important;
+    }
+    .badge.bg-success {
+        background-color: #198754 !important;
+    }
+    .badge.bg-danger {
+        background-color: #dc3545 !important;
+    }
+    .badge.bg-warning {
+        background-color: #ffc107 !important;
+        color: #212529 !important;
+    }
+    .tab-content {
+        padding-top: 20px;
+    }
+    /* تحسين ظهور الطاولة */
+    .table-actions {
+        white-space: nowrap;
+    }
+    .table th {
+        background-color: #f8f9fa;
+    }
+    /* إضافة قسم للفلترة */
+    .filter-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>إدارة المستخلصات</h2>
+        </div>
+        <div class="col-md-4 text-start">
+            <a href="{{ url_for('invoices.add_invoice') }}" class="btn btn-success">
+                <i class="fas fa-plus me-1"></i> إضافة مستخلص جديد
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
+                        قيد الانتظار 
+                        <span class="badge bg-warning">{{ pending_invoices|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved" type="button" role="tab" aria-controls="approved" aria-selected="false">
+                        معتمدة 
+                        <span class="badge bg-success">{{ approved_invoices|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab" aria-controls="rejected" aria-selected="false">
+                        مرفوضة 
+                        <span class="badge bg-danger">{{ rejected_invoices|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="false">
+                        الكل 
+                        <span class="badge bg-primary">{{ all_invoices|length }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="myTabContent">
+                <!-- قيد الانتظار -->
+                <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+                    {% if pending_invoices %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم المستخلص</th>
+                                    <th>تاريخ المستخلص</th>
+                                    <th>المشروع</th>
+                                    <th>المبلغ (ريال)</th>
+                                    <th>مقدم الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in pending_invoices %}
+                                <tr>
+                                    <td>{{ invoice.invoice_number }}</td>
+                                    <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ invoice.project_name }}</td>
+                                    <td>{{ "%.2f"|format(invoice.invoice_amount) }}</td>
+                                    <td>{{ invoice.username }}</td>
+                                    <td>
+                                        <span class="badge bg-warning">{{ invoice.status }}</span>
+                                    </td>
+                                    <td class="table-actions">
+                                        <a href="{{ url_for('invoices.view_invoice', id=invoice.id) }}" class="btn btn-sm btn-info me-1">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('invoices.edit_invoice', id=invoice.id) }}" class="btn btn-sm btn-primary me-1">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        لا توجد مستخلصات قيد الانتظار.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- معتمدة -->
+                <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
+                    {% if approved_invoices %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم المستخلص</th>
+                                    <th>تاريخ المستخلص</th>
+                                    <th>المشروع</th>
+                                    <th>المبلغ (ريال)</th>
+                                    <th>مقدم الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in approved_invoices %}
+                                <tr>
+                                    <td>{{ invoice.invoice_number }}</td>
+                                    <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ invoice.project_name }}</td>
+                                    <td>{{ "%.2f"|format(invoice.invoice_amount) }}</td>
+                                    <td>{{ invoice.username }}</td>
+                                    <td>
+                                        <span class="badge bg-success">{{ invoice.status }}</span>
+                                    </td>
+                                    <td class="table-actions">
+                                        <a href="{{ url_for('invoices.view_invoice', id=invoice.id) }}" class="btn btn-sm btn-info me-1">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('invoices.view_invoice', id=invoice.id, print=1) }}" class="btn btn-sm btn-secondary me-1" target="_blank">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        لا توجد مستخلصات معتمدة.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- مرفوضة -->
+                <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
+                    {% if rejected_invoices %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم المستخلص</th>
+                                    <th>تاريخ المستخلص</th>
+                                    <th>المشروع</th>
+                                    <th>المبلغ (ريال)</th>
+                                    <th>مقدم الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in rejected_invoices %}
+                                <tr>
+                                    <td>{{ invoice.invoice_number }}</td>
+                                    <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ invoice.project_name }}</td>
+                                    <td>{{ "%.2f"|format(invoice.invoice_amount) }}</td>
+                                    <td>{{ invoice.username }}</td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ invoice.status }}</span>
+                                    </td>
+                                    <td class="table-actions">
+                                        <a href="{{ url_for('invoices.view_invoice', id=invoice.id) }}" class="btn btn-sm btn-info me-1">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        لا توجد مستخلصات مرفوضة.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- الكل -->
+                <div class="tab-pane fade" id="all" role="tabpanel" aria-labelledby="all-tab">
+                    {% if all_invoices %}
+                    <div class="filter-section mb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-2">
+                                    <label for="project-filter">تصفية حسب المشروع</label>
+                                    <input type="text" class="form-control" id="project-filter" placeholder="اسم المشروع">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-2">
+                                    <label for="date-filter">تصفية حسب التاريخ</label>
+                                    <input type="date" class="form-control" id="date-filter">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-2">
+                                    <label for="status-filter">تصفية حسب الحالة</label>
+                                    <select class="form-control" id="status-filter">
+                                        <option value="">الكل</option>
+                                        <option value="قيد الانتظار">قيد الانتظار</option>
+                                        <option value="معتمد">معتمد</option>
+                                        <option value="مرفوض">مرفوض</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم المستخلص</th>
+                                    <th>تاريخ المستخلص</th>
+                                    <th>المشروع</th>
+                                    <th>المبلغ (ريال)</th>
+                                    <th>مقدم الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in all_invoices %}
+                                <tr>
+                                    <td>{{ invoice.invoice_number }}</td>
+                                    <td>{{ invoice.invoice_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ invoice.project_name }}</td>
+                                    <td>{{ "%.2f"|format(invoice.invoice_amount) }}</td>
+                                    <td>{{ invoice.username }}</td>
+                                    <td>
+                                        {% if invoice.status == 'قيد الانتظار' %}
+                                        <span class="badge bg-warning">{{ invoice.status }}</span>
+                                        {% elif invoice.status == 'معتمد' %}
+                                        <span class="badge bg-success">{{ invoice.status }}</span>
+                                        {% elif invoice.status == 'مرفوض' %}
+                                        <span class="badge bg-danger">{{ invoice.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="table-actions">
+                                        <a href="{{ url_for('invoices.view_invoice', id=invoice.id) }}" class="btn btn-sm btn-info me-1">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if invoice.status == 'قيد الانتظار' %}
+                                        <a href="{{ url_for('invoices.edit_invoice', id=invoice.id) }}" class="btn btn-sm btn-primary me-1">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if invoice.status == 'معتمد' %}
+                                        <a href="{{ url_for('invoices.view_invoice', id=invoice.id, print=1) }}" class="btn btn-sm btn-secondary me-1" target="_blank">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        لا توجد مستخلصات.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // وظائف الفلترة
+        const projectFilter = document.getElementById('project-filter');
+        const dateFilter = document.getElementById('date-filter');
+        const statusFilter = document.getElementById('status-filter');
+        const tableRows = document.querySelectorAll('#all tbody tr');
+        
+        // فلترة حسب المشروع
+        if (projectFilter) {
+            projectFilter.addEventListener('input', function() {
+                applyFilters();
+            });
+        }
+        
+        // فلترة حسب التاريخ
+        if (dateFilter) {
+            dateFilter.addEventListener('change', function() {
+                applyFilters();
+            });
+        }
+        
+        // فلترة حسب الحالة
+        if (statusFilter) {
+            statusFilter.addEventListener('change', function() {
+                applyFilters();
+            });
+        }
+        
+        // تطبيق جميع الفلاتر
+        function applyFilters() {
+            const projectValue = projectFilter ? projectFilter.value.toLowerCase() : '';
+            const dateValue = dateFilter ? dateFilter.value : '';
+            const statusValue = statusFilter ? statusFilter.value : '';
+            
+            tableRows.forEach(row => {
+                const projectCell = row.cells[2]; // عمود المشروع
+                const dateCell = row.cells[1]; // عمود التاريخ
+                const statusCell = row.cells[5]; // عمود الحالة
+                
+                let showRow = true;
+                
+                // تحقق من المشروع
+                if (projectValue && projectCell) {
+                    const projectText = projectCell.textContent.toLowerCase();
+                    if (!projectText.includes(projectValue)) {
+                        showRow = false;
+                    }
+                }
+                
+                // تحقق من التاريخ
+                if (dateValue && dateCell) {
+                    const dateText = dateCell.textContent;
+                    if (dateText !== dateValue) {
+                        showRow = false;
+                    }
+                }
+                
+                // تحقق من الحالة
+                if (statusValue && statusCell) {
+                    const statusText = statusCell.textContent.trim();
+                    if (!statusText.includes(statusValue)) {
+                        showRow = false;
+                    }
+                }
+                
+                // تطبيق الفلتر
+                row.style.display = showRow ? '' : 'none';
+            });
+        }
+    });
+</script>
+{% endblock %}

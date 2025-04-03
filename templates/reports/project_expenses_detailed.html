@@ -1,0 +1,607 @@
+{% extends 'base.html' %}
+
+{% block title %}تقرير مصروفات مشروع {{ project.name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<style>
+    .print-header {
+        display: none;
+    }
+    .expense-card {
+        transition: all 0.2s;
+    }
+    .expense-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .summary-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    .summary-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    .progress {
+        height: 10px;
+    }
+    .chart-container {
+        height: 350px;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .print-header {
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .container-fluid {
+            width: 100%;
+            max-width: 100%;
+        }
+        .tab-content > .tab-pane {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        .chart-container {
+            page-break-before: always;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- عنوان الطباعة - يظهر فقط عند الطباعة -->
+    <div class="print-header">
+        <h2>تقرير مصروفات مشروع: {{ project.name }}</h2>
+        <p>من {{ start_date.strftime('%Y-%m-%d') }} إلى {{ end_date.strftime('%Y-%m-%d') }}</p>
+    </div>
+
+    <!-- بطاقة التصفية والعمليات - تختفي عند الطباعة -->
+    <div class="card shadow mb-4 no-print">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="m-0 font-weight-bold text-primary">تقرير مصروفات مشروع: {{ project.name }}</h5>
+            <div>
+                <a href="{{ url_for('expense_reports.project_expenses') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-right"></i> عودة للتقارير
+                </a>
+                <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                    <i class="fas fa-print"></i> طباعة
+                </button>
+                <a href="{{ url_for('expense_reports.project_expenses', project_id=project.id, export='excel', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')) }}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel"></i> تصدير إلى إكسيل
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row">
+                <input type="hidden" name="project_id" value="{{ project.id }}">
+                <div class="col-md-5 mb-3">
+                    <label for="dateRange" class="form-label">الفترة الزمنية</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="dateRange" name="dateRange" readonly>
+                        <input type="hidden" id="start_date" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}">
+                        <input type="hidden" id="end_date" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}">
+                        <div class="input-group-append">
+                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-5 mb-3">
+                    <label for="project_id_select" class="form-label">المشروع</label>
+                    <select class="form-control" id="project_id_select" name="project_id" onchange="this.form.submit()">
+                        {% for p in projects %}
+                            <option value="{{ p.id }}" {% if p.id == project.id %}selected{% endif %}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-block">تصفية</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- بطاقة ملخص المشروع -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">معلومات المشروع</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>اسم المشروع</th>
+                                    <td>{{ project.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>كود المشروع</th>
+                                    <td>{{ project.code }}</td>
+                                </tr>
+                                <tr>
+                                    <th>العميل</th>
+                                    <td>{{ project.client_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>الحالة</th>
+                                    <td>
+                                        {% if project.status == 'نشط' %}
+                                            <span class="badge badge-success">{{ project.status }}</span>
+                                        {% elif project.status == 'مكتمل' %}
+                                            <span class="badge badge-primary">{{ project.status }}</span>
+                                        {% elif project.status == 'متوقف' %}
+                                            <span class="badge badge-warning">{{ project.status }}</span>
+                                        {% elif project.status == 'ملغي' %}
+                                            <span class="badge badge-danger">{{ project.status }}</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{{ project.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>تاريخ البداية</th>
+                                    <td>{{ project.start_date.strftime('%Y-%m-%d') if project.start_date else 'غير محدد' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>تاريخ النهاية المتوقع</th>
+                                    <td>{{ project.expected_end_date.strftime('%Y-%m-%d') if project.expected_end_date else 'غير محدد' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>قيمة العقد</th>
+                                    <td>{{ "{:,.2f}".format(project.contract_value) if project.contract_value else 'غير محدد' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>الميزانية التقديرية</th>
+                                    <td>{{ "{:,.2f}".format(project.estimated_budget) if project.estimated_budget else 'غير محدد' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- بطاقات ملخص المصروفات -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">أوامر الشراء</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "{:,.2f}".format(expenses['purchase_orders']) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-invoice fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">المستخلصات</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "{:,.2f}".format(expenses['invoices']) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-receipt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">معاملات أخرى</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "{:,.2f}".format(expenses['other_transactions']) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exchange-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">إجمالي المصروفات</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "{:,.2f}".format(expenses['total']) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- بطاقة نسبة الإنفاق من الميزانية -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">نسبة الإنفاق من الميزانية</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="progress mb-4" style="height: 25px;">
+                                {% set percentage = (expenses['total'] / project.estimated_budget * 100) if project.estimated_budget and project.estimated_budget > 0 else 0 %}
+                                
+                                {% if percentage > 100 %}
+                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                                        {{ "%.1f"|format(percentage) }}%
+                                    </div>
+                                {% elif percentage > 80 %}
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ "%.1f"|format(percentage) }}%;" aria-valuenow="{{ "%.1f"|format(percentage) }}" aria-valuemin="0" aria-valuemax="100">
+                                        {{ "%.1f"|format(percentage) }}%
+                                    </div>
+                                {% else %}
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ "%.1f"|format(percentage) }}%;" aria-valuenow="{{ "%.1f"|format(percentage) }}" aria-valuemin="0" aria-valuemax="100">
+                                        {{ "%.1f"|format(percentage) }}%
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="summary-value">{{ "{:,.2f}".format(project.estimated_budget) }}</div>
+                                    <div class="summary-label">الميزانية التقديرية</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="summary-value {% if expenses['total'] > project.estimated_budget %}text-danger{% endif %}">
+                                        {{ "{:,.2f}".format(expenses['total']) }}
+                                    </div>
+                                    <div class="summary-label">إجمالي المصروفات</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- بطاقة الرسم البياني -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">المصروفات الشهرية</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="expensesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تفاصيل المعاملات في علامات تبويب -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <ul class="nav nav-tabs card-header-tabs" id="transactionTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="po-tab" data-toggle="tab" href="#purchaseOrders" role="tab" aria-controls="purchaseOrders" aria-selected="true">
+                        <i class="fas fa-file-invoice"></i> أوامر الشراء ({{ po_details|length }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="invoice-tab" data-toggle="tab" href="#invoices" role="tab" aria-controls="invoices" aria-selected="false">
+                        <i class="fas fa-receipt"></i> المستخلصات ({{ invoice_details|length }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="other-tab" data-toggle="tab" href="#otherTransactions" role="tab" aria-controls="otherTransactions" aria-selected="false">
+                        <i class="fas fa-exchange-alt"></i> معاملات أخرى ({{ other_txn_details|length }})
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="transactionTabsContent">
+                <!-- محتوى أوامر الشراء -->
+                <div class="tab-pane fade show active" id="purchaseOrders" role="tabpanel" aria-labelledby="po-tab">
+                    {% if po_details %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>رقم أمر الشراء</th>
+                                        <th>التاريخ</th>
+                                        <th>المورد</th>
+                                        <th>المبلغ</th>
+                                        <th>الحالة</th>
+                                        <th class="no-print">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for po in po_details %}
+                                        <tr>
+                                            <td>{{ po.number }}</td>
+                                            <td>{{ po.date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ po.supplier }}</td>
+                                            <td>{{ "{:,.2f}".format(po.amount) }}</td>
+                                            <td>
+                                                {% if po.status == 'معتمد' %}
+                                                    <span class="badge badge-success">{{ po.status }}</span>
+                                                {% elif po.status == 'قيد الانتظار' %}
+                                                    <span class="badge badge-warning">{{ po.status }}</span>
+                                                {% elif po.status == 'مرفوض' %}
+                                                    <span class="badge badge-danger">{{ po.status }}</span>
+                                                {% else %}
+                                                    <span class="badge badge-secondary">{{ po.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="no-print">
+                                                <a href="/purchase_orders/orders/view/{{ po.id }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> عرض
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-active">
+                                        <th colspan="3">الإجمالي</th>
+                                        <th>{{ "{:,.2f}".format(expenses['purchase_orders']) }}</th>
+                                        <th colspan="2"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            لا توجد أوامر شراء معتمدة لهذا المشروع خلال الفترة المحددة
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- محتوى المستخلصات -->
+                <div class="tab-pane fade" id="invoices" role="tabpanel" aria-labelledby="invoice-tab">
+                    {% if invoice_details %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>رقم المستخلص</th>
+                                        <th>التاريخ</th>
+                                        <th>المورد</th>
+                                        <th>المبلغ</th>
+                                        <th>الحالة</th>
+                                        <th class="no-print">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for invoice in invoice_details %}
+                                        <tr>
+                                            <td>{{ invoice.number }}</td>
+                                            <td>{{ invoice.date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ invoice.supplier }}</td>
+                                            <td>{{ "{:,.2f}".format(invoice.amount) }}</td>
+                                            <td>
+                                                {% if invoice.status == 'معتمد' %}
+                                                    <span class="badge badge-success">{{ invoice.status }}</span>
+                                                {% elif invoice.status == 'قيد الانتظار' %}
+                                                    <span class="badge badge-warning">{{ invoice.status }}</span>
+                                                {% elif invoice.status == 'مرفوض' %}
+                                                    <span class="badge badge-danger">{{ invoice.status }}</span>
+                                                {% else %}
+                                                    <span class="badge badge-secondary">{{ invoice.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="no-print">
+                                                <a href="/invoices/{{ invoice.id }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> عرض
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-active">
+                                        <th colspan="3">الإجمالي</th>
+                                        <th>{{ "{:,.2f}".format(expenses['invoices']) }}</th>
+                                        <th colspan="2"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            لا توجد مستخلصات معتمدة لهذا المشروع خلال الفترة المحددة
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- محتوى المعاملات الأخرى -->
+                <div class="tab-pane fade" id="otherTransactions" role="tabpanel" aria-labelledby="other-tab">
+                    {% if other_txn_details %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>رقم المعاملة</th>
+                                        <th>التاريخ</th>
+                                        <th>الوصف</th>
+                                        <th>المبلغ</th>
+                                        <th>الحالة</th>
+                                        <th class="no-print">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for txn in other_txn_details %}
+                                        <tr>
+                                            <td>{{ txn.number }}</td>
+                                            <td>{{ txn.date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ txn.description }}</td>
+                                            <td>{{ "{:,.2f}".format(txn.amount) }}</td>
+                                            <td>
+                                                {% if txn.status == 'معتمد' %}
+                                                    <span class="badge badge-success">{{ txn.status }}</span>
+                                                {% elif txn.status == 'قيد الانتظار' %}
+                                                    <span class="badge badge-warning">{{ txn.status }}</span>
+                                                {% elif txn.status == 'مرفوض' %}
+                                                    <span class="badge badge-danger">{{ txn.status }}</span>
+                                                {% else %}
+                                                    <span class="badge badge-secondary">{{ txn.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="no-print">
+                                                <a href="/other_transactions/{{ txn.id }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> عرض
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-active">
+                                        <th colspan="3">الإجمالي</th>
+                                        <th>{{ "{:,.2f}".format(expenses['other_transactions']) }}</th>
+                                        <th colspan="2"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            لا توجد معاملات أخرى معتمدة لهذا المشروع خلال الفترة المحددة
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // تهيئة منتقي التاريخ
+        $('#dateRange').daterangepicker({
+            startDate: moment('{{ start_date.strftime('%Y-%m-%d') }}'),
+            endDate: moment('{{ end_date.strftime('%Y-%m-%d') }}'),
+            locale: {
+                format: 'YYYY-MM-DD',
+                applyLabel: 'تطبيق',
+                cancelLabel: 'إلغاء',
+                fromLabel: 'من',
+                toLabel: 'إلى',
+                customRangeLabel: 'مخصص',
+                daysOfWeek: ['أح', 'إث', 'ثل', 'أر', 'خم', 'جم', 'سب'],
+                monthNames: ['يناير', 'فبراير', 'مارس', 'إبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+                firstDay: 0
+            }
+        }, function(start, end, label) {
+            $('#start_date').val(start.format('YYYY-MM-DD'));
+            $('#end_date').val(end.format('YYYY-MM-DD'));
+        });
+        
+        // تهيئة الرسم البياني
+        const chartData = {{ chart_data|safe }};
+        const ctx = document.getElementById('expensesChart').getContext('2d');
+        
+        const labels = chartData.map(item => item.month);
+        const purchaseOrdersData = chartData.map(item => item.purchase_orders);
+        const invoicesData = chartData.map(item => item.invoices);
+        const otherTransactionsData = chartData.map(item => item.other_transactions);
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'أوامر الشراء',
+                        data: purchaseOrdersData,
+                        backgroundColor: 'rgba(78, 115, 223, 0.7)',
+                        borderColor: 'rgba(78, 115, 223, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'المستخلصات',
+                        data: invoicesData,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'المعاملات الأخرى',
+                        data: otherTransactionsData,
+                        backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                        borderColor: 'rgba(23, 162, 184, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: false,
+                        title: {
+                            display: true,
+                            text: 'الشهر'
+                        }
+                    },
+                    y: {
+                        stacked: false,
+                        title: {
+                            display: true,
+                            text: 'المبلغ'
+                        },
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'توزيع المصروفات الشهرية للمشروع'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}عرض الإشعار{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('notifications.index') }}">الإشعارات</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">عرض الإشعار</li>
+                </ol>
+            </nav>
+            <h2 class="text-right">تفاصيل الإشعار</h2>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0">{{ notification.title }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted small">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <p class="mb-3">{{ notification.message }}</p>
+                        <p class="mb-0"><strong>الفئة:</strong> {{ notification.category }}</p>
+                    </div>
+                    
+                    <hr>
+                    
+                    {% if notification.reference_type and notification.reference_id %}
+                        <div class="mb-3">
+                            <h5>المرجع:</h5>
+                            <p><strong>نوع المرجع:</strong> {{ notification.reference_type }}</p>
+                            <p><strong>رقم المرجع:</strong> {{ notification.reference_id }}</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {% if notification.url %}
+                                <a href="{{ notification.url }}" class="btn btn-primary">الانتقال إلى المرجع</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('notifications.index') }}" class="btn btn-secondary">العودة للإشعارات</a>
+                        <form method="POST" action="{{ url_for('notifications.dismiss', id=notification.id) }}" id="dismissForm">
+                            <button type="submit" class="btn btn-danger">حذف الإشعار</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // إرسال طلب حذف الإشعار
+        document.getElementById('dismissForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            fetch(`/notifications/dismiss/{{ notification.id }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // التوجيه إلى صفحة الإشعارات
+                    window.location.href = "{{ url_for('notifications.index') }}";
+                }
+            })
+            .catch(error => {
+                console.error('خطأ:', error);
+            });
+        });
+    });
+</script>
+{% endblock %}

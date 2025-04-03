@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block title %}ملخص مصاريف المشاريع{% endblock %}
+
+{% block extra_css %}
+<style>
+    .projects-table {
+        min-width: 100%;
+    }
+    .projects-table th {
+        background-color: #f2f2f2;
+    }
+    .total-row {
+        font-weight: bold;
+        background-color: #f8f9fa;
+    }
+    .no-data-message {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+    .progress {
+        height: 20px;
+    }
+    .progress-bar {
+        text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+    }
+    .budget-danger {
+        color: #721c24;
+        font-weight: bold;
+    }
+    .budget-warning {
+        color: #856404;
+        font-weight: bold;
+    }
+    .budget-success {
+        color: #155724;
+    }
+    .card-dashboard {
+        margin-bottom: 1.5rem;
+        transition: transform 0.3s;
+    }
+    .card-dashboard:hover {
+        transform: translateY(-5px);
+    }
+    .summary-icon {
+        font-size: 2.5rem;
+        color: #6c757d;
+    }
+    
+    /* أنماط الطباعة */
+    @media print {
+        .btn-group,
+        .navbar,
+        .sidebar,
+        footer,
+        .no-print {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        .card-header {
+            background-color: white !important;
+            color: black !important;
+            text-align: center;
+            padding-top: 0;
+        }
+        
+        .container-fluid {
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .projects-table th {
+            background-color: #f2f2f2 !important;
+            color: black !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        
+        .table-responsive {
+            overflow: visible !important;
+        }
+        
+        .btn {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">ملخص مصاريف المشاريع</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <div class="btn-group">
+                            <a href="{{ url_for('reports.projects_summary', export='excel') }}" class="btn btn-success">
+                                <i class="fas fa-file-excel mr-1"></i> تصدير إلى إكسيل
+                            </a>
+                            <button class="btn btn-info" onclick="window.print()">
+                                <i class="fas fa-print mr-1"></i> طباعة
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        {% if summary_data %}
+                        
+                        <!-- الإحصائيات الإجمالية -->
+                        <div class="col-12 mb-4">
+                            <div class="row">
+                                {% set total_po = summary_data | sum(attribute='po_total') %}
+                                {% set total_invoices = summary_data | sum(attribute='invoice_total') %}
+                                {% set total_other = summary_data | sum(attribute='other_transaction_total') %}
+                                {% set total_expenses = summary_data | sum(attribute='total_expenses') %}
+                                {% set total_budget = summary_data | sum(attribute='estimated_budget') %}
+                                
+                                <div class="col-md-3">
+                                    <div class="card card-dashboard bg-light">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-file-invoice-dollar summary-icon mb-2"></i>
+                                            <h4 class="mb-0">{{ "{:,.2f}".format(total_expenses) }}</h4>
+                                            <p class="mb-0">إجمالي المصاريف (ريال)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card card-dashboard bg-light">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-shopping-cart summary-icon mb-2"></i>
+                                            <h4 class="mb-0">{{ "{:,.2f}".format(total_po) }}</h4>
+                                            <p class="mb-0">إجمالي أوامر الشراء (ريال)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card card-dashboard bg-light">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-file-invoice summary-icon mb-2"></i>
+                                            <h4 class="mb-0">{{ "{:,.2f}".format(total_invoices) }}</h4>
+                                            <p class="mb-0">إجمالي المستخلصات (ريال)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card card-dashboard bg-light">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-money-bill-wave summary-icon mb-2"></i>
+                                            <h4 class="mb-0">{{ "{:,.2f}".format(total_other) }}</h4>
+                                            <p class="mb-0">إجمالي المعاملات الأخرى (ريال)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- جدول ملخص المشاريع -->
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped projects-table">
+                                    <thead>
+                                        <tr>
+                                            <th>المشروع</th>
+                                            <th>الحالة</th>
+                                            <th>أوامر الشراء (ريال)</th>
+                                            <th>المستخلصات (ريال)</th>
+                                            <th>المعاملات الأخرى (ريال)</th>
+                                            <th>إجمالي المصاريف (ريال)</th>
+                                            <th>الميزانية التقديرية (ريال)</th>
+                                            <th>نسبة الصرف</th>
+                                            <th>الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for project in summary_data %}
+                                        <tr>
+                                            <td>{{ project.name }}</td>
+                                            <td>{{ project.status or "نشط" }}</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(project.po_total) }}</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(project.invoice_total) }}</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(project.other_transaction_total) }}</td>
+                                            <td class="text-left font-weight-bold">{{ "{:,.2f}".format(project.total_expenses) }}</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(project.estimated_budget) }}</td>
+                                            <td>
+                                                {% if project.estimated_budget > 0 %}
+                                                <div class="progress">
+                                                    {% if project.budget_percentage > 100 %}
+                                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                                                        {{ "{:.1f}".format(project.budget_percentage) }}%
+                                                    </div>
+                                                    {% elif project.budget_percentage > 85 %}
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ project.budget_percentage }}%;" aria-valuenow="{{ project.budget_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                                        {{ "{:.1f}".format(project.budget_percentage) }}%
+                                                    </div>
+                                                    {% else %}
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ project.budget_percentage }}%;" aria-valuenow="{{ project.budget_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                                        {{ "{:.1f}".format(project.budget_percentage) }}%
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                {% if project.budget_percentage > 100 %}
+                                                <small class="budget-danger">
+                                                    <i class="fas fa-exclamation-triangle"></i> تجاوز الميزانية
+                                                </small>
+                                                {% elif project.budget_percentage > 85 %}
+                                                <small class="budget-warning">
+                                                    <i class="fas fa-exclamation-circle"></i> اقتراب من تجاوز الميزانية
+                                                </small>
+                                                {% else %}
+                                                <small class="budget-success">
+                                                    ضمن الميزانية المحددة
+                                                </small>
+                                                {% endif %}
+                                                
+                                                {% else %}
+                                                <span class="text-muted">لم يتم تحديد ميزانية</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('reports.project_expenses', project_id=project.id) }}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-chart-bar"></i> تفاصيل المصاريف
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        <tr class="total-row">
+                                            <td colspan="2" class="text-center">الإجمالي</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(total_po) }}</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(total_invoices) }}</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(total_other) }}</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(total_expenses) }}</td>
+                                            <td class="text-left">{{ "{:,.2f}".format(total_budget) }}</td>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-12">
+                            <div class="no-data-message">
+                                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                                <h5>لا توجد بيانات مشاريع متاحة</h5>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

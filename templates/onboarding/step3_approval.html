@@ -1,0 +1,583 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-primary shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-check-double me-2"></i>
+                        دورة الموافقات
+                    </h3>
+                    <span class="badge bg-light text-primary">الخطوة {{ current_step }} من {{ total_steps }}</span>
+                </div>
+                <div class="card-body p-4">
+                    <!-- شريط التقدم -->
+                    <div class="progress mb-4" style="height: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ (current_step / total_steps) * 100 }}%;" 
+                            aria-valuenow="{{ (current_step / total_steps) * 100 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='img/approval.svg') }}" alt="الموافقات" class="img-fluid mb-3" style="max-height: 200px;">
+                        <h2 class="text-primary">دورة الموافقات وآلية المراجعة</h2>
+                        <p class="text-muted">كيف تعمل دورة الموافقات في نظام المشتريات وكيف يمكن للأطراف المختلفة التفاعل معها</p>
+                    </div>
+                    
+                    <!-- نظرة عامة على دورة الموافقات -->
+                    <div class="card border-light mb-4">
+                        <div class="card-body">
+                            <h4 class="text-primary mb-3">لماذا نحتاج دورة الموافقات؟</h4>
+                            
+                            <p>دورة الموافقات هي عملية منظمة للتأكد من أن جميع طلبات الشراء والمعاملات تخضع للفحص المناسب قبل تنفيذها. تساعد هذه العملية في:</p>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <i class="fas fa-shield-alt text-primary me-2"></i>
+                                            ضمان توافق الطلبات مع سياسات الشركة
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-coins text-primary me-2"></i>
+                                            السيطرة على التكاليف وإدارة الميزانية
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-tasks text-primary me-2"></i>
+                                            تحديد أولويات الشراء بناءً على الاحتياجات الفعلية
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <i class="fas fa-user-check text-primary me-2"></i>
+                                            توزيع المسؤولية بشكل عادل بين أطراف متعددة
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-search text-primary me-2"></i>
+                                            تحسين عملية مراجعة وتدقيق المعاملات
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-file-alt text-primary me-2"></i>
+                                            توثيق جميع خطوات عملية الشراء
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- مستويات الموافقة -->
+                    <div class="card border-info mb-4">
+                        <div class="card-header bg-info text-dark">
+                            <h4 class="mb-0"><i class="fas fa-layer-group me-2"></i>مستويات الموافقة</h4>
+                        </div>
+                        <div class="card-body">
+                            <p>يعتمد النظام على ثلاثة مستويات من الموافقات، يتم تفعيلها حسب قيمة الطلب والسياسات المعتمدة:</p>
+                            
+                            <div class="approval-levels">
+                                <div class="level-step">
+                                    <div class="level-icon level-1">
+                                        <span>1</span>
+                                    </div>
+                                    <div class="level-content">
+                                        <h5>المستوى الأول: مدير المكتب الهندسي</h5>
+                                        <p>يراجع جميع طلبات الشراء والمعاملات للتأكد من:</p>
+                                        <ul>
+                                            <li>صحة المعلومات الفنية والمواصفات</li>
+                                            <li>توافق الطلب مع متطلبات المشروع</li>
+                                            <li>تقدير مدى أهمية وأولوية الطلب</li>
+                                        </ul>
+                                        <div class="alert alert-light">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            جميع الطلبات تبدأ من هذا المستوى بغض النظر عن قيمتها.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="level-step">
+                                    <div class="level-icon level-2">
+                                        <span>2</span>
+                                    </div>
+                                    <div class="level-content">
+                                        <h5>المستوى الثاني: مدير المشاريع</h5>
+                                        <p>يراجع الطلبات والمعاملات بعد موافقة المستوى الأول للتأكد من:</p>
+                                        <ul>
+                                            <li>توافق الطلب مع خطة المشروع العامة</li>
+                                            <li>مدى تأثير الطلب على تقدم المشروع</li>
+                                            <li>التوازن بين احتياجات المشاريع المختلفة</li>
+                                        </ul>
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            يتم تفعيل هذا المستوى للطلبات التي تتجاوز قيمتها 5,000 ريال.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="level-step">
+                                    <div class="level-icon level-3">
+                                        <span>3</span>
+                                    </div>
+                                    <div class="level-content">
+                                        <h5>المستوى الثالث: المدير التنفيذي</h5>
+                                        <p>المستوى النهائي من الموافقات، يراجع الطلبات للتأكد من:</p>
+                                        <ul>
+                                            <li>التوافق مع الأهداف الاستراتيجية للشركة</li>
+                                            <li>التحكم في المصروفات الكبيرة</li>
+                                            <li>ضمان تخصيص الموارد بشكل سليم</li>
+                                        </ul>
+                                        <div class="alert alert-danger">
+                                            <i class="fas fa-exclamation-circle me-2"></i>
+                                            يتم تفعيل هذا المستوى للطلبات التي تتجاوز قيمتها 50,000 ريال.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- كيف تتم عملية الموافقة -->
+                    <div class="card border-success mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i>كيف تتم عملية الموافقة؟</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="approval-process">
+                                <div class="process-step">
+                                    <div class="step-number">1</div>
+                                    <div class="step-content">
+                                        <h5>استلام الطلب</h5>
+                                        <p>عندما يتم إنشاء طلب جديد، يصل إشعار للمُعتمِد المسؤول في المستوى الأول.</p>
+                                        <div class="approval-notification">
+                                            <i class="fas fa-bell"></i>
+                                            <div class="notification-text">
+                                                <strong>طلب شراء جديد بانتظار الموافقة</strong>
+                                                <p>طلب شراء #12345 - مواد بناء لمشروع الرياض السكني</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="process-step">
+                                    <div class="step-number">2</div>
+                                    <div class="step-content">
+                                        <h5>مراجعة تفاصيل الطلب</h5>
+                                        <p>يمكن للمُعتمِد الوصول إلى تفاصيل الطلب من خلال:</p>
+                                        <ul>
+                                            <li>الضغط على الإشعار المستلم</li>
+                                            <li>الانتقال إلى قائمة "<strong>الموافقات</strong>" من لوحة التحكم</li>
+                                        </ul>
+                                        <div class="text-center my-3">
+                                            <img src="{{ url_for('static', filename='img/approval-detail.svg') }}" alt="تفاصيل الموافقات" class="approval-detail-img">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="process-step">
+                                    <div class="step-number">3</div>
+                                    <div class="step-content">
+                                        <h5>اتخاذ القرار</h5>
+                                        <p>يمكن للمُعتمِد اتخاذ أحد القرارات التالية:</p>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-success btn-sm" disabled>
+                                                <i class="fas fa-check me-1"></i>
+                                                موافقة
+                                            </button>
+                                            <button class="btn btn-danger btn-sm" disabled>
+                                                <i class="fas fa-times me-1"></i>
+                                                رفض
+                                            </button>
+                                            <button class="btn btn-warning btn-sm" disabled>
+                                                <i class="fas fa-reply me-1"></i>
+                                                إرجاع للمراجعة
+                                            </button>
+                                        </div>
+                                        <div class="mt-3">
+                                            <p><strong>إضافة تعليق:</strong> يمكن للمُعتمِد إضافة ملاحظات أو تعليقات لتوضيح سبب القرار</p>
+                                            <div class="form-floating">
+                                                <textarea class="form-control" placeholder="أضف تعليقك هنا" disabled style="height: 80px"></textarea>
+                                                <label>تعليقات إضافية</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="process-step">
+                                    <div class="step-number">4</div>
+                                    <div class="step-content">
+                                        <h5>انتقال الطلب للمستوى التالي</h5>
+                                        <p>بعد الموافقة، يحدث ما يلي:</p>
+                                        <ul>
+                                            <li>إذا كانت قيمة الطلب تستدعي المستوى التالي، يتم إرسال إشعار للمُعتمِد في المستوى التالي</li>
+                                            <li>إذا تمت الموافقة من جميع المستويات المطلوبة، يصبح الطلب جاهزاً للتحويل إلى أمر شراء</li>
+                                        </ul>
+                                        <div class="progress mt-3" style="height: 24px;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: 70%;" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">
+                                                مستوى الموافقة: 2 من 3
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="process-step">
+                                    <div class="step-number">5</div>
+                                    <div class="step-content">
+                                        <h5>تتبع حالة الطلب</h5>
+                                        <p>يمكن لمقدم الطلب والمديرين متابعة حالة الطلب في أي وقت من خلال:</p>
+                                        <ul>
+                                            <li>صفحة تفاصيل الطلب</li>
+                                            <li>لوحة التحكم الرئيسية</li>
+                                            <li>سجل الإشعارات</li>
+                                        </ul>
+                                        <div class="approval-status">
+                                            <div class="status-item">
+                                                <div class="status-icon completed">
+                                                    <i class="fas fa-check"></i>
+                                                </div>
+                                                <div class="status-text">
+                                                    <strong>مدير المكتب الهندسي</strong>
+                                                    <span class="text-success">تمت الموافقة</span>
+                                                </div>
+                                            </div>
+                                            <div class="status-item">
+                                                <div class="status-icon in-progress">
+                                                    <i class="fas fa-clock"></i>
+                                                </div>
+                                                <div class="status-text">
+                                                    <strong>مدير المشاريع</strong>
+                                                    <span class="text-warning">قيد المراجعة</span>
+                                                </div>
+                                            </div>
+                                            <div class="status-item">
+                                                <div class="status-icon pending">
+                                                    <i class="fas fa-pause"></i>
+                                                </div>
+                                                <div class="status-text">
+                                                    <strong>المدير التنفيذي</strong>
+                                                    <span class="text-muted">بانتظار المستوى السابق</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- نصائح للمُعتمِدين -->
+                    <div class="card border-warning mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h4 class="mb-0"><i class="fas fa-lightbulb me-2"></i>نصائح للمُعتمِدين</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <h5 class="text-primary">ما يجب عليك فعله:</h5>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check text-success me-2"></i>
+                                            مراجعة جميع التفاصيل بعناية قبل اتخاذ القرار
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check text-success me-2"></i>
+                                            التحقق من توافق الطلب مع ميزانية المشروع
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check text-success me-2"></i>
+                                            طلب معلومات إضافية إذا كان الطلب غير واضح
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check text-success me-2"></i>
+                                            توضيح سبب الرفض أو الإرجاع للمراجعة عند الحاجة
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-lg-6">
+                                    <h5 class="text-danger">ما يجب تجنبه:</h5>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <i class="fas fa-times text-danger me-2"></i>
+                                            تأخير مراجعة الطلبات دون مبرر
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-times text-danger me-2"></i>
+                                            الموافقة على طلبات تفتقر إلى المعلومات الضرورية
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-times text-danger me-2"></i>
+                                            رفض الطلبات دون توضيح الأسباب
+                                        </li>
+                                        <li class="list-group-item">
+                                            <i class="fas fa-times text-danger me-2"></i>
+                                            تجاوز إجراءات الموافقة المعتمدة في النظام
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('onboarding.wizard_step', step_num=current_step) }}">
+                        <div class="d-flex justify-content-between mt-4">
+                            {% if prev_step %}
+                            <a href="{{ url_for('onboarding.wizard_step', step_num=prev_step) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-right me-1"></i>
+                                السابق
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('onboarding.wizard_index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-right me-1"></i>
+                                العودة للصفحة الرئيسية
+                            </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                التالي
+                                <i class="fas fa-arrow-left ms-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* تنسيق مستويات الموافقة */
+    .approval-levels {
+        position: relative;
+        padding: 10px 0;
+    }
+    
+    .level-step {
+        display: flex;
+        margin-bottom: 30px;
+        position: relative;
+    }
+    
+    .level-step:last-child {
+        margin-bottom: 0;
+    }
+    
+    .level-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin-left: 20px;
+        color: white;
+        z-index: 2;
+    }
+    
+    .level-icon.level-1 {
+        background-color: #28a745;
+    }
+    
+    .level-icon.level-2 {
+        background-color: #ffc107;
+    }
+    
+    .level-icon.level-3 {
+        background-color: #dc3545;
+    }
+    
+    .level-content {
+        flex: 1;
+    }
+    
+    .level-content h5 {
+        margin-bottom: 10px;
+    }
+    
+    /* خط عمودي يربط المستويات */
+    .approval-levels:before {
+        content: "";
+        position: absolute;
+        top: 25px;
+        bottom: 25px;
+        right: 25px;
+        width: 2px;
+        background-color: #e0e0e0;
+        z-index: 1;
+    }
+    
+    /* تنسيق خطوات عملية الموافقة */
+    .approval-process {
+        position: relative;
+    }
+    
+    .process-step {
+        display: flex;
+        margin-bottom: 30px;
+        position: relative;
+    }
+    
+    .process-step:last-child {
+        margin-bottom: 0;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #007bff;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        margin-left: 20px;
+        z-index: 2;
+    }
+    
+    .step-content {
+        flex: 1;
+    }
+    
+    .step-content h5 {
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+    
+    /* خط عمودي يربط الخطوات */
+    .approval-process:before {
+        content: "";
+        position: absolute;
+        top: 20px;
+        bottom: 20px;
+        right: 20px;
+        width: 2px;
+        background-color: #e0e0e0;
+        z-index: 1;
+    }
+    
+    /* تنسيق الإشعارات */
+    .approval-notification {
+        display: flex;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border-right: 4px solid #007bff;
+        margin: 10px 0;
+        align-items: center;
+    }
+    
+    .approval-notification i {
+        font-size: 24px;
+        color: #007bff;
+        margin-left: 15px;
+    }
+    
+    .notification-text strong {
+        display: block;
+        margin-bottom: 5px;
+    }
+    
+    .notification-text p {
+        margin-bottom: 0;
+        color: #6c757d;
+    }
+    
+    /* تنسيق أزرار الإجراءات */
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        margin: 10px 0;
+    }
+    
+    /* تنسيق حالة الموافقة */
+    .approval-status {
+        margin-top: 15px;
+    }
+    
+    .status-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .status-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        color: white;
+    }
+    
+    .status-icon.completed {
+        background-color: #28a745;
+    }
+    
+    .status-icon.in-progress {
+        background-color: #ffc107;
+    }
+    
+    .status-icon.pending {
+        background-color: #6c757d;
+    }
+    
+    .status-text strong {
+        display: block;
+    }
+    
+    /* تنسيق صورة التفاصيل */
+    .approval-detail-img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* تنسيق يدعم الواجهة العربية RTL */
+    .level-step, .process-step, .status-item, .approval-notification {
+        text-align: right;
+    }
+    
+    /* جعل القسم متجاوب مع الشاشات الصغيرة */
+    @media (max-width: 768px) {
+        .level-step, .process-step {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .level-icon, .step-number {
+            margin: 0 0 15px 0;
+        }
+        
+        .approval-levels:before, .approval-process:before {
+            display: none;
+        }
+        
+        .approval-notification {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .approval-notification i {
+            margin: 0 0 10px 0;
+        }
+        
+        .status-item {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .status-icon {
+            margin: 0 0 10px 0;
+        }
+    }
+</style>
+{% endblock %}

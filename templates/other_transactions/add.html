@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}إضافة معاملة جديدة{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .form-label {
+        font-weight: bold;
+    }
+    .custom-file-input:lang(ar) ~ .custom-file-label::after {
+        content: "استعراض";
+    }
+    .btn-action {
+        min-width: 120px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>إضافة معاملة جديدة</h2>
+        </div>
+        <div class="col-md-4 text-start">
+            <a href="{{ url_for('other_transactions.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-1"></i> العودة للمعاملات
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">معلومات المعاملة</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="transaction_number" class="form-label">رقم المعاملة</label>
+                            <input type="text" class="form-control" id="transaction_number" name="transaction_number" placeholder="سيتم إنشاء رقم تلقائي إذا تركت هذا الحقل فارغاً">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="transaction_date" class="form-label">تاريخ المعاملة *</label>
+                            <input type="date" class="form-control" id="transaction_date" name="transaction_date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="transaction_type" class="form-label">نوع المعاملة *</label>
+                            <select class="form-control" id="transaction_type" name="transaction_type" required>
+                                <option value="">اختر نوع المعاملة</option>
+                                <option value="خطاب">خطاب</option>
+                                <option value="مذكرة داخلية">مذكرة داخلية</option>
+                                <option value="طلب موافقة">طلب موافقة</option>
+                                <option value="تقرير">تقرير</option>
+                                <option value="اجتماع">اجتماع</option>
+                                <option value="أخرى">أخرى</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="project_name" class="form-label">المشروع</label>
+                    <select class="form-control" id="project_name" name="project_name">
+                        <option value="">-- اختر المشروع --</option>
+                        {% for project in projects %}
+                        <option value="{{ project.name }}">{{ project.name }} ({{ project.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="amount" class="form-label">المبلغ</label>
+                            <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="0" placeholder="أدخل المبلغ (اختياري)">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mt-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="vat_inclusive" name="vat_inclusive" checked>
+                                <label class="form-check-label" for="vat_inclusive">
+                                    المبلغ يشمل ضريبة القيمة المضافة
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="description" class="form-label">الوصف</label>
+                    <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="attachment" class="form-label">المرفقات</label>
+                    <div class="custom-file">
+                        <input type="file" class="form-control" id="attachment" name="attachment">
+                        <small class="form-text text-muted">يمكنك إرفاق ملف PDF أو صورة أو مستند Word/Excel.</small>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-success btn-action">
+                        <i class="fas fa-save me-1"></i> حفظ المعاملة
+                    </button>
+                    <a href="{{ url_for('other_transactions.index') }}" class="btn btn-light btn-action">إلغاء</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // تعيين التاريخ الحالي كقيمة افتراضية لتاريخ المعاملة
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('transaction_date').value = today;
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}التقارير{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">التقارير</h2>
+    
+    <div class="row">
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">تقارير المشتريات</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{{ url_for('reports.total_purchases') }}" class="text-decoration-none">تقرير إجمالي المشتريات</a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ url_for('reports.purchases_by_supplier') }}" class="text-decoration-none">تقرير المشتريات حسب المورد</a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ url_for('reports.supplier_performance') }}" class="text-decoration-none">تقرير أداء الموردين</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">تقارير المخزون</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{{ url_for('reports.inventory_items') }}" class="text-decoration-none">تقرير المواد المخزنة</a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ url_for('reports.inventory_movements') }}" class="text-decoration-none">تقرير حركة المخزون</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

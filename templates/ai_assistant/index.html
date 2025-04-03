@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}مساعد الذكاء الاصطناعي - نظام إدارة المشتريات{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .ai-feature-card {
+        transition: all 0.3s ease;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .ai-feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+    }
+    
+    .ai-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        color: #2c3e50;
+    }
+    
+    .recent-item {
+        transition: all 0.2s ease;
+        border-right: 3px solid transparent;
+        padding-right: 10px;
+    }
+    
+    .recent-item:hover {
+        border-right-color: #3498db;
+        background-color: rgba(52, 152, 219, 0.05);
+    }
+    
+    .ai-assistant-header {
+        background: linear-gradient(135deg, #3498db, #2c3e50);
+        color: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-radius: 0 0 15px 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ai-assistant-header text-center">
+    <div class="container">
+        <h1><i class="fa fa-robot ml-2"></i>مساعد الذكاء الاصطناعي لتحسين المشتريات</h1>
+        <p class="lead">تحليلات متقدمة وتوصيات لتحسين عمليات الشراء وخفض التكاليف</p>
+    </div>
+</div>
+
+<div class="container">
+    {% if not ai_ready %}
+    <div class="alert alert-warning text-center mb-4">
+        <i class="fa fa-exclamation-triangle ml-2"></i>
+        <strong>تنبيه:</strong> يجب إعداد مفتاح OpenAI API لتمكين جميع ميزات الذكاء الاصطناعي.
+    </div>
+    {% endif %}
+    
+    <div class="row mb-5">
+        <div class="col-md-3">
+            <div class="card ai-feature-card text-center mb-4 h-100">
+                <div class="card-body">
+                    <div class="ai-icon">
+                        <i class="fa fa-chart-line"></i>
+                    </div>
+                    <h5 class="card-title">تحليل أوامر الشراء</h5>
+                    <p class="card-text">تحليلات متعمقة وتوصيات لتحسين أوامر الشراء وخفض التكاليف</p>
+                    <a href="{{ url_for('ai_assistant.purchase_insights') }}" class="btn btn-outline-primary">
+                        <i class="fa fa-chart-pie ml-1"></i> عرض التحليلات
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card ai-feature-card text-center mb-4 h-100">
+                <div class="card-body">
+                    <div class="ai-icon">
+                        <i class="fa fa-store"></i>
+                    </div>
+                    <h5 class="card-title">توصيات الموردين</h5>
+                    <p class="card-text">اقتراح أفضل الموردين لطلبات الشراء بناءً على الأداء السابق</p>
+                    {% if recent_requests %}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="supplierRecDropdown" data-toggle="dropdown">
+                            <i class="fa fa-user-check ml-1"></i> اختر طلب شراء
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right text-right">
+                            {% for req in recent_requests %}
+                            <a class="dropdown-item" href="{{ url_for('ai_assistant.supplier_recommendations', request_id=req.id) }}">
+                                رقم {{ req.id }} - {{ req.project_name }}
+                            </a>
+                            {% endfor %}
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{{ url_for('purchase_orders.requests') }}">
+                                <i class="fa fa-list ml-1"></i> عرض جميع الطلبات
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('purchase_orders.requests') }}" class="btn btn-outline-primary">
+                        <i class="fa fa-user-check ml-1"></i> اختر طلب شراء
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card ai-feature-card text-center mb-4 h-100">
+                <div class="card-body">
+                    <div class="ai-icon">
+                        <i class="fa fa-file-invoice-dollar"></i>
+                    </div>
+                    <h5 class="card-title">تحليل أمر شراء</h5>
+                    <p class="card-text">تحليل شامل لأمر شراء محدد مع توصيات للتحسين</p>
+                    {% if recent_orders %}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="orderAnalysisDropdown" data-toggle="dropdown">
+                            <i class="fa fa-search-dollar ml-1"></i> اختر أمر شراء
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right text-right">
+                            {% for order, project_name in recent_orders %}
+                            <a class="dropdown-item" href="{{ url_for('ai_assistant.order_analysis', order_id=order.id) }}">
+                                رقم {{ order.id }} - {{ project_name or 'بدون مشروع' }}
+                            </a>
+                            {% endfor %}
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{{ url_for('purchase_orders.orders') }}">
+                                <i class="fa fa-list ml-1"></i> عرض جميع الأوامر
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('purchase_orders.orders') }}" class="btn btn-outline-primary">
+                        <i class="fa fa-search-dollar ml-1"></i> اختر أمر شراء
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card ai-feature-card text-center mb-4 h-100">
+                <div class="card-body">
+                    <div class="ai-icon">
+                        <i class="fa fa-question-circle"></i>
+                    </div>
+                    <h5 class="card-title">اسأل المساعد</h5>
+                    <p class="card-text">اطرح أسئلة حول المشتريات واحصل على إجابات مبنية على بيانات النظام</p>
+                    <a href="{{ url_for('ai_assistant.ask_question') }}" class="btn btn-outline-primary">
+                        <i class="fa fa-comments ml-1"></i> اطرح سؤالاً
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fa fa-shopping-cart ml-2"></i>أحدث أوامر الشراء</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% if recent_orders %}
+                            {% for order, project_name in recent_orders %}
+                            <a href="{{ url_for('ai_assistant.order_analysis', order_id=order.id) }}" class="list-group-item list-group-item-action recent-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">أمر شراء رقم {{ order.id }}</h6>
+                                        <small class="text-muted">{{ project_name or 'بدون مشروع' }}</small>
+                                    </div>
+                                    <span class="badge badge-primary badge-pill">{{ order.total_price }} ريال</span>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="list-group-item text-center text-muted">
+                                <i class="fa fa-info-circle ml-1"></i> لا توجد أوامر شراء حديثة
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('purchase_orders.orders') }}" class="btn btn-sm btn-outline-secondary">عرض جميع أوامر الشراء</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fa fa-clipboard-list ml-2"></i>أحدث طلبات الشراء</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% if recent_requests %}
+                            {% for req in recent_requests %}
+                            <a href="{{ url_for('ai_assistant.supplier_recommendations', request_id=req.id) }}" class="list-group-item list-group-item-action recent-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">طلب شراء رقم {{ req.id }}</h6>
+                                        <small class="text-muted">{{ req.project_name or 'بدون مشروع' }}</small>
+                                    </div>
+                                    <span class="badge badge-{{ req.status|lower == 'approved' and 'success' or req.status|lower == 'pending' and 'warning' or 'secondary' }} badge-pill">{{ req.status }}</span>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="list-group-item text-center text-muted">
+                                <i class="fa fa-info-circle ml-1"></i> لا توجد طلبات شراء حديثة
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('purchase_orders.requests') }}" class="btn btn-sm btn-outline-secondary">عرض جميع طلبات الشراء</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}

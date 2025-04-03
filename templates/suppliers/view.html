@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('suppliers.index') }}">الموردين</a></li>
+                    <li class="breadcrumb-item active">{{ supplier.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-truck me-2"></i>معلومات المورد
+                    </h3>
+                    <div>
+                        <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" class="btn btn-sm btn-warning me-1">
+                            <i class="fas fa-edit me-1"></i>تعديل
+                        </a>
+                        <a href="{{ url_for('suppliers.delete', id=supplier.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد من حذف هذا المورد؟')">
+                            <i class="fas fa-trash me-1"></i>حذف
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">الاسم</p>
+                            <p class="fs-5">{{ supplier.name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">التصنيف</p>
+                            <p class="fs-5">{{ supplier.category or 'غير محدد' }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">رقم الهاتف</p>
+                            <p class="fs-5">{{ supplier.phone or 'غير محدد' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">البريد الإلكتروني</p>
+                            <p class="fs-5">{{ supplier.email or 'غير محدد' }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تقييم الأداء</p>
+                            <p class="fs-5">
+                                {% if supplier.performance_rating == 'ممتاز' %}
+                                    <span class="badge bg-success">{{ supplier.performance_rating }}</span>
+                                {% elif supplier.performance_rating == 'جيد' %}
+                                    <span class="badge bg-info">{{ supplier.performance_rating }}</span>
+                                {% elif supplier.performance_rating == 'متوسط' %}
+                                    <span class="badge bg-warning text-dark">{{ supplier.performance_rating }}</span>
+                                {% elif supplier.performance_rating == 'ضعيف' %}
+                                    <span class="badge bg-danger">{{ supplier.performance_rating }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">غير محدد</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تاريخ التسجيل</p>
+                            <p class="fs-5">{{ supplier.created_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <p class="text-muted mb-1">العنوان</p>
+                            <p class="fs-5">{{ supplier.address or 'غير محدد' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>ملخص التعاملات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <p class="text-muted mb-1">عدد العقود</p>
+                        <h3>{{ contracts|length }}</h3>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-muted mb-1">عدد أوامر الشراء</p>
+                        <h3>{{ supplier.purchase_orders|length }}</h3>
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-muted mb-1">عدد عروض الأسعار</p>
+                        <h3>{{ supplier.price_quotes|length }}</h3>
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="{{ url_for('suppliers.add_contract', supplier_id=supplier.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-file-contract me-1"></i> إضافة عقد جديد
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم العقود -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-file-contract me-2"></i>العقود
+                    </h4>
+                    <a href="{{ url_for('suppliers.add_contract', supplier_id=supplier.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i>إضافة عقد
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if contracts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>رقم العقد</th>
+                                    <th>تاريخ البدء</th>
+                                    <th>تاريخ الانتهاء</th>
+                                    <th>الحالة</th>
+                                    <th>العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for contract in contracts %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ contract.contract_number }}</td>
+                                    <td>{{ contract.start_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ contract.end_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        {% if contract.end_date >= now.date() %}
+                                            <span class="badge bg-success">ساري</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">منتهي</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('suppliers.view_contract', id=contract.id) }}" class="btn btn-outline-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('suppliers.edit_contract', id=contract.id) }}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('suppliers.delete_contract', id=contract.id) }}" class="btn btn-outline-danger" onclick="return confirm('هل أنت متأكد من حذف هذا العقد؟')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="display-5 text-muted mb-4">
+                            <i class="fas fa-file-contract"></i>
+                        </div>
+                        <h4 class="text-muted">لا يوجد عقود</h4>
+                        <p class="text-muted mb-4">لم يتم إضافة أي عقود لهذا المورد حتى الآن</p>
+                        <a href="{{ url_for('suppliers.add_contract', supplier_id=supplier.id) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i> إضافة عقد جديد
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- قسم أوامر الشراء -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>أوامر الشراء
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if supplier.purchase_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>رقم الأمر</th>
+                                    <th>تاريخ الأمر</th>
+                                    <th>الإجمالي</th>
+                                    <th>تاريخ التسليم</th>
+                                    <th>الحالة</th>
+                                    <th>العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in supplier.purchase_orders %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ order.order_number }}</td>
+                                    <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ "%.2f"|format(order.total_price or 0) }} ريال</td>
+                                    <td>{{ order.delivery_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        {% if order.approval_status == 'قيد الانتظار' %}
+                                        <span class="badge bg-warning text-dark">{{ order.approval_status }}</span>
+                                        {% elif order.approval_status == 'معتمد' %}
+                                        <span class="badge bg-success">{{ order.approval_status }}</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">{{ order.approval_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('purchase_orders.view_order', id=order.id) }}" class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="display-5 text-muted mb-4">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <h4 class="text-muted">لا توجد أوامر شراء</h4>
+                        <p class="text-muted mb-4">لم يتم إصدار أي أوامر شراء لهذا المورد حتى الآن</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

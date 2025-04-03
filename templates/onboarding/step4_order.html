@@ -1,0 +1,695 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-primary shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        أوامر الشراء
+                    </h3>
+                    <span class="badge bg-light text-primary">الخطوة {{ current_step }} من {{ total_steps }}</span>
+                </div>
+                <div class="card-body p-4">
+                    <!-- شريط التقدم -->
+                    <div class="progress mb-4" style="height: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ (current_step / total_steps) * 100 }}%;" 
+                            aria-valuenow="{{ (current_step / total_steps) * 100 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='img/purchase-order.svg') }}" alt="أمر الشراء" class="img-fluid mb-3" style="max-height: 200px;">
+                        <h2 class="text-primary">إنشاء وإدارة أوامر الشراء</h2>
+                        <p class="text-muted">دليل كامل حول أوامر الشراء وكيفية إصدارها ومتابعتها</p>
+                    </div>
+                    
+                    <!-- ما هو أمر الشراء -->
+                    <div class="card border-light mb-4">
+                        <div class="card-body">
+                            <h4 class="text-primary mb-3">ما هو أمر الشراء؟</h4>
+                            
+                            <p>أمر الشراء هو مستند رسمي تصدره المؤسسة للمورد لشراء المواد أو الخدمات. يعمل كعقد ملزم قانونياً بين المؤسسة والمورد ويحدد تفاصيل المواد المطلوبة والأسعار وشروط التسليم.</p>
+                            
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-primary shadow-sm">
+                                        <div class="card-header bg-primary text-white">
+                                            <h5 class="mb-0">المعلومات الأساسية في أمر الشراء</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-group list-group-flush">
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-hashtag text-primary me-2"></i>
+                                                    رقم أمر الشراء (مرجع فريد)
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-calendar-alt text-primary me-2"></i>
+                                                    تاريخ إصدار أمر الشراء
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-building text-primary me-2"></i>
+                                                    معلومات الشركة المُصدرة
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-user-tie text-primary me-2"></i>
+                                                    بيانات المورد كاملة
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-truck text-primary me-2"></i>
+                                                    شروط التسليم والشحن
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-money-bill-wave text-primary me-2"></i>
+                                                    شروط الدفع والعملة
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-info shadow-sm">
+                                        <div class="card-header bg-info text-dark">
+                                            <h5 class="mb-0">أهمية أمر الشراء</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-group list-group-flush">
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-gavel text-info me-2"></i>
+                                                    يُعتبر وثيقة قانونية ملزمة بين الطرفين
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-shield-alt text-info me-2"></i>
+                                                    يحمي الأطراف من النزاعات المستقبلية
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-search text-info me-2"></i>
+                                                    يسهل تتبع المشتريات ومراقبة الإنفاق
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-file-invoice-dollar text-info me-2"></i>
+                                                    يساعد في التحقق من الفواتير عند الاستلام
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-chart-line text-info me-2"></i>
+                                                    يسمح بإعداد تقارير دقيقة عن النفقات
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <i class="fas fa-layer-group text-info me-2"></i>
+                                                    يدعم التخطيط المالي للمشاريع
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- دورة حياة أمر الشراء -->
+                    <div class="card border-success mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0"><i class="fas fa-sync-alt me-2"></i>دورة حياة أمر الشراء</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="order-lifecycle">
+                                <div class="lifecycle-step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h5>1. إنشاء أمر الشراء</h5>
+                                        <p>بعد موافقة الأطراف المختصة على طلب الشراء، يتم تحويله إلى أمر شراء رسمي</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="lifecycle-step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h5>2. إرسال أمر الشراء للمورد</h5>
+                                        <p>يتم إرسال أمر الشراء إلى المورد المختار عبر البريد الإلكتروني أو غيره من وسائل الاتصال</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="lifecycle-step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-thumbs-up"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h5>3. تأكيد استلام المورد</h5>
+                                        <p>يقوم المورد بتأكيد استلام أمر الشراء والموافقة على المواصفات والأسعار والشروط</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="lifecycle-step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-boxes"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h5>4. تحضير الطلبية</h5>
+                                        <p>يقوم المورد بتجهيز الطلبية وفقاً للمواصفات المطلوبة في أمر الشراء</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="lifecycle-step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-truck"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h5>5. الشحن والتسليم</h5>
+                                        <p>يقوم المورد بشحن وتسليم البضائع أو تقديم الخدمات حسب المواعيد المتفق عليها</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="lifecycle-step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-clipboard-check"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h5>6. استلام وفحص البضائع</h5>
+                                        <p>تقوم الشركة باستلام البضائع وفحصها للتأكد من مطابقتها للمواصفات المطلوبة</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="lifecycle-step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h5>7. معالجة الفاتورة</h5>
+                                        <p>بعد استلام البضائع، يتم استلام الفاتورة ومطابقتها مع أمر الشراء للتأكد من صحتها</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="lifecycle-step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h5>8. إتمام عملية الدفع</h5>
+                                        <p>يتم دفع قيمة الفاتورة وفقاً لشروط الدفع المتفق عليها في أمر الشراء</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="lifecycle-step">
+                                    <div class="step-icon">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <div class="step-content">
+                                        <h5>9. إغلاق أمر الشراء</h5>
+                                        <p>بعد إتمام جميع الخطوات بنجاح، يتم إغلاق أمر الشراء في النظام</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- كيفية إنشاء أمر شراء -->
+                    <div class="card border-warning mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h4 class="mb-0"><i class="fas fa-edit me-2"></i>كيفية إنشاء أمر شراء في النظام</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="create-order-steps">
+                                <div class="create-step">
+                                    <div class="step-number">1</div>
+                                    <div class="step-content">
+                                        <h5>اختيار طلب الشراء المعتمد</h5>
+                                        <p>من قائمة "طلبات الشراء المعتمدة"، اختر الطلب الذي تريد تحويله إلى أمر شراء</p>
+                                        <div class="text-center mt-2 mb-3">
+                                            <button class="btn btn-sm btn-outline-primary" disabled>
+                                                <i class="fas fa-list me-1"></i>
+                                                عرض طلبات الشراء المعتمدة
+                                            </button>
+                                        </div>
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            يمكن تحويل طلبات الشراء إلى أوامر شراء فقط بعد اكتمال دورة الموافقات الخاصة بها
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="create-step">
+                                    <div class="step-number">2</div>
+                                    <div class="step-content">
+                                        <h5>اختيار المورد المناسب</h5>
+                                        <p>قم باختيار المورد من قائمة الموردين المعتمدين، أو إضافة مورد جديد إذا لزم الأمر</p>
+                                        <div class="supplier-selection">
+                                            <div class="form-group mb-3">
+                                                <select class="form-select" disabled>
+                                                    <option selected disabled>اختر المورد...</option>
+                                                    <option>شركة الإنشاءات المتحدة</option>
+                                                    <option>مؤسسة الرياض للمواد</option>
+                                                    <option>شركة المواد الحديثة</option>
+                                                </select>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-success" disabled>
+                                                <i class="fas fa-plus-circle me-1"></i>
+                                                إضافة مورد جديد
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="create-step">
+                                    <div class="step-number">3</div>
+                                    <div class="step-content">
+                                        <h5>تحديد شروط الدفع والتسليم</h5>
+                                        <p>قم بإدخال شروط الدفع وتفاصيل التسليم المتفق عليها مع المورد</p>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <h6 class="mb-2">شروط الدفع</h6>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="radio" disabled>
+                                                    <label class="form-check-label">دفعة مقدمة (30%)</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="radio" disabled checked>
+                                                    <label class="form-check-label">دفع بعد التسليم (100%)</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" disabled>
+                                                    <label class="form-check-label">دفعات على مراحل</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6 class="mb-2">شروط التسليم</h6>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="radio" disabled>
+                                                    <label class="form-check-label">تسليم فوري</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="radio" disabled checked>
+                                                    <label class="form-check-label">خلال أسبوع</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" disabled>
+                                                    <label class="form-check-label">خلال شهر</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="create-step">
+                                    <div class="step-number">4</div>
+                                    <div class="step-content">
+                                        <h5>مراجعة وتحرير بنود الطلب</h5>
+                                        <p>راجع بنود الطلب وأدخل الأسعار النهائية المتفق عليها مع المورد</p>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-striped">
+                                                <thead class="table-primary">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>البند</th>
+                                                        <th>الكمية</th>
+                                                        <th>وحدة القياس</th>
+                                                        <th>السعر الوحدة</th>
+                                                        <th>الإجمالي</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>1</td>
+                                                        <td>أسمنت مقاوم للأملاح</td>
+                                                        <td>100</td>
+                                                        <td>كيس</td>
+                                                        <td>25.00</td>
+                                                        <td>2,500.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>2</td>
+                                                        <td>حديد تسليح 12مم</td>
+                                                        <td>2</td>
+                                                        <td>طن</td>
+                                                        <td>3,200.00</td>
+                                                        <td>6,400.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>3</td>
+                                                        <td>رمل مغسول</td>
+                                                        <td>30</td>
+                                                        <td>متر مكعب</td>
+                                                        <td>85.00</td>
+                                                        <td>2,550.00</td>
+                                                    </tr>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <td colspan="5" class="text-start">المجموع</td>
+                                                        <td>11,450.00</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="5" class="text-start">ضريبة القيمة المضافة (15%)</td>
+                                                        <td>1,717.50</td>
+                                                    </tr>
+                                                    <tr class="table-primary">
+                                                        <td colspan="5" class="text-start fw-bold">الإجمالي النهائي</td>
+                                                        <td class="fw-bold">13,167.50</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="create-step">
+                                    <div class="step-number">5</div>
+                                    <div class="step-content">
+                                        <h5>إضافة ملاحظات وشروط خاصة</h5>
+                                        <p>يمكنك إضافة ملاحظات أو شروط خاصة تتعلق بأمر الشراء</p>
+                                        <div class="form-floating">
+                                            <textarea class="form-control" placeholder="أضف ملاحظاتك هنا" disabled style="height: 100px">يجب أن تكون جميع المواد مطابقة للمواصفات القياسية السعودية. يتم رفض أي مواد غير مطابقة للمواصفات المذكورة.</textarea>
+                                            <label>ملاحظات إضافية</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="create-step">
+                                    <div class="step-number">6</div>
+                                    <div class="step-content">
+                                        <h5>إنشاء وإرسال أمر الشراء</h5>
+                                        <p>بعد التأكد من جميع التفاصيل، اضغط على زر "إنشاء أمر الشراء" لإصدار أمر الشراء رسمياً</p>
+                                        <div class="d-flex gap-2 mt-3">
+                                            <button class="btn btn-primary" disabled>
+                                                <i class="fas fa-file-invoice me-1"></i>
+                                                إنشاء أمر الشراء
+                                            </button>
+                                            <button class="btn btn-outline-primary" disabled>
+                                                <i class="fas fa-print me-1"></i>
+                                                طباعة
+                                            </button>
+                                            <button class="btn btn-outline-success" disabled>
+                                                <i class="fas fa-paper-plane me-1"></i>
+                                                إرسال بالبريد
+                                            </button>
+                                            <button class="btn btn-outline-secondary" disabled>
+                                                <i class="fas fa-download me-1"></i>
+                                                تحميل PDF
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- متابعة حالة أوامر الشراء -->
+                    <div class="card border-info mb-4">
+                        <div class="card-header bg-info text-dark">
+                            <h4 class="mb-0"><i class="fas fa-search-location me-2"></i>متابعة حالة أوامر الشراء</h4>
+                        </div>
+                        <div class="card-body">
+                            <p>يمكنك متابعة حالة أوامر الشراء في أي وقت من خلال قائمة "أوامر الشراء" في النظام</p>
+                            
+                            <div class="status-indicators">
+                                <div class="status-item">
+                                    <div class="status-badge badge-draft">مسودة</div>
+                                    <p>أمر الشراء تم إنشاؤه ولكن لم يتم إرساله للمورد بعد</p>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-badge badge-sent">تم الإرسال</div>
+                                    <p>تم إرسال أمر الشراء للمورد وبانتظار تأكيد الاستلام</p>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-badge badge-confirmed">مؤكد</div>
+                                    <p>أكد المورد استلام أمر الشراء والموافقة على شروطه</p>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-badge badge-processing">قيد التنفيذ</div>
+                                    <p>المورد يقوم بتجهيز الطلبية حالياً</p>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-badge badge-shipping">قيد الشحن</div>
+                                    <p>المواد في طريقها للتسليم</p>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-badge badge-delivered">تم التسليم</div>
+                                    <p>تم استلام المواد وفي انتظار الفحص والتحقق</p>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-badge badge-completed">مكتمل</div>
+                                    <p>تم استلام المواد ومطابقتها والدفع للمورد</p>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-badge badge-canceled">ملغي</div>
+                                    <p>تم إلغاء أمر الشراء لأي سبب</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('onboarding.wizard_step', step_num=current_step) }}">
+                        <div class="d-flex justify-content-between mt-4">
+                            {% if prev_step %}
+                            <a href="{{ url_for('onboarding.wizard_step', step_num=prev_step) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-right me-1"></i>
+                                السابق
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('onboarding.wizard_index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-right me-1"></i>
+                                العودة للصفحة الرئيسية
+                            </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                التالي
+                                <i class="fas fa-arrow-left ms-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* تنسيق دورة حياة أمر الشراء */
+    .order-lifecycle {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        margin: 20px 0;
+    }
+    
+    .lifecycle-step {
+        width: calc(33.333% - 20px);
+        margin-bottom: 25px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        transition: transform 0.3s;
+    }
+    
+    .lifecycle-step:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .step-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #28a745;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    
+    .step-content h5 {
+        color: #28a745;
+        margin-bottom: 10px;
+        font-size: 1rem;
+    }
+    
+    .step-content p {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    /* تنسيق خطوات إنشاء أمر الشراء */
+    .create-order-steps {
+        position: relative;
+        padding: 10px 0;
+    }
+    
+    .create-step {
+        display: flex;
+        margin-bottom: 30px;
+        position: relative;
+    }
+    
+    .create-step:last-child {
+        margin-bottom: 0;
+    }
+    
+    .create-step .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #ffc107;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        margin-left: 20px;
+        z-index: 2;
+    }
+    
+    .create-step .step-content {
+        flex: 1;
+    }
+    
+    .create-step .step-content h5 {
+        color: #ffc107;
+        margin-bottom: 10px;
+    }
+    
+    /* خط عمودي يربط الخطوات */
+    .create-order-steps:before {
+        content: "";
+        position: absolute;
+        top: 20px;
+        bottom: 20px;
+        right: 20px;
+        width: 2px;
+        background-color: #e0e0e0;
+        z-index: 1;
+    }
+    
+    /* تنسيق حالات أمر الشراء */
+    .status-indicators {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-top: 15px;
+    }
+    
+    .status-item {
+        flex: 1;
+        min-width: 200px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        color: white;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .badge-draft {
+        background-color: #6c757d;
+    }
+    
+    .badge-sent {
+        background-color: #007bff;
+    }
+    
+    .badge-confirmed {
+        background-color: #17a2b8;
+    }
+    
+    .badge-processing {
+        background-color: #ffc107;
+    }
+    
+    .badge-shipping {
+        background-color: #fd7e14;
+    }
+    
+    .badge-delivered {
+        background-color: #20c997;
+    }
+    
+    .badge-completed {
+        background-color: #28a745;
+    }
+    
+    .badge-canceled {
+        background-color: #dc3545;
+    }
+    
+    .status-item p {
+        margin-bottom: 0;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    /* تنسيق اختيار المورد */
+    .supplier-selection {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .supplier-selection .form-group {
+        flex: 1;
+    }
+    
+    /* تنسيق يدعم الواجهة العربية RTL */
+    .create-step {
+        text-align: right;
+    }
+    
+    /* جعل القسم متجاوب مع الشاشات الصغيرة */
+    @media (max-width: 768px) {
+        .lifecycle-step {
+            width: calc(50% - 15px);
+        }
+        
+        .create-step {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .create-step .step-number {
+            margin: 0 0 15px 0;
+        }
+        
+        .create-order-steps:before {
+            display: none;
+        }
+        
+        .supplier-selection {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .supplier-selection .form-group {
+            width: 100%;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .lifecycle-step {
+            width: 100%;
+        }
+        
+        .status-item {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

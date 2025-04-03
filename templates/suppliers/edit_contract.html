@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('suppliers.index') }}">الموردين</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('suppliers.view', id=contract.supplier_id) }}">{{ contract.supplier.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('suppliers.view_contract', id=contract.id) }}">عقد {{ contract.contract_number }}</a></li>
+                    <li class="breadcrumb-item active">تعديل</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>تعديل بيانات العقد
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('suppliers.edit_contract', id=contract.id) }}">
+                        <div class="mb-3">
+                            <label for="contract_number" class="form-label">رقم العقد <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="contract_number" name="contract_number" value="{{ contract.contract_number }}" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_date" class="form-label">تاريخ البدء <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ contract.start_date.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="end_date" class="form-label">تاريخ الانتهاء <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ contract.end_date.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="terms" class="form-label">الشروط والأحكام</label>
+                            <textarea class="form-control" id="terms" name="terms" rows="5">{{ contract.terms }}</textarea>
+                        </div>
+                        
+                        <div class="text-end mt-4">
+                            <a href="{{ url_for('suppliers.view_contract', id=contract.id) }}" class="btn btn-outline-secondary me-2">إلغاء</a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i> حفظ التغييرات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

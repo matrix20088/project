@@ -1,0 +1,508 @@
+{% extends 'base.html' %}
+
+{% block title %}مقارنة مصروفات المشاريع{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<style>
+    .print-header {
+        display: none;
+    }
+    .chart-container {
+        height: 400px;
+        margin-bottom: 30px;
+    }
+    .table .progress {
+        height: 8px;
+    }
+    .progress-percentage {
+        position: absolute;
+        right: 8px;
+        font-size: 10px;
+    }
+    .header-container {
+        min-height: 45px;
+    }
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #d1d3e2;
+        border-radius: 0.35rem;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #4e73df;
+        border: 1px solid #4e73df;
+        color: white;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: white;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .print-header {
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .container-fluid {
+            width: 100%;
+            max-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- عنوان الطباعة - يظهر فقط عند الطباعة -->
+    <div class="print-header">
+        <h2>تقرير مقارنة مصروفات المشاريع</h2>
+        <p>من {{ start_date.strftime('%Y-%m-%d') }} إلى {{ end_date.strftime('%Y-%m-%d') }}</p>
+        <p>
+            المشاريع: 
+            {% for project in selected_projects %}
+                {{ project.name }}{% if not loop.last %} - {% endif %}
+            {% endfor %}
+        </p>
+    </div>
+
+    <!-- بطاقة العنوان والتصفية - تختفي عند الطباعة -->
+    <div class="card shadow mb-4 no-print">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="m-0 font-weight-bold text-primary">تقرير مقارنة مصروفات المشاريع</h5>
+            <div>
+                <a href="{{ url_for('expense_reports.project_expenses') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-right"></i> مصروفات المشاريع
+                </a>
+                <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                    <i class="fas fa-print"></i> طباعة
+                </button>
+                <a href="{{ url_for('expense_reports.expense_comparison', export='excel', start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d'), project_ids=request.args.getlist('project_ids')) }}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel"></i> تصدير إلى إكسيل
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row">
+                    <div class="col-md-5 mb-3">
+                        <label for="dateRange" class="form-label">الفترة الزمنية</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="dateRange" name="dateRange" readonly>
+                            <input type="hidden" id="start_date" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}">
+                            <input type="hidden" id="end_date" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}">
+                            <div class="input-group-append">
+                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <label for="project_ids" class="form-label">المشاريع</label>
+                        <select class="form-control select2" id="project_ids" name="project_ids" multiple="multiple">
+                            {% for project in projects %}
+                                <option value="{{ project.id }}" 
+                                    {% if selected_projects and project in selected_projects %}selected{% endif %}>
+                                    {{ project.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-block">تطبيق</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if comparison_data %}
+        <!-- بطاقة الرسوم البيانية -->
+        <div class="row">
+            <!-- مقارنة إجمالي المصروفات -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">مقارنة إجمالي المصروفات</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="expensesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- مقارنة نسب المصروفات من الميزانية -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">مقارنة نسب المصروفات من الميزانية</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="budgetPercentageChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- توزيع أنواع المصروفات -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">توزيع أنواع المصروفات حسب المشروع</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="expenseTypesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- معدل الإنفاق اليومي -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">معدل الإنفاق اليومي</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="dailyRateChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- جدول مقارنة المشاريع -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">جدول مقارنة المشاريع</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" class="align-middle">المشروع</th>
+                                <th rowspan="2" class="align-middle">الحالة</th>
+                                <th rowspan="2" class="align-middle">الميزانية التقديرية</th>
+                                <th colspan="3" class="text-center">المصروفات</th>
+                                <th rowspan="2" class="align-middle">إجمالي المصروفات</th>
+                                <th rowspan="2" class="align-middle">نسبة الإنفاق</th>
+                            </tr>
+                            <tr>
+                                <th>أوامر الشراء</th>
+                                <th>المستخلصات</th>
+                                <th>معاملات أخرى</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for project in comparison_data %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ project.name }}</strong>
+                                        <small class="d-block text-muted">{{ project.code }}</small>
+                                    </td>
+                                    <td>
+                                        {% if project.status == 'نشط' %}
+                                            <span class="badge badge-success">{{ project.status }}</span>
+                                        {% elif project.status == 'مكتمل' %}
+                                            <span class="badge badge-primary">{{ project.status }}</span>
+                                        {% elif project.status == 'متوقف' %}
+                                            <span class="badge badge-warning">{{ project.status }}</span>
+                                        {% elif project.status == 'ملغي' %}
+                                            <span class="badge badge-danger">{{ project.status }}</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{{ project.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ "{:,.2f}".format(project.estimated_budget) }}</td>
+                                    <td>{{ "{:,.2f}".format(project.po_total) }}</td>
+                                    <td>{{ "{:,.2f}".format(project.invoice_total) }}</td>
+                                    <td>{{ "{:,.2f}".format(project.other_txn_total) }}</td>
+                                    <td>{{ "{:,.2f}".format(project.total_expenses) }}</td>
+                                    <td>
+                                        <div class="position-relative">
+                                            <div class="progress">
+                                                {% if project.budget_percentage > 100 %}
+                                                    <div class="progress-bar bg-danger" role="progressbar" style="width: 100%"></div>
+                                                {% elif project.budget_percentage > 80 %}
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ project.budget_percentage }}%"></div>
+                                                {% else %}
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ project.budget_percentage }}%"></div>
+                                                {% endif %}
+                                            </div>
+                                            <span class="progress-percentage">{{ "%.1f"|format(project.budget_percentage) }}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            الرجاء اختيار مشروع واحد على الأقل لعرض بيانات المقارنة
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // تهيئة منتقي التاريخ
+        $('#dateRange').daterangepicker({
+            startDate: moment('{{ start_date.strftime('%Y-%m-%d') }}'),
+            endDate: moment('{{ end_date.strftime('%Y-%m-%d') }}'),
+            locale: {
+                format: 'YYYY-MM-DD',
+                applyLabel: 'تطبيق',
+                cancelLabel: 'إلغاء',
+                fromLabel: 'من',
+                toLabel: 'إلى',
+                customRangeLabel: 'مخصص',
+                daysOfWeek: ['أح', 'إث', 'ثل', 'أر', 'خم', 'جم', 'سب'],
+                monthNames: ['يناير', 'فبراير', 'مارس', 'إبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+                firstDay: 0
+            }
+        }, function(start, end, label) {
+            $('#start_date').val(start.format('YYYY-MM-DD'));
+            $('#end_date').val(end.format('YYYY-MM-DD'));
+        });
+        
+        // تهيئة Select2 للاختيار المتعدد
+        $('.select2').select2({
+            placeholder: 'اختر المشاريع للمقارنة',
+            allowClear: true,
+            dir: 'rtl',
+            language: 'ar'
+        });
+        
+        {% if comparison_data %}
+            // إعداد البيانات للرسوم البيانية
+            const comparisonData = {{ comparison_data|tojson|safe }};
+            const projectNames = comparisonData.map(p => p.name);
+            const totalExpenses = comparisonData.map(p => p.total_expenses);
+            const budgetPercentages = comparisonData.map(p => p.budget_percentage);
+            const poTotals = comparisonData.map(p => p.po_total);
+            const invoiceTotals = comparisonData.map(p => p.invoice_total);
+            const otherTxnTotals = comparisonData.map(p => p.other_txn_total);
+            const dailyRates = comparisonData.map(p => p.daily_expense_rate || 0);
+            
+            // الرسم البياني لإجمالي المصروفات
+            const expensesChartCtx = document.getElementById('expensesChart').getContext('2d');
+            new Chart(expensesChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: projectNames,
+                    datasets: [{
+                        label: 'إجمالي المصروفات',
+                        data: totalExpenses,
+                        backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                        borderColor: 'rgba(78, 115, 223, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'المبلغ'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'المشروع'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'مقارنة إجمالي المصروفات حسب المشروع',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // الرسم البياني لنسب الإنفاق من الميزانية
+            const budgetPercentageChartCtx = document.getElementById('budgetPercentageChart').getContext('2d');
+            new Chart(budgetPercentageChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: projectNames,
+                    datasets: [{
+                        label: 'نسبة الإنفاق من الميزانية (%)',
+                        data: budgetPercentages,
+                        backgroundColor: comparisonData.map(p => {
+                            if (p.budget_percentage > 100) return 'rgba(220, 53, 69, 0.8)';  // danger
+                            if (p.budget_percentage > 80) return 'rgba(255, 193, 7, 0.8)';  // warning
+                            return 'rgba(40, 167, 69, 0.8)';  // success
+                        }),
+                        borderColor: comparisonData.map(p => {
+                            if (p.budget_percentage > 100) return 'rgba(220, 53, 69, 1)';
+                            if (p.budget_percentage > 80) return 'rgba(255, 193, 7, 1)';
+                            return 'rgba(40, 167, 69, 1)';
+                        }),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'النسبة المئوية (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'المشروع'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'مقارنة نسب الإنفاق من الميزانية',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // الرسم البياني لتوزيع أنواع المصروفات
+            const expenseTypesChartCtx = document.getElementById('expenseTypesChart').getContext('2d');
+            new Chart(expenseTypesChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: projectNames,
+                    datasets: [
+                        {
+                            label: 'أوامر الشراء',
+                            data: poTotals,
+                            backgroundColor: 'rgba(78, 115, 223, 0.8)',
+                            borderColor: 'rgba(78, 115, 223, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'المستخلصات',
+                            data: invoiceTotals,
+                            backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'معاملات أخرى',
+                            data: otherTxnTotals,
+                            backgroundColor: 'rgba(23, 162, 184, 0.8)',
+                            borderColor: 'rgba(23, 162, 184, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stacked: false,
+                            title: {
+                                display: true,
+                                text: 'المبلغ'
+                            }
+                        },
+                        x: {
+                            stacked: false,
+                            title: {
+                                display: true,
+                                text: 'المشروع'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'توزيع أنواع المصروفات حسب المشروع',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // الرسم البياني لمعدل الإنفاق اليومي
+            const dailyRateChartCtx = document.getElementById('dailyRateChart').getContext('2d');
+            new Chart(dailyRateChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: projectNames,
+                    datasets: [{
+                        label: 'معدل الإنفاق اليومي',
+                        data: dailyRates,
+                        backgroundColor: 'rgba(255, 145, 0, 0.8)',
+                        borderColor: 'rgba(255, 145, 0, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'المبلغ/اليوم'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'المشروع'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'مقارنة معدل الإنفاق اليومي',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            });
+        {% endif %}
+    });
+</script>
+{% endblock %}

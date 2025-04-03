@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('inventory.items') }}">المخزون</a></li>
+                    <li class="breadcrumb-item active">{{ inventory_item.item_name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-box me-2"></i>معلومات المادة
+                    </h3>
+                    <div>
+                        <a href="{{ url_for('inventory.edit_item', id=inventory_item.id) }}" class="btn btn-sm btn-warning me-1">
+                            <i class="fas fa-edit me-1"></i>تعديل
+                        </a>
+                        <a href="{{ url_for('inventory.add_movement', id=inventory_item.id) }}" class="btn btn-sm btn-info me-1">
+                            <i class="fas fa-exchange-alt me-1"></i>تسجيل حركة
+                        </a>
+                        <a href="{{ url_for('inventory.add_inventory', id=inventory_item.id) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-clipboard-check me-1"></i>جرد
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">رقم المادة</p>
+                            <p class="fs-5">{{ inventory_item.item_number }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">اسم المادة</p>
+                            <p class="fs-5">{{ inventory_item.item_name }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">الكمية المتاحة</p>
+                            <p class="fs-5">{{ inventory_item.available_quantity }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">الكمية المطلوبة</p>
+                            <p class="fs-5">{{ inventory_item.required_quantity or 'غير محدد' }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">المستودع</p>
+                            <p class="fs-5">
+                                <a href="{{ url_for('inventory.view_warehouse', id=inventory_item.warehouse_id) }}">
+                                    {{ inventory_item.warehouse.warehouse_name }}
+                                </a>
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">الحالة</p>
+                            <p class="fs-5">
+                                {% if inventory_item.required_quantity and inventory_item.available_quantity < inventory_item.required_quantity %}
+                                    <span class="badge bg-danger">ناقص</span>
+                                {% elif inventory_item.required_quantity and inventory_item.available_quantity == inventory_item.required_quantity %}
+                                    <span class="badge bg-success">مكتمل</span>
+                                {% elif inventory_item.required_quantity and inventory_item.available_quantity > inventory_item.required_quantity %}
+                                    <span class="badge bg-info">زائد</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">غير محدد</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>ملخص الحركة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="movementChart" width="100%" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم حركات المخزون -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-exchange-alt me-2"></i>حركات المخزون
+                    </h4>
+                    <a href="{{ url_for('inventory.add_movement', id=inventory_item.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i>تسجيل حركة
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if movements %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>التاريخ</th>
+                                    <th>النوع</th>
+                                    <th>الكمية</th>
+                                    <th>المرجع</th>
+                                    <th>بواسطة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in movements %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ movement.movement_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        {% if movement.movement_type == 'وارد' %}
+                                        <span class="badge bg-success">{{ movement.movement_type }}</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">{{ movement.movement_type }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ movement.quantity }}</td>
+                                    <td>{{ movement.reference or 'غير محدد' }}</td>
+                                    <td>{{ movement.user.username }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">لا توجد حركات مخزون مسجلة لهذه المادة</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم سجل الجرد -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>سجل الجرد
+                    </h4>
+                    <a href="{{ url_for('inventory.add_inventory', id=inventory_item.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i>إجراء جرد
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if inventories %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>رقم الجرد</th>
+                                    <th>تاريخ الجرد</th>
+                                    <th>الكمية المسجلة</th>
+                                    <th>الكمية الفعلية</th>
+                                    <th>الفرق</th>
+                                    <th>بواسطة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inventory in inventories %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ inventory.inventory_number }}</td>
+                                    <td>{{ inventory.inventory_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ inventory.recorded_quantity }}</td>
+                                    <td>{{ inventory.actual_quantity }}</td>
+                                    <td>
+                                        {% set difference = inventory.actual_quantity - inventory.recorded_quantity %}
+                                        {% if difference > 0 %}
+                                        <span class="text-success">+{{ difference }}</span>
+                                        {% elif difference < 0 %}
+                                        <span class="text-danger">{{ difference }}</span>
+                                        {% else %}
+                                        <span class="text-muted">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ inventory.user.username }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">لا توجد عمليات جرد مسجلة لهذه المادة</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if movements %}
+        // تحضير بيانات للرسم البياني
+        let dates = [];
+        let quantities = [];
+        let balance = {{ inventory_item.available_quantity }};
+        let movementsCount = {{ movements|length }};
+        
+        // الحصول على آخر 5 حركات فقط للرسم البياني
+        {% for movement in movements[:5]|reverse %}
+            dates.push('{{ movement.movement_date.strftime("%Y-%m-%d") }}');
+            {% if movement.movement_type == 'صادر' %}
+                balance += {{ movement.quantity }};  // نضيف الكمية لأننا نبدأ من الرصيد الحالي ونرجع للخلف
+            {% else %}
+                balance -= {{ movement.quantity }};  // نطرح الكمية لأننا نبدأ من الرصيد الحالي ونرجع للخلف
+            {% endif %}
+            quantities.push(balance);
+        {% endfor %}
+        
+        // عكس المصفوفات لعرضها بالترتيب الزمني الصحيح
+        dates.reverse();
+        quantities.reverse();
+        
+        // إضافة الرصيد الحالي
+        dates.push('الحالي');
+        quantities.push({{ inventory_item.available_quantity }});
+        
+        // رسم المخطط
+        const ctx = document.getElementById('movementChart').getContext('2d');
+        const movementChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'رصيد المخزون',
+                    data: quantities,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+        {% else %}
+        // إذا لم توجد حركات، نعرض مخطط بسيط
+        const ctx = document.getElementById('movementChart').getContext('2d');
+        const movementChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['الحالي'],
+                datasets: [{
+                    label: 'رصيد المخزون',
+                    data: [{{ inventory_item.available_quantity }}],
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}
