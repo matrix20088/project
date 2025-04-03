@@ -1,0 +1,28 @@
+Database verified successfully
+INFO:main:Application started
+INFO:root:نظام الإشعارات معطل بناءً على طلب المستخدم
+DEBUG:auth:بدأ تحميل لوحة التحكم
+DEBUG:auth:تم الحصول على الإحصائيات: الموردين=7, طلبات الشراء=11, أوامر قيد الانتظار=4, إجمالي أوامر الشراء=12
+DEBUG:auth:تم الحصول على 5 طلب شراء حديث
+DEBUG:auth:طلب شراء REQ-3 - المشروع: فلل العليا, مقدم الطلب: م.محمد حسن
+DEBUG:auth:طلب 1: رقم الطلب: REQ-3, المشروع: فلل العليا, مقدم الطلب: م.محمد حسن
+DEBUG:auth:طلب شراء REQ-2 - المشروع: فلل العليا, مقدم الطلب: م.محمد حسن
+DEBUG:auth:طلب 2: رقم الطلب: REQ-2, المشروع: فلل العليا, مقدم الطلب: م.محمد حسن
+DEBUG:auth:طلب شراء REQ-1 - المشروع: فلل المنار 122, مقدم الطلب: admin
+DEBUG:auth:طلب 3: رقم الطلب: REQ-1, المشروع: فلل المنار 122, مقدم الطلب: admin
+DEBUG:auth:طلب شراء REQ-F7057E - المشروع: النرجس 120, مقدم الطلب: admin
+DEBUG:auth:طلب 4: رقم الطلب: REQ-F7057E, المشروع: النرجس 120, مقدم الطلب: admin
+DEBUG:auth:طلب شراء REQ-00376A - المشروع: رخاء المكتبيه, مقدم الطلب: م.سيف عبد الله
+DEBUG:auth:طلب 5: رقم الطلب: REQ-00376A, المشروع: رخاء المكتبيه, مقدم الطلب: م.سيف عبد الله
+DEBUG:auth:تم الحصول على 4 أمر شراء قيد الانتظار
+DEBUG:auth:أمر 1: رقم الأمر: PO-2, المورد: مؤسسة اباد, المشروع: النرجس 120, منشئ الأمر: ابراهيم عزازي
+DEBUG:auth:أمر 2: رقم الأمر: PO-1, المورد: شركة اتحاد المعادن, المشروع: فلل العليا, منشئ الأمر: ابراهيم عزازي
+DEBUG:auth:أمر 3: رقم الأمر: PO-4123B5, المورد: مؤسسة الماسه الحديثة, المشروع: غير محدد, منشئ الأمر: admin
+DEBUG:auth:أمر 4: رقم الأمر: PO-DAB6D5, المورد: شركة قمة المنصورة, المشروع: غير محدد, منشئ الأمر: admin
+ERROR:root:خطأ SQLAlchemy: Entity namespace for "purchase_orders" has no property "status"
+ERROR:root:نوع الخطأ: InvalidRequestError
+ERROR:root:خطأ SQLAlchemy: Entity namespace for "purchase_orders" has no property "status"
+ERROR:root:نوع الخطأ: InvalidRequestError
+^C[2025-04-02 21:18:54 +0000] [3419] [INFO] Handling signal: int
+[2025-04-02 21:18:54 +0000] [3430] [INFO] Worker exiting (pid: 3430)
+[2025-04-02 21:18:54 +0000] [3419] [INFO] Shutting down: Master

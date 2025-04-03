@@ -1,0 +1,52 @@
+NameError
+NameError: name 'render_template' is not defined
+
+Traceback (most recent call last)
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 917, in full_dispatch_request
+rv = self.dispatch_request()
+     ^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 902, in dispatch_request
+return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 278, in <lambda>
+view_func=lambda **kw: self_ref().send_static_file(**kw),  # type: ignore # noqa: B950
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 326, in send_static_file
+return send_from_directory(
+       
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\helpers.py", line 565, in send_from_directory
+return werkzeug.utils.send_from_directory(  # type: ignore[return-value]
+       
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\werkzeug\utils.py", line 567, in send_from_directory
+raise NotFound()
+^^^^^^^^^^^^^^^^
+During handling of the above exception, another exception occurred:
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 1536, in __call__
+return self.wsgi_app(environ, start_response)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 1514, in wsgi_app
+response = self.handle_exception(e)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 1511, in wsgi_app
+response = self.full_dispatch_request()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 919, in full_dispatch_request
+rv = self.handle_user_exception(e)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 802, in handle_user_exception
+return self.handle_http_exception(e)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\hhp\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 777, in handle_http_exception
+return self.ensure_sync(handler)(e)  # type: ignore[no-any-return]
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "D:\newsystem\ArabicChatBot\app.py", line 97, in not_found_error
+return render_template('errors/404.html'), 404
+       ^^^^^^^^^^^^^^^
+NameError: name 'render_template' is not defined
+The debugger caught an exception in your WSGI application. You can now look at the traceback which led to the error.
+To switch between the interactive traceback and the plaintext one, you can click on the "Traceback" headline. From the text traceback you can also create a paste of it. For code execution mouse-over the frame you want to debug and click on the console icon on the right side.
+
+You can execute arbitrary Python code in the stack frames and there are some extra helpers available for introspection:
+
+dump() shows all variables in the frame
+dump(obj) dumps all that's known about the object
