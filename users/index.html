@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <h2 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>إدارة المستخدمين
+                    </h2>
+                    <div>
+                        <a href="{{ url_for('users.update_all_permissions') }}" class="btn btn-warning me-2" onclick="return confirm('هل أنت متأكد من تحديث صلاحيات جميع المستخدمين؟')">
+                            <i class="fas fa-sync-alt me-1"></i> تحديث صلاحيات المستخدمين
+                        </a>
+                        <a href="{{ url_for('users.add') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-1"></i> إضافة مستخدم جديد
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>اسم المستخدم</th>
+                                    <th>البريد الإلكتروني</th>
+                                    <th>رقم الهاتف</th>
+                                    <th>الدور</th>
+                                    <th>تاريخ التسجيل</th>
+                                    <th>العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.phone or 'غير محدد' }}</td>
+                                    <td>
+                                        {% if user.role == 'مدير' %}
+                                            <span class="badge bg-danger">{{ user.role }}</span>
+                                        {% elif user.role == 'محاسب' %}
+                                            <span class="badge bg-warning text-dark">{{ user.role }}</span>
+                                        {% elif user.role == 'موظف مشتريات' %}
+                                            <span class="badge bg-info text-dark">{{ user.role }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ user.role }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('users.view', id=user.id) }}" class="btn btn-outline-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('users.edit', id=user.id) }}" class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('users.permissions', id=user.id) }}" class="btn btn-outline-primary">
+                                                <i class="fas fa-key"></i>
+                                            </a>
+                                            {% if user.id != current_user.id %}
+                                            <a href="{{ url_for('users.delete', id=user.id) }}" class="btn btn-outline-danger" onclick="return confirm('هل أنت متأكد من حذف هذا المستخدم؟')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="display-5 text-muted mb-4">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h4 class="text-muted">لا يوجد مستخدمين</h4>
+                        <p class="text-muted mb-4">لم يتم إضافة أي مستخدمين حتى الآن</p>
+                        <a href="{{ url_for('users.add') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-1"></i> إضافة مستخدم جديد
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

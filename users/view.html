@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('users.index') }}">المستخدمين</a></li>
+                    <li class="breadcrumb-item active">{{ user.username }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-user me-2"></i>معلومات المستخدم
+                    </h3>
+                    <div>
+                        <a href="{{ url_for('users.edit', id=user.id) }}" class="btn btn-sm btn-warning me-1">
+                            <i class="fas fa-edit me-1"></i>تعديل
+                        </a>
+                        <a href="{{ url_for('users.permissions', id=user.id) }}" class="btn btn-sm btn-primary me-1">
+                            <i class="fas fa-key me-1"></i>الصلاحيات
+                        </a>
+                        {% if user.id != current_user.id %}
+                        <a href="{{ url_for('users.delete', id=user.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد من حذف هذا المستخدم؟')">
+                            <i class="fas fa-trash me-1"></i>حذف
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">اسم المستخدم</p>
+                            <p class="fs-5">{{ user.username }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">البريد الإلكتروني</p>
+                            <p class="fs-5">{{ user.email }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">رقم الهاتف</p>
+                            <p class="fs-5">{{ user.phone or 'غير محدد' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">الدور</p>
+                            <p class="fs-5">
+                                {% if user.role == 'مدير' %}
+                                    <span class="badge bg-danger">{{ user.role }}</span>
+                                {% elif user.role == 'محاسب' %}
+                                    <span class="badge bg-warning text-dark">{{ user.role }}</span>
+                                {% elif user.role == 'موظف مشتريات' %}
+                                    <span class="badge bg-info text-dark">{{ user.role }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ user.role }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">المسمى الوظيفي</p>
+                            <p class="fs-5">{{ user.job_title or 'غير محدد' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <p class="text-muted mb-1">تاريخ التسجيل</p>
+                            <p class="fs-5">{{ user.created_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                    </div>
+                    {% if user.signature_path %}
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <p class="text-muted mb-1">التوقيع</p>
+                            <div class="border p-3 rounded text-center">
+                                <img src="{{ url_for('static', filename=user.signature_path.replace('static/', '')) }}" 
+                                    alt="توقيع المستخدم" class="img-fluid" style="max-height: 100px;"
+                                    onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/signature-placeholder.png') }}'; console.log('استخدام توقيع بديل للعرض');">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>الصلاحيات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for permission in permissions %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>{{ permission.module }}</strong>
+                                <div>
+                                    {% if permission.can_create %}
+                                    <span class="badge bg-success" data-bs-toggle="tooltip" title="إنشاء">
+                                        <i class="fas fa-plus"></i>
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if permission.can_read %}
+                                    <span class="badge bg-info" data-bs-toggle="tooltip" title="عرض">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if permission.can_update %}
+                                    <span class="badge bg-warning text-dark" data-bs-toggle="tooltip" title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if permission.can_delete %}
+                                    <span class="badge bg-danger" data-bs-toggle="tooltip" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if permission.can_approve %}
+                                    <span class="badge bg-primary" data-bs-toggle="tooltip" title="اعتماد">
+                                        <i class="fas fa-check"></i>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <a href="{{ url_for('users.permissions', id=user.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-key me-1"></i> إدارة الصلاحيات
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // تفعيل tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

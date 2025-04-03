@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('users.index') }}">المستخدمين</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('users.view', id=user.id) }}">{{ user.username }}</a></li>
+                    <li class="breadcrumb-item active">تعديل</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-user-edit me-2"></i>تعديل بيانات المستخدم
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('users.edit', id=user.id) }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">اسم المستخدم</label>
+                            <input type="text" class="form-control" id="username" value="{{ user.username }}" readonly>
+                            <small class="form-text text-muted">لا يمكن تغيير اسم المستخدم</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">البريد الإلكتروني <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">كلمة المرور</label>
+                            <input type="password" class="form-control" id="password" name="password">
+                            <small class="form-text text-muted">اتركها فارغة إذا لم ترغب في تغيير كلمة المرور</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">رقم الهاتف</label>
+                            <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="job_title" class="form-label">المسمى الوظيفي</label>
+                            <input type="text" class="form-control" id="job_title" name="job_title" value="{{ user.job_title }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="signature" class="form-label">ملف التوقيع</label>
+                            <input type="file" class="form-control" id="signature" name="signature" accept="image/png, image/jpeg, image/gif">
+                            <small class="form-text text-muted">ملفات الصور المسموح بها: PNG, JPEG, GIF</small>
+                            {% if user.signature_path %}
+                            <div class="mt-2 border p-2 rounded">
+                                <p class="text-muted mb-1">التوقيع الحالي:</p>
+                                <img src="{{ url_for('static', filename=user.signature_path.replace('static/', '')) }}" 
+                                     alt="توقيع المستخدم" class="img-fluid" style="max-height: 80px;"
+                                     onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/signature-placeholder.png') }}'; console.log('استخدام توقيع بديل للعرض');">
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if current_user.role == 'مدير' %}
+                        <div class="mb-3">
+                            <label for="role" class="form-label">الدور <span class="text-danger">*</span></label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="">-- اختر الدور --</option>
+                                <option value="مدير" {% if user.role == 'مدير' %}selected{% endif %}>مدير</option>
+                                <option value="محاسب" {% if user.role == 'محاسب' %}selected{% endif %}>محاسب</option>
+                                <option value="مدير مالي" {% if user.role == 'مدير مالي' %}selected{% endif %}>مدير مالي</option>
+                                <option value="موظف مشتريات" {% if user.role == 'موظف مشتريات' %}selected{% endif %}>موظف مشتريات</option>
+                                <option value="موظف" {% if user.role == 'موظف' %}selected{% endif %}>موظف</option>
+                                <option value="مدير مكتب هندسي" {% if user.role == 'مدير مكتب هندسي' %}selected{% endif %}>مدير مكتب هندسي</option>
+                                <option value="مدير مشاريع" {% if user.role == 'مدير مشاريع' %}selected{% endif %}>مدير مشاريع</option>
+                                <option value="مدير تنفيذي" {% if user.role == 'مدير تنفيذي' %}selected{% endif %}>مدير تنفيذي</option>
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="text-end mt-4">
+                            <a href="{{ url_for('users.view', id=user.id) }}" class="btn btn-outline-secondary me-2">إلغاء</a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i> حفظ التغييرات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
