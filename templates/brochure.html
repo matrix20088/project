@@ -1,0 +1,247 @@
+
+{% extends "base.html" %}
+
+{% block title %}نظام إدارة المشتريات - بروشور تعريفي{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .brochure-header {
+        background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+        color: white;
+        padding: 50px 0;
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .feature-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+        margin-bottom: 30px;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        color: #0d6efd;
+        margin-bottom: 20px;
+    }
+    
+    .feature-card .card-body {
+        padding: 25px;
+    }
+    
+    .section-title {
+        margin-bottom: 40px;
+        text-align: center;
+        position: relative;
+        padding-bottom: 15px;
+    }
+    
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3px;
+        background: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="brochure-header">
+    <div class="container">
+        <h1 class="display-4">نظام إدارة المشتريات المتكامل</h1>
+        <p class="lead">حل متكامل لإدارة المشتريات والموردين والمشاريع بكفاءة عالية</p>
+    </div>
+</div>
+
+<div class="container">
+    <section class="mb-5">
+        <h2 class="section-title">المميزات الرئيسية</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h5 class="card-title">إدارة طلبات الشراء</h5>
+                        <p class="card-text">إنشاء وتتبع طلبات الشراء بسهولة مع نظام اعتماد متكامل</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h5 class="card-title">إدارة الموردين</h5>
+                        <p class="card-text">قاعدة بيانات شاملة للموردين مع تقييم الأداء والعقود</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <h5 class="card-title">إدارة المشاريع</h5>
+                        <p class="card-text">متابعة المشاريع وربطها بالمشتريات والمستخلصات</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <h5 class="card-title">إدارة المستخلصات</h5>
+                        <p class="card-text">تنظيم وتتبع المستخلصات المالية للمشاريع</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h5 class="card-title">التقارير والتحليلات</h5>
+                        <p class="card-text">تقارير تفصيلية وإحصائيات للمشتريات والمشاريع</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <h5 class="card-title">إدارة الصلاحيات</h5>
+                        <p class="card-text">نظام صلاحيات متقدم لضمان أمن وسلامة البيانات</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="mb-5">
+        <h2 class="section-title">مزايا النظام</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card feature-card">
+                    <div class="card-body">
+                        <h5><i class="fas fa-check-circle text-success ml-2"></i>سهولة الاستخدام</h5>
+                        <p>واجهة مستخدم سهلة وبسيطة باللغة العربية</p>
+                        
+                        <h5><i class="fas fa-check-circle text-success ml-2"></i>نظام اعتماد متكامل</h5>
+                        <p>مسار اعتماد واضح لجميع المعاملات</p>
+                        
+                        <h5><i class="fas fa-check-circle text-success ml-2"></i>المرفقات والمستندات</h5>
+                        <p>دعم إرفاق المستندات والملفات لكل معاملة</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card feature-card">
+                    <div class="card-body">
+                        <h5><i class="fas fa-check-circle text-success ml-2"></i>التوقيعات الإلكترونية</h5>
+                        <p>نظام توقيع إلكتروني للمعاملات والاعتمادات</p>
+                        
+                        <h5><i class="fas fa-check-circle text-success ml-2"></i>إشعارات فورية</h5>
+                        <p>نظام إشعارات متكامل لمتابعة حالة المعاملات</p>
+                        
+                        <h5><i class="fas fa-check-circle text-success ml-2"></i>طباعة التقارير</h5>
+                        <p>إمكانية طباعة جميع المعاملات والتقارير</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="text-center mb-5">
+        <h1 class="display-4">نظام ميار لإدارة المشاريع والمشتريات</h1>
+        <p class="lead">حل متكامل لإدارة المشاريع والمشتريات بكفاءة عالية</p>
+    </div>
+
+    <!-- المميزات الرئيسية -->
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-project-diagram fa-3x mb-3 text-primary"></i>
+                    <h3>إدارة المشاريع</h3>
+                    <p>متابعة شاملة للمشاريع من البداية إلى النهاية</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-shopping-cart fa-3x mb-3 text-success"></i>
+                    <h3>نظام المشتريات</h3>
+                    <p>إدارة طلبات وأوامر الشراء بشكل متكامل</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-invoice-dollar fa-3x mb-3 text-info"></i>
+                    <h3>إدارة المستخلصات</h3>
+                    <p>متابعة وإدارة المستخلصات والمدفوعات</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تفاصيل المميزات -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <h4><i class="fas fa-check-circle text-success"></i> المميزات الرئيسية</h4>
+            <ul class="list-group">
+                <li class="list-group-item">إدارة كاملة للمشاريع والعملاء</li>
+                <li class="list-group-item">نظام متكامل لطلبات وأوامر الشراء</li>
+                <li class="list-group-item">إدارة المستخلصات والمدفوعات</li>
+                <li class="list-group-item">نظام تقارير شامل</li>
+                <li class="list-group-item">إدارة المخزون والمستودعات</li>
+            </ul>
+        </div>
+        <div class="col-md-6 mb-4">
+            <h4><i class="fas fa-shield-alt text-primary"></i> مميزات الأمان</h4>
+            <ul class="list-group">
+                <li class="list-group-item">نظام صلاحيات متعدد المستويات</li>
+                <li class="list-group-item">تتبع كامل للإجراءات والتعديلات</li>
+                <li class="list-group-item">نظام موافقات متعدد المراحل</li>
+                <li class="list-group-item">نسخ احتياطية تلقائية</li>
+                <li class="list-group-item">تشفير البيانات الحساسة</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

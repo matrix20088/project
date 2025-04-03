@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="card-title mb-4">
+                                <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
+                            </h2>
+                            <p class="lead">مرحباً بك {{ current_user.username }} في نظام إدارة المشتريات واعتماد المعاملات الداخلية</p>
+                        </div>
+                        {% if current_user.is_admin %}
+                        <div>
+                            <a href="{{ url_for('admin.system_management') }}" class="btn btn-danger">
+                                <i class="fas fa-cogs me-1"></i> إدارة النظام
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- بطاقات الإحصائيات -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white border-0 shadow h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-0">الموردين</h6>
+                            <h3 class="mt-3 mb-0">{{ suppliers_count }}</h3>
+                        </div>
+                        <div class="display-4"><i class="fas fa-truck"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="{{ url_for('suppliers.index') }}" class="text-white text-decoration-none small">عرض التفاصيل <i class="fas fa-arrow-circle-left ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white border-0 shadow h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-0">طلبات الشراء</h6>
+                            <h3 class="mt-3 mb-0">{{ purchase_requests_count }}</h3>
+                        </div>
+                        <div class="display-4"><i class="fas fa-file-alt"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="{{ url_for('purchase_orders.requests') }}" class="text-white text-decoration-none small">عرض التفاصيل <i class="fas fa-arrow-circle-left ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-dark border-0 shadow h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-0">أوامر قيد الانتظار</h6>
+                            <h3 class="mt-3 mb-0">{{ pending_orders_count }}</h3>
+                        </div>
+                        <div class="display-4"><i class="fas fa-clock"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="{{ url_for('approvals.purchase_orders') }}" class="text-dark text-decoration-none small">عرض التفاصيل <i class="fas fa-arrow-circle-left ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-dark border-0 shadow h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-0">أوامر الشراء</h6>
+                            <h3 class="mt-3 mb-0">{{ orders_count|default(0) }}</h3>
+                        </div>
+                        <div class="display-4"><i class="fas fa-file-invoice"></i></div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="{{ url_for('purchase_orders.orders') }}" class="text-dark text-decoration-none small">عرض التفاصيل <i class="fas fa-arrow-circle-left ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- طلبات الشراء الأخيرة -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>طلبات الشراء الأخيرة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_requests %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم الطلب</th>
+                                    <th>المشروع</th>
+                                    <th>المادة</th>
+                                    <th>الغرض من الطلب</th>
+                                    <th>مقدم الطلب</th>
+                                    <th>الحالة</th>
+                                    <th>العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in recent_requests %}
+                                <tr>
+                                    <td>{{ request.request_number }}</td>
+                                    <td>{{ request.project.name if request.project else request.project_name|default('غير محدد') }}</td>
+                                    <td>{{ request.item_name }}</td>
+                                    <td>{{ request.purpose|truncate(30) }}</td>
+                                    <td>{{ request.requester_name|default('غير محدد') }}</td>
+                                    <td>
+                                        {% if request.status == 'قيد الانتظار' %}
+                                        <span class="badge bg-warning text-dark">{{ request.status }}</span>
+                                        {% elif request.status == 'قيد التنفيذ' %}
+                                        <span class="badge bg-info text-dark">{{ request.status }}</span>
+                                        {% else %}
+                                        <span class="badge bg-success">{{ request.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('purchase_orders.view_request', id=request.id) }}" class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-4">لا توجد طلبات شراء حديثة</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent text-center">
+                    <a href="{{ url_for('purchase_orders.requests') }}" class="btn btn-outline-primary btn-sm">عرض جميع الطلبات</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- أوامر الشراء قيد الانتظار -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>أوامر الشراء قيد الانتظار
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم الأمر</th>
+                                    <th>المورد</th>
+                                    <th>المشروع</th>
+                                    <th>المادة</th>
+                                    <th>الغرض من الطلب</th>
+                                    <th>منشئ الأمر</th>
+                                    <th>التاريخ</th>
+                                    <th>العمليات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in pending_orders %}
+                                <tr>
+                                    <td>{{ order.order_number }}</td>
+                                    <td>{{ order.supplier.name if order.supplier else order.supplier_name|default('غير محدد') }}</td>
+                                    <td>{{ order.project.name if order.project else order.project_name|default('غير محدد') }}</td>
+                                    <td>{{ order.item_name }}</td>
+                                    <td>{{ order.purpose|truncate(30) }}</td>
+                                    <td>{{ order.creator_name|default('غير محدد') }}</td>
+                                    <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('approvals.view_purchase_order', id=order.id) }}" class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-check-circle"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-4">لا توجد أوامر شراء قيد الانتظار</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent text-center">
+                    <a href="{{ url_for('approvals.purchase_orders') }}" class="btn btn-outline-warning btn-sm">عرض جميع الأوامر قيد الانتظار</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>إحصائيات المشتريات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="purchasesChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // بيانات إحصائية للرسم البياني (سيتم استبدالها ببيانات حقيقية في الإصدار النهائي)
+        const ctx = document.getElementById('purchasesChart').getContext('2d');
+        const purchasesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+                datasets: [{
+                    label: 'إجمالي المشتريات',
+                    data: [0, 0, 0, 0, 0, 0],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item active">الملف الشخصي</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-user-circle me-2"></i>الملف الشخصي
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        يمكنك تحديث معلوماتك الشخصية وتغيير كلمة المرور الخاصة بك.
+                    </div>
+
+                    <form method="POST" action="{{ url_for('auth.profile') }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">اسم المستخدم</label>
+                            <input type="text" class="form-control" id="username" value="{{ current_user.username }}" disabled>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">رقم الهاتف</label>
+                            <input type="text" class="form-control" id="phone" name="phone" value="{{ current_user.phone or '' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="signature" class="form-label">ملف التوقيع</label>
+                            <input type="file" class="form-control" id="signature" name="signature" accept="image/png, image/jpeg, image/gif">
+                            <small class="form-text text-muted">ملفات الصور المسموح بها: PNG, JPEG, GIF</small>
+                            {% if user_signature_path %}
+                            <div class="mt-2 border p-2 rounded">
+                                <p class="text-muted mb-1">التوقيع الحالي:</p>
+                                <img src="{{ url_for('static', filename=user_signature_path.replace('static/', '', 1)) }}" 
+                                     alt="توقيع المستخدم" class="img-fluid" style="max-height: 80px;">
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <hr class="my-4">
+                        <h5 class="mb-3">تغيير كلمة المرور</h5>
+                        
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">كلمة المرور الحالية</label>
+                            <input type="password" class="form-control" id="current_password" name="current_password">
+                            <div class="form-text">أدخل كلمة المرور الحالية فقط إذا كنت ترغب في تغييرها.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">كلمة المرور الجديدة</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password">
+                        </div>
+                        
+                        <div class="text-end mt-4">
+                            <a href="{{ url_for('auth.dashboard') }}" class="btn btn-outline-secondary me-2">إلغاء</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> حفظ التغييرات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
