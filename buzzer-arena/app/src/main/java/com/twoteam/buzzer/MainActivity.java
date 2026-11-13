@@ -93,8 +93,15 @@ public class MainActivity extends Activity {
                     speech.setPitch(1.06f);
                     speech.setOnUtteranceProgressListener(new UtteranceProgressListener(){
                         @Override public void onStart(String id){}
-                        @Override public void onDone(String id){fire("speechDone",id);}
-                        @Override public void onError(String id){fire("voiceStatus","unavailable");}
+                        @Override public void onDone(String id){
+                            if(id!=null&&id.matches("[0-9]+")){
+                                if(speech!=null) speech.setSpeechRate(1.0f);
+                                fire("speechDone",id);
+                            }
+                        }
+                        @Override public void onError(String id){
+                            if(id!=null&&id.matches("[0-9]+"))fire("speechUnavailable",id);
+                        }
                     });
                 }
                 fire("voiceStatus",speechReady?"ready":"unavailable");
@@ -291,6 +298,27 @@ public class MainActivity extends Activity {
                         TextToSpeech.QUEUE_FLUSH,null,round==null?"q":round);
                     if(rc==TextToSpeech.ERROR)fire("speechUnavailable",round);
                 }else fire("speechUnavailable",round);
+            });
+        }
+        @android.webkit.JavascriptInterface public void spellQuestion(String intro,String lettersJson,String round){
+            runOnUiThread(()->{
+                if(!speechReady||speech==null){fire("speechUnavailable",round);return;}
+                try{
+                    JSONArray letters=new JSONArray(lettersJson);
+                    if(letters.length()<2||letters.length()>48){fire("speechUnavailable",round);return;}
+                    int started=speech.speak(intro,TextToSpeech.QUEUE_FLUSH,null,"spell-intro-"+round);
+                    if(started==TextToSpeech.ERROR){fire("speechUnavailable",round);return;}
+                    speech.setSpeechRate(0.77f);
+                    for(int i=0;i<letters.length();i++){
+                        final String label=letters.getString(i);
+                        if(label.length()>35)throw new Exception("Invalid letter label");
+                        speech.speak(label,TextToSpeech.QUEUE_ADD,null,"spell-"+round+"-"+i);
+                        // A real pause after every letter, rather than reading one fast sentence.
+                        speech.playSilentUtterance(470,TextToSpeech.QUEUE_ADD,"spell-pause-"+round+"-"+i);
+                    }
+                    // The LAST utterance owns the completion event, so the buzzer stays hidden until every letter is heard.
+                    speech.speak("استعدوا.",TextToSpeech.QUEUE_ADD,null,round);
+                }catch(Exception e){fire("speechUnavailable",round);}
             });
         }
         @android.webkit.JavascriptInterface public void voiceSettings(){

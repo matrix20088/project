@@ -2,13 +2,18 @@
 const root=document.getElementById("root");
 const CAT_ALL="🌟 منوعات",CAT_KEYS=Object.keys(QUESTIONS),ICONS=["🔵","🩷","🟡","🟣"];
 const TOTAL_QUESTIONS=CAT_KEYS.reduce((n,k)=>n+QUESTIONS[k].length,0);
-const QUIZ_SEC=15,ANSWER_SEC=12,ANNOUNCE_SEC=26,RESULT_SEC=8,WIN_AT=10;
+const QUIZ_SEC=15,ANSWER_SEC=12,FAST_ANSWER_SEC=6,FAST_BUZZ_MS=2000;
+const SECRET_DELAY_MAX_MS=15000,ANNOUNCE_SEC=70,RESULT_SEC=8,WIN_AT=10;
+const HARD_CATS=["🏛️ تاريخ للنخبة","🧬 علوم صعبة","🧭 جغرافيا متقدمة","🎨 فن وأدب","♟️ منطق صعب"];
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const clean=s=>String(s??"").trim().replace(/[\r\n\t]+/g," ").slice(0,18)||"لاعب";
 const format=n=>Math.max(0,n|0);
 const cfg={name:localStorage.getItem("buzzerName")||"لاعب 1",target:2,category:CAT_ALL};
 let host=false,seat=null,online=false,pending="",devices=[],state=null,answerIndex=-1;
 let usedQuestions=new Set(),lastVersion=-1,soundOn=true;
+let hiddenOpenAt=0,speechWatchdogAt=0,buzzOpenedAt=0,privateReverseLetters=[];
+const SPELL_NAMES={"ا":"ألف","أ":"ألف بهمزة فوق","إ":"ألف بهمزة تحت","آ":"ألف مد","ب":"باء","ت":"تاء","ث":"ثاء","ج":"جيم","ح":"حاء","خ":"خاء","د":"دال","ذ":"ذال","ر":"راء","ز":"زاي","س":"سين","ش":"شين","ص":"صاد","ض":"ضاد","ط":"طاء","ظ":"ظاء","ع":"عين","غ":"غين","ف":"فاء","ق":"قاف","ك":"كاف","ل":"لام","م":"ميم","ن":"نون","ه":"هاء","و":"واو","ي":"ياء","ى":"ألف مقصورة","ة":"تاء مربوطة","ء":"همزة","ئ":"ياء بهمزة","ؤ":"واو بهمزة"};
+function spelledLetters(word){return [...String(word)].reverse().filter(ch=>ch.trim()).map(ch=>SPELL_NAMES[ch]||ch);}
 let voiceOn=localStorage.getItem("buzzerVoice")!=="off",voiceAvailable=true;
 const HOST_LINES={
  intro:["يلا بينا نولّع المنافسة!","ركزوا معايا يا أبطال!","السؤال ده محتاج تركيز!","جهزوا إيديكم يا جماعة!","السؤال الجاي ممكن يقلب النتيجة!"],
@@ -21,15 +26,31 @@ function hostLine(kind,n=0){const l=HOST_LINES[kind];return l[(n+Math.floor(Math
 function toggleVoice(){voiceOn=!voiceOn;localStorage.setItem("buzzerVoice",voiceOn?"on":"off");renderHome();}
 function previewVoice(){try{Native.speak("أهلا بيكم في جرس التحدي! معانا اتنين أو تلاتة أو أربعة متسابقين، والنهارده هنشوف مين أسرع واحد على الجرس!")}catch(e){showError("تعذر تشغيل صوت الحكم: "+e.message);}}
 function speakQuestion(text,round){
- if(!host||!voiceOn){questionVoiceFinished(false,round);return;}
+ if(!host)return;
+ if(state?.question?.audioOnly){
+  if(!voiceOn||!voiceAvailable){unavailableSpelling();return;}
+  try{Native.spellQuestion(String(text),JSON.stringify(privateReverseLetters),String(round));}
+  catch(e){unavailableSpelling();}
+  return;
+ }
+ if(!voiceOn){questionVoiceFinished(false,round);return;}
  try{Native.speakQuestion(String(text),String(round));}
  catch(e){questionVoiceFinished(false,round);}
 }
+function unavailableSpelling(){
+ if(!host||!state||state.phase!=="announce")return;
+ voiceAvailable=false;
+ if(state.category===CAT_ALL){state.msg="محرك النطق العربي غير متاح؛ هنختار سؤالًا غير صوتي.";newRound();}
+ else{state.phase="paused";state.msg="فئة الكلمات المقلوبة محتاجة محرك نطق عربي. فعّله من إعدادات الهاتف أو اختار فئة تانية.";bump();}
+}
 function questionVoiceFinished(spoken,round){
  if(!host||!state||state.phase!=="announce"||String(state.round)!==String(round)||state.speechOver)return;
+ if(!spoken&&state.question?.audioOnly){unavailableSpelling();return;}
  state.speechOver=true;
- state.remaining=spoken?2:7;state.deadline=Date.now()+(spoken?1350:6500);
- state.msg=spoken?"🎤 الحكم خلّص السؤال! ركزوا... الجرس هيفتح":"اقرأوا السؤال، الجرس هيفتح خلال لحظات";
+ const secret=Math.floor(Math.random()*(SECRET_DELAY_MAX_MS+1));
+ hiddenOpenAt=Date.now()+secret;
+ state.remaining=0;state.deadline=0; // The exact reveal time is PRIVATE to the referee phone.
+ state.msg="🎙️ السؤال خلص. الجرس ممكن يظهر في أي لحظة... خلي عينك على الشاشة!";
  bump();
 }
 function native(name,arg){try{if(!window.Native||typeof Native[name]!=="function")throw new Error("التطبيق لازم يتفتح من أندرويد");if(arg===undefined)Native[name]();else Native[name](arg);}catch(e){showError(e.message);}}
@@ -133,33 +154,34 @@ window.onNative=(type,detail)=>{
    return;
   }
  }
- if(type==="ttsStatus"){voiceAvailable=false;if(!state)renderHome();return;}
+ if(type==="ttsStatus"||type==="voiceStatus"){voiceAvailable=detail==="ready";if(!state)renderHome();return;}
  if(type==="speechDone"){questionVoiceFinished(true,detail);return;}
  if(type==="speechUnavailable"){voiceAvailable=false;questionVoiceFinished(false,detail);return;}
  if(type==="error"){showError(detail);return;}
  if(type==="disconnected"){online=false;host=false;seat=null;state=null;showError(detail||"انقطع اتصال البلوتوث");return;}
 };
 function selectNewQuestion(){
- let possible=[];
- const cats=state.category===CAT_ALL?CAT_KEYS:[state.category];
- for(const cat of cats){
-  QUESTIONS[cat].forEach((row,i)=>{const key=cat+"#"+i;if(!usedQuestions.has(key))possible.push({cat,row,key});});
+ const preferred=state.category===CAT_ALL?CAT_KEYS.filter(c=>c!=="🔄 كلمة مقلوبة"||voiceOn&&voiceAvailable):[state.category];
+ if(!preferred.length)return null;
+ let cats=preferred.filter(cat=>QUESTIONS[cat]?.length);
+ if(!cats.length)return null;
+ // Mixed mode: roughly two-thirds advanced general-knowledge questions, without maths dominating.
+ if(state.category===CAT_ALL){
+   const hard=cats.filter(c=>HARD_CATS.includes(c)),other=cats.filter(c=>!HARD_CATS.includes(c));
+   if(hard.length&&other.length)cats=Math.random()<.65?hard:other;
  }
- if(!possible.length){
-  usedQuestions.clear();
-  for(const cat of cats)QUESTIONS[cat].forEach((row,i)=>possible.push({cat,row,key:cat+"#"+i}));
- }
- const item=possible[Math.floor(Math.random()*possible.length)];
+ const cat=cats[Math.floor(Math.random()*cats.length)];
+ let pool=QUESTIONS[cat].map((row,i)=>({row,key:cat+"#"+i})).filter(x=>!usedQuestions.has(x.key));
+ if(!pool.length){pool=QUESTIONS[cat].map((row,i)=>({row,key:cat+"#"+i}));for(const x of pool)usedQuestions.delete(x.key);}
+ const item=pool[Math.floor(Math.random()*pool.length)];
  usedQuestions.add(item.key);
- let row=item.row.slice();
- if(item.cat==="🔄 كلمة مقلوبة"){
-  const word=[...row[0]].reverse().join("");
-  row=["اقرأ الكلمة دي بالمقلوب: "+word,...row];
- }
+ const reversed=cat==="🔄 كلمة مقلوبة";
+ privateReverseLetters=reversed?spelledLetters(item.row[0]):[];
+ let row=reversed?["🎧 اسمع الحروف من الحكم، وركّب الكلمة بالمقلوب.",...item.row]:item.row.slice();
  const options=row.slice(1).map((value,i)=>({value,correct:i===0}));
  for(let i=options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
  answerIndex=options.findIndex(x=>x.correct);
- return {cat:item.cat,q:row[0],options:options.map(x=>x.value)};
+ return {cat,q:row[0],options:options.map(x=>x.value),audioOnly:reversed};
 }
 function startMatch(){
  if(!host||!state||!allReady()||state.phase!=="lobby")return;
@@ -175,21 +197,30 @@ function newRound(){
  }
  state.round++;
  state.phase="announce";state.question=selectNewQuestion();state.lockedSeat=null;state.result=null;
- state.deadline=Date.now()+ANNOUNCE_SEC*1000;state.remaining=ANNOUNCE_SEC;state.speechOver=false;
- state.msg="🎙️ الحكم بيقرأ السؤال، جهّزوا إيديكم على الجرس";
+ state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;
+ hiddenOpenAt=0;buzzOpenedAt=0;
+ speechWatchdogAt=Date.now()+ANNOUNCE_SEC*1000;
+ state.deadline=0;state.remaining=0;state.speechOver=false;
+ state.msg="🎙️ الحكم بيقرأ السؤال، والجرس مخفي لحد ما يخلص.";
  bump();
- speakQuestion(hostLine("intro",state.round)+" السؤال رقم "+state.round+". "+state.question.q,state.round);
+ const intro=hostLine("intro",state.round)+" السؤال رقم "+state.round+". ";
+ speakQuestion(intro+(state.question.audioOnly?"دلوقتي كلمة مقلوبة. ركزوا في الحروف بالترتيب.":state.question.q),state.round);
 }
 function openBuzz(){
- if(!host||!state||state.phase!=="announce"||Date.now()<state.deadline)return;
- state.phase="question";state.deadline=Date.now()+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;state.msg="🔔 "+hostLine("start",state.round);
- sfx("ok");bump();
+ if(!host||!state||state.phase!=="announce"||!state.speechOver||!hiddenOpenAt||Date.now()<hiddenOpenAt)return;
+ buzzOpenedAt=Date.now();
+ state.phase="question";state.deadline=buzzOpenedAt+QUIZ_SEC*1000;
+ state.remaining=QUIZ_SEC;state.msg="🔔 "+hostLine("start",state.round);
+ haptic();sfx("ok");bump();
 }
 function claimBuzz(who){
  if(!host||!state||state.phase!=="question"||state.lockedSeat!==null||Date.now()>state.deadline)return;
  const p=state.players.find(x=>x.seat===who&&x.online);if(!p)return;
- state.lockedSeat=who;state.phase="answer";state.deadline=Date.now()+ANSWER_SEC*1000;state.remaining=ANSWER_SEC;
- state.msg="🔔 "+p.name+" سبق الجميع! اختار إجابتك";
+ const rush=(Date.now()-buzzOpenedAt)<=FAST_BUZZ_MS;
+ state.fastBuzz=rush;state.answerWindowSec=rush?FAST_ANSWER_SEC:ANSWER_SEC;
+ state.lockedSeat=who;state.phase="answer";
+ state.deadline=Date.now()+state.answerWindowSec*1000;state.remaining=state.answerWindowSec;
+ state.msg="🔔 "+p.name+(rush?" خطف الجرس! قدامه 6 ثواني؛ الغلط −2":" سبق الجميع! قدامه 12 ثانية؛ الغلط −1");
  haptic();sfx("buzz");speak("الجرس مع "+p.name);
  bump();
 }
@@ -214,11 +245,15 @@ function resolveAnswer(isCorrect,choice,timedout=false){
  const answer=state.question?.options[answerIndex]||"—";
  let msg,delta=0;
  if(!p){msg="الوقت خلص، محدش ضغط الجرس";}
- else{delta=isCorrect?1:-1;p.score+=delta;
-   msg=isCorrect?hostLine("correct",state.round)+" نقطة لـ "+p.name:timedout?"الوقت خلص يا "+p.name+"، خسر نقطة":hostLine("wrong",state.round)+" "+p.name+" خسر نقطة";
+ else{
+  delta=isCorrect?1:(state.fastBuzz?-2:-1);p.score+=delta;
+  const loss=Math.abs(delta);
+  msg=isCorrect?hostLine("correct",state.round)+" نقطة لـ "+p.name:
+   timedout?"الوقت خلص يا "+p.name+"، خسر "+loss+(loss===2?" نقطتين":" نقطة"):
+   hostLine("wrong",state.round)+" "+p.name+" خسر "+loss+(loss===2?" نقطتين":" نقطة");
  }
  state.phase="result";state.remaining=RESULT_SEC;state.deadline=Date.now()+RESULT_SEC*1000;
- state.result={name:p?.name||"مفيش حد",seat:p?.seat??-1,delta,correct:answer,chosen:choice===null?null:state.question.options[choice],ok:!!p&&isCorrect};
+ state.result={name:p?.name||"مفيش حد",seat:p?.seat??-1,delta,correct:answer,chosen:choice===null?null:state.question.options[choice],ok:!!p&&isCorrect,fast:!!p&&state.fastBuzz};
  state.msg=msg;
  speak(msg+". الإجابة الصحيحة: "+answer);sfx(isCorrect?"ok":"bad");bump();
 }
@@ -233,14 +268,18 @@ function resetToLobby(){
 }
 function tick(){
  if(!host||!state)return;
- const phase=state.phase;
- if(!["announce","question","answer","result"].includes(phase))return;
- const now=Date.now(),remaining=Math.max(0,Math.ceil((state.deadline-now)/1000));
+ const phase=state.phase,now=Date.now();
+ if(phase==="announce"){
+  if(!state.speechOver&&now>=speechWatchdogAt){questionVoiceFinished(false,state.round);return;}
+  if(state.speechOver&&hiddenOpenAt&&now>=hiddenOpenAt)openBuzz();
+  return;
+ }
+ if(!["question","answer","result"].includes(phase))return;
+ const remaining=Math.max(0,Math.ceil((state.deadline-now)/1000));
  if(remaining!==state.remaining){state.remaining=remaining;sync();updateTimerUI();}
  if(now<state.deadline)return;
- if(phase==="announce")openBuzz();
- else if(phase==="question"){resolveAnswer(false,null,true);}
- else if(phase==="answer"){resolveAnswer(false,null,true);}
+ if(phase==="question")resolveAnswer(false,null,true);
+ else if(phase==="answer")resolveAnswer(false,null,true);
  else if(phase==="result")advanceRound();
 }
-setInterval(tick,260);
+setInterval(tick,200);

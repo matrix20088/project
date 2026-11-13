@@ -17,9 +17,10 @@ function renderHome(){
 }
 function renderHow(){
  root.innerHTML=nav()+`<section class="card"><h2>🎤 نظام الحكم والجرس</h2><p class="desc">الحكم الإلكتروني يعلن الفئة والسؤال بصوت مصري مُركّب من محرك النطق بالعربي (حسب الأصوات المثبتة)، وبعد ما يخلص الكلام الجرس يفتح للكل.</p>
- <p class="desc">🎙️ الحكم يقرأ السؤال بصوت عربي، والجرس ما يتفتحش غير بعد انتهاء القراءة. لو النطق العربي مش متاح، بيظهر السؤال ويتفتح الجرس بعد مهلة للقراءة.</p>
+ <p class="desc">🎙️ الحكم يخلص قراءة السؤال، وبعدها الجرس يظهر فجأة خلال 15 ثانية. مفيش عدّ تنازلي يكشف اللحظة.</p>
+ <p class="desc">🔄 الكلمات المقلوبة صوت فقط: الحكم يتهجّاها حرف حرف ببطء؛ الكلمة وحروفها مش هتظهر قبل الإجابة. الفئة دي بتحتاج نطق عربي شغّال.</p>
  <p class="desc">🔔 أول رسالة ضغط توصل لموبايل صاحب الغرفة هي اللي تكسب الجرس. الجرس بيتقفل على الباقيين.</p>
- <p class="desc">🧠 المتسابق الأسرع قدامه ٤ اختيارات و١٢ ثانية للإجابة. إجابة صح +١، غلط أو انتهاء وقت الإجابة −١.</p>
+ <p class="desc">⚡ اللي يضغط في أول ثانيتين من ظهور الجرس قدامه 6 ثواني للإجابة؛ الصح +1 والغلط أو السكوت −2. اللي يدوس بعد كده قدامه 12 ثانية؛ الصح +1 والغلط أو السكوت −1.</p>
  <p class="desc">🏆 أول شخص يوصل ١٠ نقاط يفوز، والحكم يعلن اسمه تلقائيًا.</p>
  <p class="desc">📱 اعملوا اقتران Bluetooth بين الموبايلات الأول. صاحب الغرفة يختار ٢ أو ٣ أو ٤، وكل واحد تاني ينضم من موبايله.</p>
  <p class="small">ملحوظة الإنصاف: ترتيب وصول الضغطات عبر البلوتوث هو معيار الحكم. ممكن يحصل فارق اتصال بسيط بين الأجهزة؛ ده نظام للعب المنزلي مش بطولة احترافية.</p>
@@ -59,8 +60,10 @@ function renderLobby(){
 }
 function timeHeader(){
  const phase=state.phase;
- const max=phase==="announce"?ANNOUNCE_SEC:phase==="question"?QUIZ_SEC:phase==="answer"?ANSWER_SEC:RESULT_SEC;
- return `<div class="timerrow"><div><span class="kicker">الجولة ${state.round} • ${esc(state.question?.cat||"")}</span><div class="small">أول واحد يوصل ${WIN_AT} نقاط يكسب</div></div><div id="timer" class="timer ${state.remaining<=5?"danger":""}">${format(state.remaining)}ث</div></div>
+ const max=phase==="question"?QUIZ_SEC:phase==="answer"?(state.answerWindowSec||ANSWER_SEC):RESULT_SEC;
+ const common=`<div><span class="kicker">الجولة ${state.round} • ${esc(state.question?.cat||"")}</span><div class="small">أول واحد يوصل ${WIN_AT} نقاط يكسب</div></div>`;
+ if(phase==="announce")return `<div class="timerrow">${common}<div class="timer secretTimer">❔</div></div>`;
+ return `<div class="timerrow">${common}<div id="timer" class="timer ${state.remaining<=5?"danger":""}">${format(state.remaining)}ث</div></div>
  <div class="bar"><div id="timefill" style="width:${Math.round(state.remaining/max*100)}%"></div></div>`;
 }
 function updateTimerUI(){
@@ -68,7 +71,7 @@ function updateTimerUI(){
  const el=document.getElementById("timer"),fill=document.getElementById("timefill");
  if(el){el.textContent=format(state.remaining)+"ث";el.classList.toggle("danger",state.remaining<=5);}
  if(fill){
-  const max=state.phase==="announce"?ANNOUNCE_SEC:state.phase==="question"?QUIZ_SEC:state.phase==="answer"?ANSWER_SEC:RESULT_SEC;
+  const max=state.phase==="question"?QUIZ_SEC:state.phase==="answer"?(state.answerWindowSec||ANSWER_SEC):RESULT_SEC;
   fill.style.width=Math.round(state.remaining/max*100)+"%";
  }
 }
@@ -76,14 +79,14 @@ function renderQuestion(){
  const phase=state.phase,locked=state.players.find(p=>p.seat===state.lockedSeat);
  let body=nav()+renderPlayers()+timeHeader()+
  `<div class="banner">${phase==="announce"?"🎙️ الحكم بيقرأ السؤال":phase==="question"?"🔔 الجرس مفتوح للجميع":"🧠 وقت إجابة أسرع متسابق"}</div>
- <section class="card"><div class="kicker">${esc(state.question?.cat)}</div><div class="question">${esc(state.question?.q)}</div></section>`;
+ <section class="card"><div class="kicker">${esc(state.question?.cat)}</div><div class="question">${state.question?.audioOnly?"🎧 استمع للكلمة المقلوبة من الحكم... <small style='display:block;font-size:13px;margin-top:10px'>من غير عرض الكلمة أو حروفها على الشاشة.</small>":esc(state.question?.q)}</div></section>`;
  if(phase==="announce"){
-   body+=`<div class="judge"><div class="face">🎙️</div><div><strong>استعدوا للجرس</strong><p>استنوا لما الحكم يقول الجرس مفتوح</p></div></div>`;
-   body+=`<div class="notice">🎧 الجرس هيفتح تلقائيًا لما الحكم يخلص قراءة السؤال.</div>`;
+   body+=`<div class="judge"><div class="face">🎙️</div><div><strong>عينك على الشاشة!</strong><p>اسمع الحكم، وبعد ما يخلص الكلام الجرس هيظهر فجأة.</p></div></div>`;
+   body+=`<div class="notice">🎲 الجرس ممكن يظهر في أي لحظة خلال 15 ثانية بعد نهاية صوت الحكم. مفيش عدّ يكشف التوقيت!</div>`;
  }else if(phase==="question"){
-   body+=`<div class="buzzerWrap"><button id="thebuzzer" class="buzzer" onclick="pressBuzzer()" ${online&&seat!==null?"":"disabled"}>🔔<small>اضغط!</small></button><p class="desc">أول ضغط يوصل للحكم بياخد حق الإجابة</p></div>`;
+   body+=`<div class="buzzerWrap"><button id="thebuzzer" class="buzzer" onclick="pressBuzzer()" ${online&&seat!==null?"":"disabled"}>🔔<small>اضغط!</small></button><p class="desc">⚡ أول ثانيتين = خطف سريع (6 ثواني للإجابة، والخطأ −2). بعد كده = 12 ثانية والخطأ −1.</p></div>`;
  }else{
-   body+=`<div class="judge"><div class="face">${ICONS[state.lockedSeat]||"🔔"}</div><div><strong>${esc(locked?.name||"المتسابق")}</strong><p>هو الأسرع على الجرس، والكل مستني إجابته</p></div></div>`;
+   body+=`<div class="judge"><div class="face">${ICONS[state.lockedSeat]||"🔔"}</div><div><strong>${esc(locked?.name||"المتسابق")}</strong><p>${state.fastBuzz?"⚡ خطف خاطف! 6 ثواني والخطأ −2":"🎯 ضغط متأني: 12 ثانية والخطأ −1"}</p></div></div>`;
    if(seat===state.lockedSeat){
     body+=`<section class="card"><div class="kicker">اختار إجابة واحدة</div><div class="options">${state.question.options.map((opt,i)=>`<button class="option" onclick="selectOption(${i})"><i>${["A","B","C","D"][i]}</i><span>${esc(opt)}</span></button>`).join("")}</div></section>`;
    }else body+=`<div class="notice">⏳ الجرس مع ${esc(locked?.name)}، استنوا قرار الحكم</div>`;
@@ -94,7 +97,7 @@ function renderResult(){
  const r=state.result,icon=r?.seat<0?"⏰":r?.ok?"✅":"❌";
  return nav()+renderPlayers()+timeHeader()+
  `<div class="card center"><div class="resultIcon">${icon}</div><h2>${r?.seat<0?"محدش ضغط الجرس":r?.ok?"إجابة صح!":"الإجابة غلط!"}</h2>
- <p class="desc">${esc(state.msg)}</p><div class="delta">${r?.delta>0?"+1":r?.delta<0?"−1":"0"}</div>
+ <p class="desc">${esc(state.msg)}</p><div class="delta">${r?.delta>0?"+"+r.delta:r?.delta<0?"−"+Math.abs(r.delta):"0"}</div>
  <div class="notice ok"><b>الإجابة الصحيحة:</b> ${esc(r?.correct||"—")}</div>
  ${r?.chosen?`<p class="small">الإجابة المختارة: ${esc(r.chosen)}</p>`:""}
  ${host?`<button class="btn" onclick="advanceRound()">➡️ السؤال اللي بعده</button>`:`<p class="small">الحكم بينتقل للسؤال اللي بعده...</p>`}</div>`;

@@ -29,3 +29,12 @@ No accounts, external servers or internet needed. No original third-party audiov
 - Referee calls out the buzzer winner, congratulates or teases answers, and announces the champion.
 
 The app is meant for social play; Bluetooth arrival ordering is not latency-compensated and is not suitable for tournament-grade millisecond timing.
+
+## v3.0 — Surprise buzzer, challenging trivia and slow voice-only reversed words
+- More than 1,000 original Arabic questions across 20 categories, including five genuinely more challenging categories.
+- In mixed mode approximately 65% of questions are drawn from the challenging categories. Categories are sampled first, preventing arithmetic questions from dominating.
+- Judge reads the question first. Once speech finishes, the referee privately chooses a **uniformly random surprise delay in [0, 15,000] milliseconds**. No countdown or buzzer button is displayed during that delay. All buzzer timing is dictated by the host.
+- Buzz in first 2 seconds after reveal = speed challenge: 6 seconds to choose; correct +1, wrong or unanswered -2. Later buzz = 12 seconds; correct +1, wrong or unanswered -1. No buzz = 0.
+- Reversed-word prompts display *no word or spelling*. The host Android TTS speaks the reversed letters one at a time as Arabic letter names (e.g. ة ص ق ل ا → تاء مربوطة، صاد، قاف، لام، ألف), with a deliberate ~470ms pause after each letter and slower speech rate. Multiple-choice answers appear only after someone wins the buzzer.
+- Reverse-word rounds require a supported Arabic TTS engine. If not available, the mixed game skips them; the single-category game pauses and explains the limitation. No silent unsolvable prompts.
+- Bluetooth host uses receive ordering; not certified latency compensation.
