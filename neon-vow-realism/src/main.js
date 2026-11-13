@@ -224,13 +224,13 @@ function update(){
   else e.object.visible=false;
  }
  for(let i=bullets.length-1;i>=0;i--){bullets[i].life-=dt;bullets[i].obj.scale.multiplyScalar(1+dt*5);bullets[i].obj.material.opacity=Math.max(0,bullets[i].life);if(bullets[i].life<=0){scene.remove(bullets[i].obj);bullets.splice(i,1);}}
- const goal=cameraMode===0?new THREE.Vector3(player.x,3.1,player.z+8.7):new THREE.Vector3(player.x-1.2,2.8,player.z+4.2);
+ const goal=cameraMode===0?new THREE.Vector3(player.x,2.5,player.z+3.0):new THREE.Vector3(player.x-.75,2.15,player.z+.1);
  camera.position.lerp(goal,Math.min(1,dt*3.0));
- camera.lookAt(player.x,1.6,player.z-5.5);
+ camera.lookAt(player.x,1.25,player.z-3.5);
  renderer.render(scene,camera);
  requestAnimationFrame(update);
 }
 window.addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 window.sceneReady=false;window.sceneError="";
-camera.position.set(0,3.2,8);
+camera.position.set(0,2.5,3.0);
 update();
