@@ -129,13 +129,30 @@ function loadAvatar(name,index){
     bone.quaternion.premultiply(localChange);
     bone.updateWorldMatrix(true,true);
   }
-  const humanBox=new THREE.Box3().setFromObject(object);
-  object.position.y-=humanBox.min.y;
+  // SkinnedMesh geometry bounds can disagree with bone world positions,
+  // especially for the original FBX scan's rest/bind transform.
+  // Align using actual skeletal head/feet and normalize in real metres.
+  const boneAt=(nm)=>{
+    const b=object.getObjectByName(nm);
+    return b?b.getWorldPosition(new THREE.Vector3()):null;
+  };
   object.updateWorldMatrix(true,true);
-  const bones=[];
-  object.traverse(n=>{if(n.isBone)bones.push(n.name);});
-  console.log("AVATAR BONES",name,bones.slice(0,120).join(","));
-  console.log("AVATAR BOUNDS",name,JSON.stringify(humanBox.getSize(new THREE.Vector3())));
+  let head=boneAt('rigHeadTop_End')||boneAt('rigHead');
+  let feet=['rigLeftFoot','rigRightFoot','rigLeftToeBase','rigRightToeBase'].map(boneAt).filter(Boolean);
+  let footY=feet.length?Math.min(...feet.map(p=>p.y)):0;
+  let measured=head?Math.abs(head.y-footY):0;
+  console.log("SKELETON FIRST",name,"head",head?.y,"foot",footY,"measured",measured);
+  if(measured>.1 && measured<50){
+    const factor=1.72/measured;
+    object.scale.multiplyScalar(factor);
+    object.updateWorldMatrix(true,true);
+  }
+  head=boneAt('rigHeadTop_End')||boneAt('rigHead');
+  feet=['rigLeftFoot','rigRightFoot','rigLeftToeBase','rigRightToeBase'].map(boneAt).filter(Boolean);
+  footY=feet.length?Math.min(...feet.map(p=>p.y)):0;
+  object.position.y+=.05-footY;
+  object.updateWorldMatrix(true,true);
+  console.log("SKELETON ALIGNED",name,"headY",boneAt('rigHeadTop_End')?.y,"footY",boneAt('rigLeftFoot')?.y,"scale",object.scale.x);
   loaded++;
   document.getElementById("loading").innerText=`3D CHARACTERS: ${loaded}/2`;
   if(loaded===2){document.getElementById("loading").style.display="none";window.sceneReady=true;}
