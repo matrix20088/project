@@ -1,0 +1,45 @@
+name: Build Jars Al Tahaddi APK
+on:
+  push:
+    branches: [buzzer-arena-2026]
+    paths:
+      - 'buzzer-arena/**'
+      - '.github/workflows/buzzer-arena.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify two, three, four human modes and referee logic
+        run: node buzzer-arena/tests/game.test.cjs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Build Android APK
+        run: gradle -p buzzer-arena :app:assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Jars-Al-Tahaddi-APK
+          path: buzzer-arena/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Publish APK release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi.apk
+          gh release delete buzzer-arena-v1 --yes 2>/dev/null || true
+          gh release create buzzer-arena-v1 Jars-Al-Tahaddi.apk --title "جرس التحدي - 2 إلى 4 لاعبين" --notes "Android Bluetooth game show: choose 2, 3 or 4 real human players; no computer players. Auto referee, buzzer and timed multiple-choice, first to 10 points. Install same APK on all paired devices."

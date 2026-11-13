@@ -1,0 +1,287 @@
+package com.twoteam.buzzer;
+
+import android.Manifest;
+import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.speech.tts.TextToSpeech;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient;
+import android.graphics.Color;
+import android.util.Log;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
+
+public class MainActivity extends Activity {
+    private static final UUID ROOM_UUID = UUID.fromString("b3b94e27-546c-4a6b-960d-b4ea4f061202");
+    private final Object lock = new Object();
+    private BluetoothAdapter adapter;
+    private WebView web;
+    private BluetoothServerSocket server;
+    private BluetoothSocket guestSocket;
+    private PrintWriter guestWriter;
+    private final Map<Integer, Peer> clients = new HashMap<>();
+    private volatile int epoch = 0;
+    private volatile boolean hosting = false;
+    private volatile boolean finished = false;
+    private volatile int expected = 2;
+    private TextToSpeech speech;
+    private boolean speechReady = false;
+
+    static class Peer {
+        final int seat;
+        final BluetoothSocket socket;
+        final PrintWriter writer;
+        Peer(int seat, BluetoothSocket socket) throws Exception {
+            this.seat=seat; this.socket=socket;
+            this.writer=new PrintWriter(new OutputStreamWriter(socket.getOutputStream(),StandardCharsets.UTF_8),true);
+        }
+        void send(String msg) { synchronized(writer) { writer.println(msg); } }
+        void close(){try{socket.close();}catch(Exception ignored){}}
+    }
+
+    @Override public void onCreate(Bundle state) {
+        super.onCreate(state);
+        getWindow().setStatusBarColor(Color.rgb(9,14,32));
+        getWindow().setNavigationBarColor(Color.rgb(9,14,32));
+        BluetoothManager manager=(BluetoothManager)getSystemService(BLUETOOTH_SERVICE);
+        if(manager!=null)adapter=manager.getAdapter();
+
+        web=new WebView(this);
+        web.setBackgroundColor(Color.rgb(9,14,32));
+        web.getSettings().setJavaScriptEnabled(true);
+        web.getSettings().setDomStorageEnabled(true);
+        web.getSettings().setDefaultTextEncodingName("UTF-8");
+        web.setWebChromeClient(new WebChromeClient(){
+            @Override public boolean onConsoleMessage(android.webkit.ConsoleMessage m){
+                Log.i("BuzzerJS",m.message()+" @ line "+m.lineNumber());return true;
+            }
+        });
+        web.setWebViewClient(new WebViewClient());
+        web.addJavascriptInterface(new Bridge(),"Native");
+        setContentView(web);
+        web.loadUrl("file:///android_asset/index.html");
+
+        speech=new TextToSpeech(getApplicationContext(), status->{
+            if(status==TextToSpeech.SUCCESS && speech!=null) {
+                int result=speech.setLanguage(new Locale("ar","EG"));
+                speechReady=result!=TextToSpeech.LANG_MISSING_DATA && result!=TextToSpeech.LANG_NOT_SUPPORTED;
+                if(speechReady){speech.setSpeechRate(1.04f);speech.setPitch(1.02f);}
+            }
+        });
+    }
+
+    private void fire(String kind,String data) {
+        runOnUiThread(()->{
+            if(web!=null && !isFinishing()) web.evaluateJavascript(
+              "window.onNative("+JSONObject.quote(kind)+","+JSONObject.quote(data==null?"":data)+")",null);
+        });
+    }
+    private String messageJson(String seat,String name) {return seat;}
+    private boolean ready() {
+        if(adapter==null){fire("error","الموبايل ده ما بيدعمش Bluetooth");return false;}
+        if(Build.VERSION.SDK_INT>=31 &&
+          checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)!=PackageManager.PERMISSION_GRANTED){
+            fire("error","اسمح للتطبيق يستخدم البلوتوث");return false;
+        }
+        if(!adapter.isEnabled()){fire("error","شغّل البلوتوث من إعدادات الموبايل");return false;}
+        return true;
+    }
+    private void shutdown(boolean intentional) {
+        synchronized(lock) {
+            epoch++;hosting=false;
+            try{if(server!=null)server.close();}catch(Exception ignored){}
+            server=null;
+            try{if(guestSocket!=null)guestSocket.close();}catch(Exception ignored){}
+            guestSocket=null;guestWriter=null;
+            for(Peer p:clients.values())p.close();
+            clients.clear();
+        }
+        if(!intentional)fire("disconnected","الاتصال اتقطع");
+    }
+    private void sendToAll(String msg) {
+        synchronized(lock) {
+            for(Peer p:clients.values())p.send(msg);
+        }
+    }
+    private void sendLine(String msg) {
+        if(msg==null || msg.indexOf('\n')>=0 || msg.indexOf('\r')>=0 || msg.length()>80000)return;
+        synchronized(lock){
+            if(hosting) {
+                for(Peer p:clients.values())p.send(msg);
+            }else if(guestWriter!=null){
+                synchronized(guestWriter){guestWriter.println(msg);}
+            }
+        }
+    }
+    private void startHost(final int n){
+        if(!ready())return;
+        shutdown(true);
+        expected=Math.min(4,Math.max(2,n));
+        hosting=true;
+        final int run=epoch;
+        fire("hosting",String.valueOf(expected));
+        new Thread(()->{
+            try {
+                BluetoothServerSocket s=adapter.listenUsingRfcommWithServiceRecord("BuzzerArena",ROOM_UUID);
+                synchronized(lock){if(run!=epoch){s.close();return;}server=s;}
+                while(run==epoch){
+                    BluetoothSocket incoming=s.accept();
+                    if(run!=epoch){incoming.close();break;}
+                    int seat=-1;
+                    synchronized(lock){
+                        for(int i=1;i<expected;i++)if(!clients.containsKey(i)){seat=i;break;}
+                    }
+                    if(seat<0) {
+                        try {new PrintWriter(incoming.getOutputStream(),true).println("{\"t\":\"full\"}");}catch(Exception ignored){}
+                        incoming.close();continue;
+                    }
+                    final Peer p=new Peer(seat,incoming);
+                    synchronized(lock){clients.put(seat,p);}
+                    JSONObject j=new JSONObject();
+                    j.put("seat",seat);
+                    j.put("device",incoming.getRemoteDevice().getName()==null?"لاعب":incoming.getRemoteDevice().getName());
+                    fire("join",j.toString());
+                    p.send("{\"t\":\"welcome\",\"seat\":"+seat+"}");
+                    final int assigned=seat;
+                    new Thread(()->readHostPeer(p,run,assigned),"buzzer-peer-"+assigned).start();
+                }
+            }catch(Exception e){
+                if(run==epoch)fire("error","فشل فتح الغرفة: "+e.getMessage());
+            }
+        },"buzzer-server").start();
+    }
+    private void readHostPeer(Peer p,int run,int seat) {
+        try(BufferedReader br=new BufferedReader(new InputStreamReader(p.socket.getInputStream(),StandardCharsets.UTF_8))){
+            String line;
+            while(run==epoch && (line=br.readLine())!=null){
+                if(line.length()>80000)continue;
+                JSONObject wrapped=new JSONObject();
+                wrapped.put("seat",seat);
+                wrapped.put("msg",line);
+                fire("remote",wrapped.toString());
+            }
+        }catch(Exception ignored){}
+        finally {
+            synchronized(lock){
+                if(clients.get(seat)==p){clients.remove(seat);p.close();}
+            }
+            if(run==epoch)fire("leave",String.valueOf(seat));
+        }
+    }
+    private void join(String address) {
+        if(!ready())return;
+        shutdown(true);
+        hosting=false;
+        final int run=epoch;
+        fire("waiting","بنتصل بموبايل صاحب الغرفة...");
+        new Thread(()->{
+            BluetoothSocket s=null;
+            try{
+                BluetoothDevice d=adapter.getRemoteDevice(address);
+                s=d.createRfcommSocketToServiceRecord(ROOM_UUID);
+                s.connect();
+                if(run!=epoch){s.close();return;}
+                PrintWriter writer=new PrintWriter(new OutputStreamWriter(s.getOutputStream(),StandardCharsets.UTF_8),true);
+                synchronized(lock){guestSocket=s;guestWriter=writer;}
+                fire("connected","تم الاتصال بالغرفة");
+                try(BufferedReader br=new BufferedReader(new InputStreamReader(s.getInputStream(),StandardCharsets.UTF_8))){
+                    String line;
+                    while(run==epoch && (line=br.readLine())!=null){
+                        if(line.length()<=80000)fire("message",line);
+                    }
+                }
+            }catch(Exception e){
+                if(run==epoch)fire("error","مش قادر أوصل بالموبايل التاني. اتأكد من الاقتران. "+e.getMessage());
+            }finally{
+                try{if(s!=null)s.close();}catch(Exception ignored){}
+                synchronized(lock){guestWriter=null;guestSocket=null;}
+                if(run==epoch)fire("disconnected","الاتصال بصاحب الغرفة انتهى");
+            }
+        },"buzzer-guest").start();
+    }
+
+    public class Bridge {
+        @android.webkit.JavascriptInterface public void permission(){
+            runOnUiThread(()->{
+                if(Build.VERSION.SDK_INT>=31 &&
+                  checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)!=PackageManager.PERMISSION_GRANTED){
+                    requestPermissions(new String[]{Manifest.permission.BLUETOOTH_CONNECT},31);
+                }else fire("ready","");
+            });
+        }
+        @android.webkit.JavascriptInterface public void host(int n){runOnUiThread(()->startHost(n));}
+        @android.webkit.JavascriptInterface public void join(String address){runOnUiThread(()->MainActivity.this.join(address));}
+        @android.webkit.JavascriptInterface public void send(String msg){sendLine(msg);}
+        @android.webkit.JavascriptInterface public void paired(){
+            runOnUiThread(()->{
+                if(!ready())return;
+                JSONArray arr=new JSONArray();
+                try{
+                    for(BluetoothDevice d:adapter.getBondedDevices()){
+                        JSONObject j=new JSONObject();
+                        j.put("name",d.getName()==null?"موبايل":d.getName());
+                        j.put("addr",d.getAddress());
+                        arr.put(j);
+                    }
+                }catch(Exception e){fire("error","تعذر قراءة الأجهزة المقترنة");return;}
+                fire("paired",arr.toString());
+            });
+        }
+        @android.webkit.JavascriptInterface public void settings(){
+            runOnUiThread(()->startActivity(new Intent("android.settings.BLUETOOTH_SETTINGS")));
+        }
+        @android.webkit.JavascriptInterface public void disconnect(){shutdown(true);}
+        @android.webkit.JavascriptInterface public void vibrate(){
+            runOnUiThread(()->{
+                try{
+                    Vibrator v=(Vibrator)getSystemService(VIBRATOR_SERVICE);
+                    if(v!=null&&v.hasVibrator())v.vibrate(VibrationEffect.createOneShot(90,120));
+                }catch(Exception ignored){}
+            });
+        }
+        @android.webkit.JavascriptInterface public void speak(String text){
+            runOnUiThread(()->{
+                if(speechReady&&text!=null && !text.isEmpty()&&speech!=null)
+                    speech.speak(text,TextToSpeech.QUEUE_FLUSH,null,"judge");
+            });
+        }
+    }
+
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] grantResults){
+        super.onRequestPermissionsResult(request,permissions,grantResults);
+        if(request==31){
+            if(grantResults.length>0&&grantResults[0]==PackageManager.PERMISSION_GRANTED)fire("ready","");
+            else fire("error","لازم تسمح للتطبيق يستخدم البلوتوث من إعدادات الصلاحيات");
+        }
+    }
+    @Override public void onBackPressed(){
+        if(web!=null)web.evaluateJavascript("window.backToMenu&&window.backToMenu()",null);
+        else super.onBackPressed();
+    }
+    @Override protected void onDestroy(){
+        finished=true;shutdown(true);
+        if(speech!=null){speech.stop();speech.shutdown();speech=null;}
+        if(web!=null){web.destroy();web=null;}
+        super.onDestroy();
+    }
+}
