@@ -7,6 +7,9 @@ function renderHome(){
  <label class="label" for="nickname">اسمك في البرنامج</label><input id="nickname" class="field" maxlength="18" value="${esc(cfg.name)}" oninput="saveName(this.value)" placeholder="اسم المتسابق">
  <label class="label">عدد المتسابقين الحقيقيين</label><div class="counts">${[2,3,4].map(n=>`<button class="count ${cfg.target===n?"selected":""}" onclick="chooseTarget(${n})">${n}<span>لاعبين</span></button>`).join("")}</div>
  <label class="label" for="category">نوع الأسئلة</label><select class="field" id="category" onchange="chooseCategory(this.value)">${cats.map(v=>`<option value="${esc(v)}" ${cfg.category===v?"selected":""}>${esc(v)}</option>`).join("")}</select>
+ <div class="voicecfg"><span>🎙️ <b>صوت الحكم</b><small>تعليق عربي حماسي حسب الأصوات الموجودة في موبايلك</small></span>
+ <button class="voiceSwitch" onclick="toggleVoice()">${voiceOn?"🔊 شغّال":"🔇 صامت"}</button></div>
+ <button class="btn ghost" onclick="previewVoice()">🔈 جرّب صوت الحكم</button>
  <button class="btn" onclick="openRoom()">🎙️ أنشئ غرفة وأنا أول لاعب</button>
  <button class="btn secondary" onclick="findRoom()">📱 انضم لغرفة لاعب تاني</button>
  <button class="btn ghost" onclick="renderHow()">🎮 طريقة اللعب</button>
@@ -16,7 +19,7 @@ function renderHow(){
  root.innerHTML=nav()+`<section class="card"><h2>🎤 نظام الحكم والجرس</h2><p class="desc">الحكم الإلكتروني يعلن الفئة والسؤال. بعد ما ينتهي العدّ التمهيدي، الجرس يفتح للكل.</p>
  <p class="desc">🔔 أول رسالة ضغط توصل لموبايل صاحب الغرفة هي اللي تكسب الجرس. الجرس بيتقفل على الباقيين.</p>
  <p class="desc">🧠 المتسابق الأسرع قدامه ٤ اختيارات و١٢ ثانية للإجابة. إجابة صح +١، غلط أو انتهاء وقت الإجابة −١.</p>
- <p class="desc">🏆 أول شخص يوصل ١٠ نقاط يفوز، والحكم يعلن اسمه تلقائيًا.</p>
+ <p class="desc">🏆 أول شخص يوصل ١٠ نقاط يفوز، والحكم يعلن اسمه تلقائيًا. صوت الحكم مش تقليد لشخص بعينه؛ هو صوت عربي آلي حسب محرك الكلام المثبت على جهازك.</p>
  <p class="desc">📱 اعملوا اقتران Bluetooth بين الموبايلات الأول. صاحب الغرفة يختار ٢ أو ٣ أو ٤، وكل واحد تاني ينضم من موبايله.</p>
  <p class="small">ملحوظة الإنصاف: ترتيب وصول الضغطات عبر البلوتوث هو معيار الحكم. ممكن يحصل فارق اتصال بسيط بين الأجهزة؛ ده نظام للعب المنزلي مش بطولة احترافية.</p>
  <button class="btn" onclick="renderHome()">جاهزين للمواجهة! ⚡</button></section>`;
@@ -74,7 +77,7 @@ function renderQuestion(){
  <section class="card"><div class="kicker">${esc(state.question?.cat)}</div><div class="question">${esc(state.question?.q)}</div></section>`;
  if(phase==="announce"){
    body+=`<div class="judge"><div class="face">🎙️</div><div><strong>استعدوا للجرس</strong><p>استنوا لما الحكم يقول الجرس مفتوح</p></div></div>`;
-   if(host)body+=`<button class="btn ghost" onclick="openBuzz()">🔔 افتح الجرس دلوقتي</button>`;
+   if(host)body+=`<p class="small center">الحكم هيفتح الجرس بعد ما يخلص قراءة السؤال. 🔊</p>`;
  }else if(phase==="question"){
    body+=`<div class="buzzerWrap"><button id="thebuzzer" class="buzzer" onclick="pressBuzzer()" ${online&&seat!==null?"":"disabled"}>🔔<small>اضغط!</small></button><p class="desc">أول ضغط يوصل للحكم بياخد حق الإجابة</p></div>`;
  }else{
