@@ -52,7 +52,7 @@ function spawnEnemies(s){
  const boss=s.sector===2;
  const count=boss?5:Math.min(11,3+Math.ceil(s.level/3)+s.sector);
  for(let i=0;i<count;i++){
-  let x=-5.2+(i%4)*3.4+(RAND(s)-.5),z=center-6+Math.floor(i/4)*4+(RAND(s)-.5)*1.3;
+  let x=-5.2+(i%4)*3.4+(RAND(s)-.5),z=(s.sector===0?-12:center+8)-Math.floor(i/4)*3.8+(RAND(s)-.5)*1.3;
   let type=(i%5===4)?"tank":(i%3===2)?"shooter":"runner";
   s.enemies.push(enemy(s,type,x,z));
  }

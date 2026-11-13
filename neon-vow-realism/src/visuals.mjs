@@ -33,16 +33,16 @@ export function createVisuals(element){
  renderer.setSize(window.innerWidth,window.innerHeight);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
- renderer.toneMappingExposure=1.45;
+ renderer.toneMappingExposure=1.82;
  renderer.shadowMap.enabled=true;
  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  element.appendChild(renderer.domElement);
  const scene=new THREE.Scene();
- scene.background=new THREE.Color(0x08142d);
- scene.fog=new THREE.FogExp2(0x0a1937,.018);
+ scene.background=new THREE.Color(0x162c50);
+ scene.fog=new THREE.FogExp2(0x1c3150,.012);
  const camera=new THREE.PerspectiveCamera(63,innerWidth/innerHeight,.09,220);
- scene.add(new THREE.HemisphereLight(0xc8deff,0x25305e,2.9));
- scene.add(new THREE.AmbientLight(0x75a4d5,.34));
+ scene.add(new THREE.HemisphereLight(0xc8deff,0x304a7a,4.2));
+ scene.add(new THREE.AmbientLight(0x99b9e4,.75));
  const amb=new THREE.DirectionalLight(0xffdfc8,1.8);
  amb.position.set(-8,22,6);amb.castShadow=true;
  amb.shadow.mapSize.set(1024,1024);amb.shadow.camera.left=-18;amb.shadow.camera.right=18;
@@ -58,7 +58,7 @@ export function createVisuals(element){
  neonGold=makeMat(0xf4cb81,.2,.2,0xe6a342,2.5),black=makeMat(0x081123,.64,.48);
  // A wide 3D urban canyon, not a static poster backdrop.
  const city=new THREE.Group();scene.add(city);
- const road=new THREE.Mesh(new THREE.PlaneGeometry(17.8,260),makeMat(0x121d31,.45,.48));
+ const road=new THREE.Mesh(new THREE.PlaneGeometry(17.8,260),makeMat(0x1b2a47,.58,.27));
  road.rotation.x=-Math.PI/2;road.position.set(0,-.06,-98);road.receiveShadow=true;city.add(road);
  for(let side of [-1,1]){
    box(city,4.1,.32,263,concrete,side*10.8,-.13,-97);
@@ -69,6 +69,18 @@ export function createVisuals(element){
    box(city,.10,.012,2.1,makeMat(0x6a7896,.05,.75),0,-.02,z);
    for(let x of [-3.6,3.6])box(city,.05,.015,.65,neonBlue,x,0,z);
  }
+ // Illuminated road markings and holographic arrows guide the player
+ // from the entry street towards the sectors.
+ for(let z=-8;z>-115;z-=12){
+   for(let side of [-1,1]){
+     const arrow=new THREE.Mesh(new THREE.ConeGeometry(.47,1.1,3),side<0?neonBlue:neonPink);
+     arrow.rotation.x=-Math.PI/2;arrow.position.set(side*5.2,.026,z);
+     arrow.scale.z=.02;city.add(arrow);
+   }
+   for(let x=-6;x<=6;x+=2){
+     box(city,.82,.022,.18,neonGold,x,.018,z-5.5);
+   }
+ }
  let seed=77655;function random(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}
  const windows=[neonBlue,neonPink,neonGold];
  const groups=windows.map(material=>{
@@ -78,7 +90,7 @@ export function createVisuals(element){
  const matrix=new THREE.Matrix4(),quat=new THREE.Quaternion(),scale=new THREE.Vector3(1,1,1);
  for(let side of [-1,1])for(let i=0;i<13;i++){
    const z=7-i*14.5,x=side*(19+random()*4),wide=10+random()*7,deep=9+random()*5,height=21+random()*35;
-   const facade=makeMat(i%4===0?0x1b324e:0x1c2c47,.58,.39);
+   const facade=makeMat(i%4===0?0x334864:0x273c5f,.58,.38,0x0c1635,.17);
    box(city,wide,height,deep,facade,x,height/2,z);
    box(city,wide+.4,.5,deep+.5,steel,x,height,z);
    if(i%3===0){
@@ -108,7 +120,7 @@ export function createVisuals(element){
  ];
  for(let [label,x,z,col] of signs){
    const m=new THREE.Mesh(new THREE.PlaneGeometry(7.0,2.5),neonPanel(label,col===0x5ae8fa?"#5ae8fa":"#fa7bc1","CITY CORE // KEEP MOVING"));
-   m.position.set(x,8,z);m.rotation.y=x>0?-Math.PI/2:Math.PI/2;city.add(m);
+   m.position.set(x,5.3,z);m.rotation.y=x>0?-Math.PI/2:Math.PI/2;city.add(m);
  }
  for(let z=-10;z>-145;z-=29){
    box(city,17,.18,1.9,steel,0,12,z);
@@ -151,6 +163,25 @@ export function createVisuals(element){
    object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;
      if(n.material){n.material.side=THREE.DoubleSide;n.material.needsUpdate=true;}}});
    heroGroups[index].add(object);
+   // Sculpted 3D cyber combat equipment, attached to the characters
+   // rather than painted on the screenshot. Clothing and faces remain scans.
+   const outfit=index===0?makeMat(0x253b60,.57,.35):makeMat(0x42324c,.55,.33);
+   const trim=index===0?neonBlue:neonPink;
+   const jacket=new THREE.Mesh(new THREE.CylinderGeometry(.33,.32,.58,18),outfit);
+   jacket.scale.z=.83;jacket.position.set(0,1.34,0);jacket.castShadow=true;heroGroups[index].add(jacket);
+   const belt=new THREE.Mesh(new THREE.CylinderGeometry(.335,.325,.13,18),steel);
+   belt.scale.z=.83;belt.position.set(0,.99,0);heroGroups[index].add(belt);
+   for(const side of [-1,1]){
+     const shoulder=sphere(heroGroups[index],.20,outfit,side*.36,1.53,.01,16);
+     shoulder.scale.z=.83;
+     box(heroGroups[index],.075,.54,.24,trim,side*.31,1.35,.1);
+     box(heroGroups[index],.18,.20,.27,outfit,side*.23,.75,.03);
+   }
+   box(heroGroups[index],.38,.25,.055,trim,0,1.38,.31);
+   box(heroGroups[index],.45,.25,.055,trim,0,1.38,-.31);
+   const backpack=box(heroGroups[index],.5,.45,.24,outfit,0,1.29,.33);
+   backpack.material=outfit;
+   box(heroGroups[index],.35,.09,.06,trim,0,1.43,.47);
    object.updateWorldMatrix(true,true);
    for(const armName of ["rigLeftArm","rigRightArm"]){
     let bone=object.getObjectByName(armName);
@@ -186,9 +217,11 @@ export function createVisuals(element){
    // Lighting equipment: cyan energy sword and a hovering pink holographic companion.
    if(index===0){
     const sword=new THREE.Group();
-    cyl(sword,.075,.28,steel,0,0,0);
-    const blade=box(sword,.11,1.12,.07,neonBlue,0,.70,0);
-    blade.castShadow=false;
+    cyl(sword,.065,.30,steel,0,.12,0);
+    cyl(sword,.11,.09,neonGold,0,.29,0);
+    const blade=new THREE.Mesh(new THREE.CylinderGeometry(.014,.072,1.23,10),neonBlue);
+    blade.position.y=.92;blade.castShadow=false;sword.add(blade);
+    sphere(sword,.095,neonBlue,0,1.54,0,12);
     scene.add(sword);heroData[index].prop=sword;
    }else{
     const drone=new THREE.Group();
@@ -292,7 +325,7 @@ export function createVisuals(element){
        heroData[i].object.updateWorldMatrix(true,true);
        hand.getWorldPosition(prop.position);
        prop.position.y+=.05;
-       prop.rotation.set(0,g.rotation.y+.2,Math.PI/2+(p.attack>0?Math.sin(p.attack*22)*.8:0));
+       prop.rotation.set(0,g.rotation.y+.2,-.42+(p.attack>0?Math.sin(p.attack*22)*.45:0));
       }else{prop.position.set(g.position.x+.45,1.15,g.position.z);}
     }else{
       prop.position.set(g.position.x+1.05,2.12+Math.sin(performance.now()*.003)*.12,g.position.z-.2);
