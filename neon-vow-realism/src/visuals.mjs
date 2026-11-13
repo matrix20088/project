@@ -163,22 +163,14 @@ export function createVisuals(element){
    object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;
      if(n.material){n.material.side=THREE.DoubleSide;n.material.needsUpdate=true;}}});
    heroGroups[index].add(object);
-   // Keep the original photogrammetry body's natural curvature and folds.
-   // Only thin wearable equipment and small glowing details are overlaid:
-   // no cartoonish box armor over the realistic jacket.
-   const outfit=index===0?makeMat(0x253953,.45,.38):makeMat(0x3a314b,.4,.39);
+   // Actual scanned human mesh and recoloured cloth are the costume.
+   // Keep only subtle 3D equipment; oversized plates and glowing belt
+   // silhouettes looked toy-like and were removed after screenshot review.
+   const outfit=index===0?makeMat(0x253953,.43,.45):makeMat(0x3a314b,.39,.45);
    const trim=index===0?neonBlue:neonPink;
-   const belt=new THREE.Mesh(new THREE.TorusGeometry(.305,.023,8,28),trim);
-   belt.rotation.x=Math.PI/2;belt.scale.y=.76;
-   belt.position.set(0,.99,0);heroGroups[index].add(belt);
-   const backPack=box(heroGroups[index],.31,.28,.115,outfit,0,1.30,.24);
+   const backPack=box(heroGroups[index],.26,.24,.075,outfit,0,1.32,.25);
    backPack.castShadow=false;
-   box(heroGroups[index],.23,.035,.04,trim,0,1.38,.32);
-   for(const side of [-1,1]){
-     const pad=sphere(heroGroups[index],.105,outfit,side*.34,1.55,0,14);
-     pad.scale.z=.7;
-     box(heroGroups[index],.045,.19,.085,trim,side*.25,1.42,.20);
-   }
+   box(heroGroups[index],.17,.025,.03,trim,0,1.41,.30);
    object.updateWorldMatrix(true,true);
    for(const armName of ["rigLeftArm","rigRightArm"]){
     let bone=object.getObjectByName(armName);
@@ -234,7 +226,7 @@ export function createVisuals(element){
  const ready=Promise.all([loadOne("nathan",0),loadOne("sophia",1)]);
  // Procedural enemies are real 3D meshes with glows, not 2D sprites.
  const foeMeshes=new Map(),shotMeshes=new Map(),itemMeshes=new Map();
- const robotM=makeMat(0x344559,.84,.24),robotDark=makeMat(0x182137,.65,.3);
+ const robotM=makeMat(0x506078,.80,.25),robotDark=makeMat(0x182137,.65,.3);
  const enemyEye=makeMat(0xff728d,.2,.15,0xf7245f,2.3);
  function robot(type){
   const g=new THREE.Group(),boss=type==="boss",scale=boss?2.4:type==="tank"?1.4:1;
@@ -332,6 +324,7 @@ export function createVisuals(element){
    const prop=heroData[i]?.prop;
    if(prop){
     if(i===0){
+      prop.visible=p.attack>.012;
       const hand=heroData[i].object.getObjectByName("rigRightHand");
       if(hand){
        heroData[i].object.updateWorldMatrix(true,true);
