@@ -28,13 +28,13 @@ jobs:
         run: gradle -p couple-game :app:assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: ElHoroobSawa-v2-APK
+          name: ElHoroobSawa-v3-APK
           path: couple-game/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish APK release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp couple-game/app/build/outputs/apk/debug/app-debug.apk ElHoroobSawa-v2.apk
-          gh release delete couple-game-v2 --yes 2>/dev/null || true
-          gh release create couple-game-v2 ElHoroobSawa-v2.apk --title "الهروب سوا 1.1 — إصلاح التشغيل" --notes "تم إصلاح الشاشة الفاضية عند بدء اللعبة. ثبّت نفس APK على الجهازين."
+          cp couple-game/app/build/outputs/apk/debug/app-debug.apk ElHoroobSawa-2.0.apk
+          gh release delete couple-game-v3 --yes 2>/dev/null || true
+          gh release create couple-game-v3 ElHoroobSawa-v2.apk --title "الهروب سوا 2.0 — مغامرات الكبار" --notes "120 مهمة، 12 عالَم، 4 تحديات في كل مهمة، ومود رومانسي وجريء بالتراضي. ثبّت نفس APK على الجهازين."
