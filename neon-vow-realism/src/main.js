@@ -104,6 +104,17 @@ function loadAvatar(name,index){
    }
   });
   avatarGroup[index].add(object);
+  // The original scan is Z-up in its FBX bind pose; glTF conversion
+  // leaves the human lying on the horizontal road plane. Stand it upright.
+  object.rotation.x=Math.PI/2;
+  object.updateWorldMatrix(true,true);
+  const humanBox=new THREE.Box3().setFromObject(object);
+  object.position.y-=humanBox.min.y;
+  object.updateWorldMatrix(true,true);
+  const bones=[];
+  object.traverse(n=>{if(n.isBone)bones.push(n.name);});
+  console.log("AVATAR BONES",name,bones.slice(0,120).join(","));
+  console.log("AVATAR BOUNDS",name,JSON.stringify(humanBox.getSize(new THREE.Vector3())));
   loaded++;
   document.getElementById("loading").innerText=`3D CHARACTERS: ${loaded}/2`;
   if(loaded===2){document.getElementById("loading").style.display="none";window.sceneReady=true;}
