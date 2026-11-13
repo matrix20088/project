@@ -3,7 +3,7 @@ const root=document.getElementById("root");
 const CAT_ALL="🌟 منوعات",CAT_KEYS=Object.keys(QUESTIONS),ICONS=["🔵","🩷","🟡","🟣"];
 const TOTAL_QUESTIONS=CAT_KEYS.reduce((n,k)=>n+QUESTIONS[k].length,0);
 const QUIZ_SEC=15,ANSWER_SEC=12,FAST_ANSWER_SEC=6,FAST_BUZZ_MS=2000;
-const SECRET_DELAY_MAX_MS=15000,ANNOUNCE_SEC=70,RESULT_SEC=8,WIN_AT=10;
+const SECRET_DELAY_MAX_MS=15000,ANNOUNCE_SEC=70,RESULT_SEC=8,RETRY_SEC=3,WIN_AT=10;
 const HARD_CATS=["🏛️ تاريخ للنخبة","🧬 علوم صعبة","🧭 جغرافيا متقدمة","🎨 فن وأدب","♟️ منطق صعب"];
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const clean=s=>String(s??"").trim().replace(/[\r\n\t]+/g," ").slice(0,18)||"لاعب";
@@ -11,6 +11,24 @@ const format=n=>Math.max(0,n|0);
 const cfg={name:localStorage.getItem("buzzerName")||"لاعب 1",target:2,category:CAT_ALL};
 let host=false,seat=null,online=false,pending="",devices=[],state=null,answerIndex=-1;
 let usedQuestions=new Set(),lastVersion=-1,soundOn=true;
+let lastTapAt=0;
+const ENTERTAINMENT_CATS=["🎬 سينما وتلفزيون","🎭 إفيهات السينما","📺 مسلسلات ومسرح","🎼 أغاني وفنانين","🎥 سينما عالمية","🎶 موسيقى وأغاني صعبة"];
+const TIER_LABELS={easy:"سهل 🟢",medium:"متوسط 🟡",hard:"صعب 🔴"};
+function difficultyByScore(scores){
+ const high=Math.max(0,...scores.map(Number).filter(Number.isFinite));
+ return high<=2?"easy":high<=5?"medium":"hard";
+}
+function tagTier(cat,idx){
+ const x=QUESTION_LEVELS?.[cat+"#"+idx];
+ if(x)return x;
+ if(HARD_CATS.includes(cat))return "hard";
+ if(cat.includes("حساب في ثواني"))return "medium";
+ return "easy";
+}
+function ringBell(){
+ try{if(window.Native&&typeof Native.playBell==="function"){Native.playBell();return;}}catch(e){}
+ sfx("buzz");
+}
 let hiddenOpenAt=0,speechWatchdogAt=0,buzzOpenedAt=0,privateReverseLetters=[];
 const SPELL_NAMES={"ا":"ألف","أ":"ألف بهمزة فوق","إ":"ألف بهمزة تحت","آ":"ألف مد","ب":"باء","ت":"تاء","ث":"ثاء","ج":"جيم","ح":"حاء","خ":"خاء","د":"دال","ذ":"ذال","ر":"راء","ز":"زاي","س":"سين","ش":"شين","ص":"صاد","ض":"ضاد","ط":"طاء","ظ":"ظاء","ع":"عين","غ":"غين","ف":"فاء","ق":"قاف","ك":"كاف","ل":"لام","م":"ميم","ن":"نون","ه":"هاء","و":"واو","ي":"ياء","ى":"ألف مقصورة","ة":"تاء مربوطة","ء":"همزة","ئ":"ياء بهمزة","ؤ":"واو بهمزة"};
 function spelledLetters(word){return [...String(word)].reverse().filter(ch=>ch.trim()).map(ch=>SPELL_NAMES[ch]||ch);}
@@ -127,6 +145,16 @@ function handleRemote(info){
  }
  if(packet.t==="buzz")claimBuzz(seatNo);
  if(packet.t==="choice")submitAnswer(seatNo,Number(packet.i));
+ if(packet.t==="skipRequest"){
+   if(["announce","question","answer","result"].includes(state.phase)){
+     state.skipRequests=state.skipRequests||[];
+     if(!state.skipRequests.includes(seatNo)){
+       state.skipRequests.push(seatNo);
+       state.msg="⏭️ "+player.name+" طلب تخطي السؤال. صاحب الغرفة يقدر يوافق.";
+       bump();
+     }
+   }
+ }
 }
 window.onNative=(type,detail)=>{
  if(type==="ready"){
@@ -148,8 +176,10 @@ window.onNative=(type,detail)=>{
   }
   if(m.t==="full"){showError("الغرفة كاملة، صاحب الغرفة اختار عدد أقل من اللاعبين");return;}
   if(m.t==="state"){
+   const was=state?.buzzId||0,hadState=!!state;
    const changed=!state||m.s.version!==lastVersion;
    state=m.s;
+   if(hadState && state.phase==="answer" && state.buzzId>was)ringBell();
    if(changed){lastVersion=state.version;renderGame();}else updateTimerUI();
    return;
   }
@@ -161,27 +191,40 @@ window.onNative=(type,detail)=>{
  if(type==="disconnected"){online=false;host=false;seat=null;state=null;showError(detail||"انقطع اتصال البلوتوث");return;}
 };
 function selectNewQuestion(){
- const preferred=state.category===CAT_ALL?CAT_KEYS.filter(c=>c!=="🔄 كلمة مقلوبة"||voiceOn&&voiceAvailable):[state.category];
- if(!preferred.length)return null;
- let cats=preferred.filter(cat=>QUESTIONS[cat]?.length);
- if(!cats.length)return null;
- // Mixed mode: roughly two-thirds advanced general-knowledge questions, without maths dominating.
- if(state.category===CAT_ALL){
-   const hard=cats.filter(c=>HARD_CATS.includes(c)),other=cats.filter(c=>!HARD_CATS.includes(c));
-   if(hard.length&&other.length)cats=Math.random()<.65?hard:other;
+ const requested=difficultyByScore(state.players.map(p=>p.score));
+ const eligible=state.category===CAT_ALL?CAT_KEYS.filter(cat=>cat!=="🔄 كلمة مقلوبة"||voiceOn&&voiceAvailable):[state.category];
+ const pool=[];
+ for(const cat of eligible){
+  const rows=QUESTIONS[cat]||[];
+  for(let i=0;i<rows.length;i++){
+   const tier=tagTier(cat,i);
+   pool.push({cat,row:rows[i],tier,key:cat+"#"+i});
+  }
  }
- const cat=cats[Math.floor(Math.random()*cats.length)];
- let pool=QUESTIONS[cat].map((row,i)=>({row,key:cat+"#"+i})).filter(x=>!usedQuestions.has(x.key));
- if(!pool.length){pool=QUESTIONS[cat].map((row,i)=>({row,key:cat+"#"+i}));for(const x of pool)usedQuestions.delete(x.key);}
- const item=pool[Math.floor(Math.random()*pool.length)];
+ if(!pool.length)return null;
+ const order=requested==="hard"?["hard","medium","easy"]:requested==="medium"?["medium","easy","hard"]:["easy","medium","hard"];
+ let candidates=[];
+ for(const tier of order){candidates=pool.filter(x=>x.tier===tier&&!usedQuestions.has(x.key));if(candidates.length)break;}
+ if(!candidates.length){
+  for(const tier of order){candidates=pool.filter(x=>x.tier===tier);if(candidates.length)break;}
+  for(const item of candidates)usedQuestions.delete(item.key);
+ }
+ if(!candidates.length)return null;
+ if(state.category===CAT_ALL){
+  const entertainment=candidates.filter(x=>ENTERTAINMENT_CATS.includes(x.cat));
+  const everythingElse=candidates.filter(x=>!ENTERTAINMENT_CATS.includes(x.cat));
+  if(entertainment.length&&everythingElse.length)
+    candidates=Math.random()<.62?entertainment:everythingElse;
+ }
+ const item=candidates[Math.floor(Math.random()*candidates.length)];
  usedQuestions.add(item.key);
- const reversed=cat==="🔄 كلمة مقلوبة";
+ const reversed=item.cat==="🔄 كلمة مقلوبة";
  privateReverseLetters=reversed?spelledLetters(item.row[0]):[];
- let row=reversed?["🎧 اسمع الحروف من الحكم، وركّب الكلمة بالمقلوب.",...item.row]:item.row.slice();
+ const row=reversed?["🎧 اسمع الحروف من الحكم، وركّب الكلمة بالمقلوب.",...item.row]:item.row.slice();
  const options=row.slice(1).map((value,i)=>({value,correct:i===0}));
  for(let i=options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
  answerIndex=options.findIndex(x=>x.correct);
- return {cat,q:row[0],options:options.map(x=>x.value),audioOnly:reversed};
+ return {cat:item.cat,q:row[0],options:options.map(x=>x.value),audioOnly:reversed,tier:item.tier};
 }
 function startMatch(){
  if(!host||!state||!allReady()||state.phase!=="lobby")return;
@@ -198,6 +241,8 @@ function newRound(){
  state.round++;
  state.phase="announce";state.question=selectNewQuestion();state.lockedSeat=null;state.result=null;
  state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;
+ state.wrongChoices=[];state.answerTimeouts=0;state.optionsShown=false;state.retry=false;state.skipRequests=[];
+ state.buzzId=state.buzzId||0;
  hiddenOpenAt=0;buzzOpenedAt=0;
  speechWatchdogAt=Date.now()+ANNOUNCE_SEC*1000;
  state.deadline=0;state.remaining=0;state.speechOver=false;
@@ -218,33 +263,42 @@ function claimBuzz(who){
  const p=state.players.find(x=>x.seat===who&&x.online);if(!p)return;
  const rush=(Date.now()-buzzOpenedAt)<=FAST_BUZZ_MS;
  state.fastBuzz=rush;state.answerWindowSec=rush?FAST_ANSWER_SEC:ANSWER_SEC;
- state.lockedSeat=who;state.phase="answer";
+ state.lockedSeat=who;state.phase="answer";state.optionsShown=true;
+ state.buzzId=(state.buzzId||0)+1;
  state.deadline=Date.now()+state.answerWindowSec*1000;state.remaining=state.answerWindowSec;
  state.msg="🔔 "+p.name+(rush?" خطف الجرس! قدامه 6 ثواني؛ الغلط −2":" سبق الجميع! قدامه 12 ثانية؛ الغلط −1");
- haptic();sfx("buzz");speak("الجرس مع "+p.name);
+ haptic();ringBell();speak("الجرس مع "+p.name);
  bump();
 }
 function pressBuzzer(){
  if(!state||state.phase!=="question"||!online||seat===null)return;
- haptic();sfx("buzz");
+ if(Date.now()-lastTapAt<350)return;
+ lastTapAt=Date.now();
+ haptic();
  if(host)claimBuzz(seat);else send({t:"buzz"});
 }
 function selectOption(i){
  if(!state||state.phase!=="answer"||seat!==state.lockedSeat)return;
- if(!Number.isInteger(i)||i<0||i>3)return;
+ if(!Number.isInteger(i)||i<0||i>3||state.wrongChoices?.includes(i))return;
  if(host)submitAnswer(seat,i);else send({t:"choice",i});
 }
 function submitAnswer(who,i){
  if(!host||!state||state.phase!=="answer"||state.lockedSeat!==who)return;
- if(!Number.isInteger(i)||i<0||i>=4||Date.now()>state.deadline)return;
+ if(!Number.isInteger(i)||i<0||i>=4||state.wrongChoices?.includes(i)||Date.now()>state.deadline)return;
  resolveAnswer(i===answerIndex,i,false);
 }
 function resolveAnswer(isCorrect,choice,timedout=false){
  if(!host||!state||!["answer","question"].includes(state.phase))return;
+ const currentPhase=state.phase;
  const p=state.players.find(x=>x.seat===state.lockedSeat);
  const answer=state.question?.options[answerIndex]||"—";
  let msg,delta=0;
- if(!p){msg="الوقت خلص، محدش ضغط الجرس";}
+ const validPick=!!p&&Number.isInteger(choice)&&choice>=0&&choice<4;
+ if(validPick && !isCorrect && !state.wrongChoices.includes(choice)){
+   state.wrongChoices.push(choice);
+ }
+ if(p && timedout)state.answerTimeouts=(state.answerTimeouts||0)+1;
+ if(!p){msg="⏰ محدش ضغط الجرس. هنبدأ سؤالًا جديدًا.";}
  else{
   delta=isCorrect?1:(state.fastBuzz?-2:-1);p.score+=delta;
   const loss=Math.abs(delta);
@@ -252,19 +306,63 @@ function resolveAnswer(isCorrect,choice,timedout=false){
    timedout?"الوقت خلص يا "+p.name+"، خسر "+loss+(loss===2?" نقطتين":" نقطة"):
    hostLine("wrong",state.round)+" "+p.name+" خسر "+loss+(loss===2?" نقطتين":" نقطة");
  }
- state.phase="result";state.remaining=RESULT_SEC;state.deadline=Date.now()+RESULT_SEC*1000;
- state.result={name:p?.name||"مفيش حد",seat:p?.seat??-1,delta,correct:answer,chosen:choice===null?null:state.question.options[choice],ok:!!p&&isCorrect,fast:!!p&&state.fastBuzz};
+ const wrongCount=state.wrongChoices.length;
+ const endQuestion=!p||isCorrect||wrongCount>=2||state.answerTimeouts>=3;
+ const again=!!p&&!endQuestion;
+ if(wrongCount>=2&&!isCorrect)msg+=". ❌ اختيارين غلط، السؤال انتهى إجباريًا.";
+ else if(again)msg+=". 🔄 هنفتح الجرس تاني، وأي متسابق يقدر يحاول!";
+ if(p&&timedout&&again)msg+=" حتى نفس المتسابق.";
+ state.phase="result";state.remaining=again?RETRY_SEC:RESULT_SEC;
+ state.deadline=Date.now()+state.remaining*1000;
+ state.result={
+  name:p?.name||"مفيش حد",seat:p?.seat??-1,delta,correct:endQuestion?answer:null,
+  chosen:validPick?state.question.options[choice]:null,chosenIndex:validPick?choice:null,
+  ok:!!p&&isCorrect,fast:!!p&&state.fastBuzz,retry:again,ended:endQuestion,
+  wrongCount,skipped:false
+ };
  state.msg=msg;
- speak(msg+". الإجابة الصحيحة: "+answer);sfx(isCorrect?"ok":"bad");bump();
+ speak(msg+(endQuestion?". الإجابة الصحيحة: "+answer:""));
+ sfx(isCorrect?"ok":"bad");bump();
+}
+function reopenBuzz(){
+ if(!host||!state||state.phase!=="result"||!state.result?.retry)return;
+ state.phase="question";state.lockedSeat=null;
+ state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;
+ state.retry=true;state.optionsShown=true;
+ buzzOpenedAt=Date.now();
+ state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
+ state.result=null;
+ state.skipRequests=[];
+ state.msg="🔔 فرصة تانية! الجرس اتفتح للجميع، والاختيارات الغلط اتعلمت. أي حد يقدر يضغط!";
+ bump();
 }
 function advanceRound(){
  if(!host||!state||state.phase!=="result")return;
- newRound();
+ if(state.result?.retry)reopenBuzz();
+ else newRound();
+}
+function skipQuestion(){
+ if(!host||!state||!["announce","question","answer","result"].includes(state.phase))return;
+ const correct=state.question?.options[answerIndex]||"—";
+ hiddenOpenAt=0;
+ state.phase="result";state.remaining=3;state.deadline=Date.now()+3000;
+ state.result={skipped:true,seat:-1,ok:false,delta:0,correct,chosen:null,retry:false,ended:true};
+ state.msg="⏭️ صاحب الغرفة تخطّى السؤال. هنروح مباشرة للي بعده.";
+ speak(state.msg);bump();
+}
+function requestSkip(){
+ if(!state||!["announce","question","answer","result"].includes(state.phase))return;
+ if(host){skipQuestion();return;}
+ if(!online||seat===null)return;
+ send({t:"skipRequest"});
+ try{haptic();}catch(e){}
 }
 function resetToLobby(){
  if(!host||!state)return;
  state.phase="lobby";state.round=0;state.winner=null;state.result=null;state.question=null;state.lockedSeat=null;state.players.forEach(p=>p.score=0);
- state.msg="هنبدأ حلقة جديدة";usedQuestions.clear();bump();
+ state.msg="هنبدأ حلقة جديدة";usedQuestions.clear();
+ state.wrongChoices=[];state.skipRequests=[];state.optionsShown=false;state.buzzId=0;
+ bump();
 }
 function tick(){
  if(!host||!state)return;

@@ -33,13 +33,13 @@ jobs:
         run: gradle -p buzzer-arena :app:assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: Jars-Al-Tahaddi-v3-APK
+          name: Jars-Al-Tahaddi-v4-APK
           path: buzzer-arena/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish APK release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v3.apk
-          gh release delete buzzer-arena-v3 --yes 2>/dev/null || true
-          gh release create buzzer-arena-v3 Jars-Al-Tahaddi-v3.apk --title "جرس التحدي 3.0 — جرس مفاجأة وأسئلة النخبة" --notes "Android game show for 2-4 real human players; 1000+ original Arabic questions, 20 categories, sudden secret buzzer reveal within 15s of TTS, spoken reverse-letter clues, fast/late answer penalty rules (-2/-1), and a voice referee. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."
+          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v4.apk
+          gh release delete buzzer-arena-v4 --yes 2>/dev/null || true
+          gh release create buzzer-arena-v4 Jars-Al-Tahaddi-v4.apk --title "جرس التحدي 4.0 — جولات متجددة وجرس حقيقي" --notes "Android game show for 2-4 real human players; 1200+ original Arabic questions with cinema, Egyptian movie references and music; adaptive score-based difficulty, shared options on buzz, automatic retry after wrong/timeout, mandatory next question after two wrong options, host skip/guest skip request, native metallic double-bell on accepted buzz, secret reveal and Arabic voice referee. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."

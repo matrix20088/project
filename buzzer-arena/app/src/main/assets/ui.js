@@ -21,6 +21,11 @@ function renderHow(){
  <p class="desc">🔄 الكلمات المقلوبة صوت فقط: الحكم يتهجّاها حرف حرف ببطء؛ الكلمة وحروفها مش هتظهر قبل الإجابة. الفئة دي بتحتاج نطق عربي شغّال.</p>
  <p class="desc">🔔 أول رسالة ضغط توصل لموبايل صاحب الغرفة هي اللي تكسب الجرس. الجرس بيتقفل على الباقيين.</p>
  <p class="desc">⚡ اللي يضغط في أول ثانيتين من ظهور الجرس قدامه 6 ثواني للإجابة؛ الصح +1 والغلط أو السكوت −2. اللي يدوس بعد كده قدامه 12 ثانية؛ الصح +1 والغلط أو السكوت −1.</p>
+ <p class="desc">🔄 لو الإجابة غلط أو الوقت خلص، الجرس يفتح تاني لنفس السؤال، وحتى نفس اللاعب يقدر يجرب تاني. بعد اختيارين مختلفين غلط، السؤال يتقفل.</p>
+ <p class="desc">🎯 الصعوبة حسب أعلى سكور: من 0 إلى 2 سهل، من 3 إلى 5 متوسط، ومن 6 نقاط صعب.</p>
+ <p class="desc">👀 الاختيارات بتظهر عند كل اللاعبين بمجرد ما حد يكسب الجرس؛ الإجابة لصاحب الجرس فقط.</p>
+ <p class="desc">⏭️ صاحب الغرفة يقدر يتخطى السؤال، والضيوف يقدروا يطلبوا التخطي.</p>
+ <p class="desc">🔔 عند قبول الضغط على الجرس بتتسمع رنّة جرس على أجهزة المتسابقين.</p>
  <p class="desc">🏆 أول شخص يوصل ١٠ نقاط يفوز، والحكم يعلن اسمه تلقائيًا.</p>
  <p class="desc">📱 اعملوا اقتران Bluetooth بين الموبايلات الأول. صاحب الغرفة يختار ٢ أو ٣ أو ٤، وكل واحد تاني ينضم من موبايله.</p>
  <p class="small">ملحوظة الإنصاف: ترتيب وصول الضغطات عبر البلوتوث هو معيار الحكم. ممكن يحصل فارق اتصال بسيط بين الأجهزة؛ ده نظام للعب المنزلي مش بطولة احترافية.</p>
@@ -53,7 +58,7 @@ function renderPlayers(lobby=false){
 function renderLobby(){
  const ready=allReady();
  root.innerHTML=nav()+`<div class="banner">🎤 استوديو جرس التحدي • ${state.target} متسابقين</div>
- <div class="judge"><div class="face">🎙️</div><div><strong>الحَكَم جاهز ويتكلم!</strong><p>الهدف ١٠ نقاط، الصح +١ والغلط −١</p></div></div>
+ <div class="judge"><div class="face">🎙️</div><div><strong>الحَكَم جاهز ويتكلم!</strong><p>الصح +١ والغلط −١ أو −٢ حسب سرعة الخطف</p></div></div>
  <section class="card"><h2>المتسابقين داخلين الاستوديو</h2><p class="desc">${playersConnected()} من ${state.target} متصلين • الفئة: ${esc(state.category)}</p>${renderPlayers(true)}
  ${host?`<button class="btn" ${ready?"":"disabled"} onclick="startMatch()">🚀 ابدأوا الحلقة!</button>`:`<div class="notice">${ready?"✅ الكل متصل، مستنيين صاحب الغرفة يبدأ":"⏳ مستنيين باقي اللاعبين..."}</div>`}
  <button class="btn ghost" onclick="backToMenu()">خروج من الغرفة</button></section>`;
@@ -75,33 +80,62 @@ function updateTimerUI(){
   fill.style.width=Math.round(state.remaining/max*100)+"%";
  }
 }
+function optionGrid(clickable=false){
+ if(!state?.optionsShown||!state.question?.options)return "";
+ const wrong=state.wrongChoices||[],canClick=clickable&&seat===state.lockedSeat&&state.phase==="answer";
+ return '<section class="card"><div class="kicker">'+(canClick?"اختار إجابتك":"👀 الإجابات ظاهرة للكل، لكن صاحب الجرس وحده يختار")+'</div><div class="options">'+state.question.options.map((opt,i)=>{
+   const mistaken=wrong.includes(i),cls=mistaken?"option wrong":canClick?"option selectChoice":"option spectator";
+   return '<button class="'+cls+'" '+(canClick&&!mistaken?'onclick="selectOption('+i+')"':"disabled")+'><i>'+["A","B","C","D"][i]+'</i><span>'+esc(opt)+'</span>'+(mistaken?'<b class="wrongmark">❌ غلط</b>':"")+'</button>';
+ }).join("")+'</div></section>';
+}
+function skipControls(){
+ if(!["announce","question","answer","result"].includes(state?.phase))return "";
+ const requests=state.skipRequests?.length||0;
+ return '<div class="skipline">'+(host?
+ '<button class="skipButton" onclick="skipQuestion()">⏭️ تخطي السؤال</button>':
+ '<button class="skipButton" onclick="requestSkip()">✋ طلب تخطي السؤال</button>')+
+ (host&&requests?'<span class="skipCount">📬 طلبات التخطي: '+requests+'</span>':"")+'</div>';
+}
 function renderQuestion(){
  const phase=state.phase,locked=state.players.find(p=>p.seat===state.lockedSeat);
+ const level=TIER_LABELS[state.question?.tier]||"متدرج";
  let body=nav()+renderPlayers()+timeHeader()+
- `<div class="banner">${phase==="announce"?"🎙️ الحكم بيقرأ السؤال":phase==="question"?"🔔 الجرس مفتوح للجميع":"🧠 وقت إجابة أسرع متسابق"}</div>
- <section class="card"><div class="kicker">${esc(state.question?.cat)}</div><div class="question">${state.question?.audioOnly?"🎧 استمع للكلمة المقلوبة من الحكم... <small style='display:block;font-size:13px;margin-top:10px'>من غير عرض الكلمة أو حروفها على الشاشة.</small>":esc(state.question?.q)}</div></section>`;
+ '<div class="banner">'+(phase==="announce"?"🎙️ الحكم بيقرأ السؤال":phase==="question"?(state.retry?"🔔 الجرس اتفتح تاني!":"🔔 الجرس مفتوح للجميع"):"🧠 وقت إجابة أسرع متسابق")+'</div>'+
+ '<section class="card"><div class="kicker">'+esc(state.question?.cat)+' • '+esc(level)+'</div><div class="question">'+
+ (state.question?.audioOnly?"🎧 اسمع الكلمة المقلوبة من الحكم، من غير ما تتكتب على الشاشة.":esc(state.question?.q))+'</div></section>';
  if(phase==="announce"){
-   body+=`<div class="judge"><div class="face">🎙️</div><div><strong>عينك على الشاشة!</strong><p>اسمع الحكم، وبعد ما يخلص الكلام الجرس هيظهر فجأة.</p></div></div>`;
-   body+=`<div class="notice">🎲 الجرس ممكن يظهر في أي لحظة خلال 15 ثانية بعد نهاية صوت الحكم. مفيش عدّ يكشف التوقيت!</div>`;
+  body+='<div class="judge"><div class="face">🎙️</div><div><strong>عينك على الشاشة!</strong><p>اسمع الحكم، والجرس هيظهر فجأة بعد ما يخلص.</p></div></div>';
+  body+='<div class="notice">🎲 الجرس ممكن يظهر خلال 15 ثانية من انتهاء كلام الحكم، من غير عدّ ظاهر.</div>';
  }else if(phase==="question"){
-   body+=`<div class="buzzerWrap"><button id="thebuzzer" class="buzzer" onclick="pressBuzzer()" ${online&&seat!==null?"":"disabled"}>🔔<small>اضغط!</small></button><p class="desc">⚡ أول ثانيتين = خطف سريع (6 ثواني للإجابة، والخطأ −2). بعد كده = 12 ثانية والخطأ −1.</p></div>`;
+  body+='<div class="buzzerWrap"><button id="thebuzzer" class="buzzer" onclick="pressBuzzer()" '+(online&&seat!==null?"":"disabled")+'>🔔<small>اضغط!</small></button>'+
+   '<p class="desc">⚡ أول ثانيتين: 6 ثواني للإجابة والغلط −2. بعد كده: 12 ثانية والغلط −1.</p></div>';
+  if(state.retry)body+='<div class="notice">🔄 فرصة تانية لنفس السؤال! أي حد يقدر يضغط، حتى اللي جاوب قبل كده.</div>';
  }else{
-   body+=`<div class="judge"><div class="face">${ICONS[state.lockedSeat]||"🔔"}</div><div><strong>${esc(locked?.name||"المتسابق")}</strong><p>${state.fastBuzz?"⚡ خطف خاطف! 6 ثواني والخطأ −2":"🎯 ضغط متأني: 12 ثانية والخطأ −1"}</p></div></div>`;
-   if(seat===state.lockedSeat){
-    body+=`<section class="card"><div class="kicker">اختار إجابة واحدة</div><div class="options">${state.question.options.map((opt,i)=>`<button class="option" onclick="selectOption(${i})"><i>${["A","B","C","D"][i]}</i><span>${esc(opt)}</span></button>`).join("")}</div></section>`;
-   }else body+=`<div class="notice">⏳ الجرس مع ${esc(locked?.name)}، استنوا قرار الحكم</div>`;
+  body+='<div class="judge"><div class="face">'+(ICONS[state.lockedSeat]||"🔔")+'</div><div><strong>'+esc(locked?.name||"المتسابق")+'</strong><p>'+
+  (state.fastBuzz?"⚡ خطف خاطف! 6 ثواني والخطأ −2":"🎯 ضغط متأني: 12 ثانية والخطأ −1")+'</p></div></div>';
+  if(seat!==state.lockedSeat)body+='<div class="notice">⏳ '+esc(locked?.name||"المتسابق")+' بيجاوب، بصوا على الاختيارات واستنوا الجرس يرجع.</div>';
  }
+ body+=optionGrid(phase==="answer");
+ body+='<div class="attemptbar">❌ اختيارات غلط: '+(state.wrongChoices?.length||0)+' / 2</div>';
+ body+=skipControls();
  return body;
 }
 function renderResult(){
- const r=state.result,icon=r?.seat<0?"⏰":r?.ok?"✅":"❌";
- return nav()+renderPlayers()+timeHeader()+
- `<div class="card center"><div class="resultIcon">${icon}</div><h2>${r?.seat<0?"محدش ضغط الجرس":r?.ok?"إجابة صح!":"الإجابة غلط!"}</h2>
- <p class="desc">${esc(state.msg)}</p><div class="delta">${r?.delta>0?"+"+r.delta:r?.delta<0?"−"+Math.abs(r.delta):"0"}</div>
- <div class="notice ok"><b>الإجابة الصحيحة:</b> ${esc(r?.correct||"—")}</div>
- ${r?.chosen?`<p class="small">الإجابة المختارة: ${esc(r.chosen)}</p>`:""}
- ${host?`<button class="btn" onclick="advanceRound()">➡️ السؤال اللي بعده</button>`:`<p class="small">الحكم بينتقل للسؤال اللي بعده...</p>`}</div>`;
+ const r=state.result||{},icon=r.skipped?"⏭️":r.seat<0?"⏰":r.ok?"✅":"❌";
+ let body=nav()+renderPlayers()+timeHeader()+
+ '<div class="card center"><div class="resultIcon">'+icon+'</div><h2>'+
+ (r.skipped?"السؤال اتخطى":r.seat<0?"محدش ضغط الجرس":r.ok?"إجابة صح!":r.retry?"إجابة غلط... فرصة تانية!":"السؤال انتهى!")+'</h2>'+
+ '<p class="desc">'+esc(state.msg)+'</p><div class="delta">'+(r.delta>0?"+"+r.delta:r.delta<0?"−"+Math.abs(r.delta):"0")+'</div>'+
+ (r.ended?'<div class="notice ok"><b>الإجابة الصحيحة:</b> '+esc(r.correct||"—")+'</div>':
+ '<div class="notice">🔒 الإجابة الصحيحة لسه سرية؛ الجرس هيفتح تاني!</div>')+
+ (r.chosen?'<p class="small">الإجابة اللي اتجرّبت: '+esc(r.chosen)+'</p>':"")+
+ optionGrid(false);
+ if(r.retry)body+='<div class="notice">🔔 استعدوا: نفس السؤال هيفضل مفتوح لأي متسابق.</div>';
+ body+=(host?'<button class="btn" onclick="advanceRound()">'+(r.retry?"🔔 افتح الجرس تاني":"➡️ السؤال اللي بعده")+'</button>':
+ '<p class="small">'+(r.retry?"الجرس هيفتح تاني...":"الحكم بينتقل للسؤال اللي بعده...")+'</p>');
+ return body+skipControls()+'</div>';
 }
+
 function renderFinished(){
  const winner=state.players.find(p=>p.seat===state.winner);
  return nav()+`<section class="hero"><div class="badgeHero">🏆</div><div class="kicker">انتهت الحلقة</div><h1>البطل هو <em>${esc(winner?.name||"المتسابق")}</em>!</h1><p class="desc">وصل لـ ${WIN_AT} نقاط قبل الجميع!</p></section>

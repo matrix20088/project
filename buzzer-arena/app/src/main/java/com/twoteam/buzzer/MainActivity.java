@@ -14,6 +14,9 @@ import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
+import android.media.AudioAttributes;
+import android.media.AudioFormat;
+import android.media.AudioTrack;
 import android.speech.tts.UtteranceProgressListener;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -270,6 +273,52 @@ public class MainActivity extends Activity {
             runOnUiThread(()->startActivity(new Intent("android.settings.BLUETOOTH_SETTINGS")));
         }
         @android.webkit.JavascriptInterface public void disconnect(){shutdown(true);}
+        // Short, layered metallic double-bell. Generated locally; no copyrighted audio or network.
+        @android.webkit.JavascriptInterface public void playBell(){
+            new Thread(()->{
+                final int sampleRate=24000;
+                final int frames=(int)(sampleRate*0.83);
+                byte[] pcm=new byte[frames*2];
+                for(int i=0;i<frames;i++){
+                    double t=(double)i/sampleRate;
+                    double first=bellWave(t,760.0);
+                    double second=bellWave(t-0.12,920.0)*0.62;
+                    double sample=Math.max(-1,Math.min(1,(first+second)*0.44));
+                    short value=(short)(sample*32767);
+                    pcm[i*2]=(byte)(value&255);
+                    pcm[i*2+1]=(byte)((value>>>8)&255);
+                }
+                AudioTrack track=null;
+                try{
+                    AudioAttributes attributes=new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_GAME)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build();
+                    AudioFormat format=new AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build();
+                    track=new AudioTrack.Builder()
+                        .setAudioAttributes(attributes)
+                        .setAudioFormat(format)
+                        .setTransferMode(AudioTrack.MODE_STATIC)
+                        .setBufferSizeInBytes(pcm.length).build();
+                    track.write(pcm,0,pcm.length);
+                    track.play();
+                    Thread.sleep(850);
+                }catch(Exception e){Log.w("BuzzerBell","Failed to play game-show bell",e);}
+                finally{if(track!=null){try{track.stop();}catch(Exception ignored){}track.release();}}
+            },"quiz-bell").start();
+        }
+        private double bellWave(double time,double freq){
+            if(time<0)return 0;
+            double attack=1-Math.exp(-time*190);
+            double envelope=attack*Math.exp(-time*5.4);
+            double strike=Math.sin(2*Math.PI*freq*time)*0.60+
+                Math.sin(2*Math.PI*freq*1.51*time)*0.25+
+                Math.sin(2*Math.PI*freq*2.04*time)*0.10+
+                Math.sin(2*Math.PI*freq*2.93*time)*0.05;
+            return envelope*strike;
+        }
         @android.webkit.JavascriptInterface public void vibrate(){
             runOnUiThread(()->{
                 try{

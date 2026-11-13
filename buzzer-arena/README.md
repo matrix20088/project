@@ -38,3 +38,16 @@ The app is meant for social play; Bluetooth arrival ordering is not latency-comp
 - Reversed-word prompts display *no word or spelling*. The host Android TTS speaks the reversed letters one at a time as Arabic letter names (e.g. ة ص ق ل ا → تاء مربوطة، صاد، قاف، لام، ألف), with a deliberate ~470ms pause after each letter and slower speech rate. Multiple-choice answers appear only after someone wins the buzzer.
 - Reverse-word rounds require a supported Arabic TTS engine. If not available, the mixed game skips them; the single-category game pauses and explains the limitation. No silent unsolvable prompts.
 - Bluetooth host uses receive ordering; not certified latency compensation.
+
+## v4.0 — Cinema-heavy, adaptive and replayable
+- Score-tier questions: leader at 0–2 => easy, 3–5 => medium, 6+ => hard. Explicit category selection remains respected, with fallback to the closest available tier.
+- 212 additional categorized questions, heavy on Egyptian comedy, movie one-liners (short references only), film directors, singers, composers, classic TV and some world cinema.
+- Mixed category draws entertainment around 62% of the time when the chosen score tier includes both entertainment and non-entertainment categories. Original geography, sports, math, words, history and science still remain.
+- All 4 choices appear **on every device** once a contestant wins the buzzer, while only that contestant can answer.
+- A wrong answer or unanswered buzz applies the existing speed-dependent penalty and opens the same question again after a short result window. All contestants (including the person who just answered) can buzz again.
+- Wrong answer options are visibly crossed out and cannot be picked again, but the correct answer is withheld until the question ends.
+- **Two distinct wrong option selections end the question** and force a new question, showing the correct answer. If nobody presses the re-opened buzzer before the timer expires, the question also ends. To avoid endless unanswered loops, 3 answer timeouts also end the question.
+- Host can skip any live question immediately without a penalty. Guests can submit skip requests; the host sees a request count.
+- An accepted buzzer press triggers an original, locally synthesized double metallic bell via Android AudioTrack on each participating device. It is not an external audio file, copied show effect or sample.
+- Host's Bluetooth message order still determines which contestant wins; timestamps are not compensated across phones.
+- 15-second secret post-speech window remains for the **first reveal**. Re-openings are immediate after short feedback.

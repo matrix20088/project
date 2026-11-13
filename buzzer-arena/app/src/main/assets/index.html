@@ -63,7 +63,18 @@ strong,b{font-weight:900}
 .questionCount{margin:12px auto 18px;border-radius:14px;padding:12px 15px;border:1px solid #5a68a2;background:#1b2848;color:#b9fdf3;font-size:13px;text-align:center;font-weight:800}
 .voiceSettings{display:flex;justify-content:space-between;align-items:center;gap:12px;border-radius:15px;background:#122640;border:1px solid #486383;padding:12px 14px;margin-top:17px}
 .voiceSettings strong{display:block;font-size:14px}.voiceSettings small{color:#a3b7d7;font-size:11px}.voiceToggle{border:1px solid #40baa8;background:#194e51;border-radius:12px;color:#d7fff5;font:inherit;font-weight:800;padding:11px 14px;white-space:nowrap}
+
+/* 4.0: live shared answer cards, retry opportunities, adaptive difficulty, host skip */
+.option.spectator{opacity:.88;background:linear-gradient(125deg,#253454,#1b2644);border-color:#455d86}
+.option.selectChoice{border-color:#7aecda;box-shadow:0 3px 12px #38d5cf16}
+.option.wrong{background:#472536;border-color:#b24e6c;color:#f4a4b1;opacity:.64;text-decoration:line-through}
+.option.wrong i{color:#f7a0a6}.wrongmark{font-size:11px;white-space:nowrap;color:#ffb4bd;margin-inline-start:auto}
+.option:disabled{cursor:default}.option.spectator:disabled{opacity:.85}
+.attemptbar{text-align:center;background:#241f3b;border:1px solid #614a73;border-radius:14px;padding:10px;font-size:12px;color:#f3c0d5;font-weight:800;margin:13px 0}
+.skipline{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin:14px 0 8px}
+.skipButton{padding:12px 16px;border:1px solid #678a9d;border-radius:13px;background:#1b3450;color:#cfeaff;font-family:inherit;font-size:13px;font-weight:850;min-height:46px}
+.skipCount{font-size:12px;color:#ffe9a9}
 </style></head>
 <body><main id="root"></main>
-<script src="questions.js"></script><script src="extra_questions.js"></script><script src="hard_questions.js"></script><script src="core.js"></script><script src="ui.js"></script>
+<script src="questions.js"></script><script src="extra_questions.js"></script><script src="hard_questions.js"></script><script src="movie_music_levels.js"></script><script src="core.js"></script><script src="ui.js"></script>
 </body></html>
