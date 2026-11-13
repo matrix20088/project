@@ -1,13 +1,36 @@
 "use strict";
 const root=document.getElementById("root");
 const CAT_ALL="🌟 منوعات",CAT_KEYS=Object.keys(QUESTIONS),ICONS=["🔵","🩷","🟡","🟣"];
-const QUIZ_SEC=15,ANSWER_SEC=12,ANNOUNCE_SEC=6,RESULT_SEC=4,WIN_AT=10;
+const QUIZ_SEC=15,ANSWER_SEC=12,ANNOUNCE_SEC=18,RESULT_SEC=8,WIN_AT=10;
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const clean=s=>String(s??"").trim().replace(/[\r\n\t]+/g," ").slice(0,18)||"لاعب";
 const format=n=>Math.max(0,n|0);
 const cfg={name:localStorage.getItem("buzzerName")||"لاعب 1",target:2,category:CAT_ALL};
 let host=false,seat=null,online=false,pending="",devices=[],state=null,answerIndex=-1;
 let usedQuestions=new Set(),lastVersion=-1,soundOn=true;
+let voiceOn=localStorage.getItem("buzzerVoice")!=="off",voiceAvailable=true;
+const HOST_LINES={
+ intro:["يلا بينا نولّع المنافسة!","ركزوا معايا يا أبطال!","السؤال ده محتاج تركيز!","جهزوا إيديكم يا جماعة!","السؤال الجاي ممكن يقلب النتيجة!"],
+ correct:["يا سلام! إجابة مظبوطة!","برافو عليك! إجابة صح!","هي دي الشطارة! إجابة صحيحة!","بوم! جبتها صح!"],
+ wrong:["يا خسارة! الإجابة غلط!","لأ لأ، مش هي دي!","معلش، المرة الجاية أحسن!","للأسف، الإجابة مش مظبوطة!"],
+ start:["يلا الجرس اتفتح!","الجرس مفتوح! مين الأسرع؟","على الجرس يا أبطال!"],
+ finish:["مبروك يا بطل!","إيه الجمال ده! عندنا فائز!"]
+};
+function hostLine(kind,n=0){const l=HOST_LINES[kind];return l[(n+Math.floor(Math.random()*l.length))%l.length];}
+function toggleVoice(){voiceOn=!voiceOn;localStorage.setItem("buzzerVoice",voiceOn?"on":"off");renderHome();}
+function previewVoice(){try{Native.speak("أهلا بيكم في جرس التحدي! معانا اتنين أو تلاتة أو أربعة متسابقين، والنهارده هنشوف مين أسرع واحد على الجرس!")}catch(e){showError("تعذر تشغيل صوت الحكم: "+e.message);}}
+function speakQuestion(text,round){
+ if(!host||!voiceOn){questionVoiceFinished(false,round);return;}
+ try{Native.speakQuestion(String(text),String(round));}
+ catch(e){questionVoiceFinished(false,round);}
+}
+function questionVoiceFinished(spoken,round){
+ if(!host||!state||state.phase!=="announce"||String(state.round)!==String(round)||state.speechOver)return;
+ state.speechOver=true;
+ state.remaining=spoken?2:7;state.deadline=Date.now()+(spoken?1350:6500);
+ state.msg=spoken?"🎤 الحكم خلّص السؤال! ركزوا... الجرس هيفتح":"اقرأوا السؤال، الجرس هيفتح خلال لحظات";
+ bump();
+}
 function native(name,arg){try{if(!window.Native||typeof Native[name]!=="function")throw new Error("التطبيق لازم يتفتح من أندرويد");if(arg===undefined)Native[name]();else Native[name](arg);}catch(e){showError(e.message);}}
 function send(p){native("send",JSON.stringify(p));}
 function haptic(){try{Native.vibrate()}catch(e){}}
@@ -21,7 +44,7 @@ function sfx(type){
  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.2);o.onended=()=>a.close();
  }catch(e){}
 }
-function speak(s){if(host)try{Native.speak(String(s))}catch(e){}}
+function speak(s){if(host&&voiceOn)try{Native.speak(String(s))}catch(e){}}
 function saveName(s){cfg.name=clean(s);try{localStorage.setItem("buzzerName",cfg.name)}catch(e){}}
 function chooseTarget(v){cfg.target=Math.min(4,Math.max(2,Number(v)||2));renderHome();}
 function chooseCategory(v){cfg.category=CAT_KEYS.includes(v)?v:CAT_ALL;}
@@ -109,6 +132,8 @@ window.onNative=(type,detail)=>{
    return;
   }
  }
+ if(type==="speechDone"){questionVoiceFinished(true,detail);return;}
+ if(type==="speechUnavailable"){voiceAvailable=false;questionVoiceFinished(false,detail);return;}
  if(type==="error"){showError(detail);return;}
  if(type==="disconnected"){online=false;host=false;seat=null;state=null;showError(detail||"انقطع اتصال البلوتوث");return;}
 };
@@ -143,26 +168,26 @@ function newRound(){
  if(!host||!state)return;
  const winner=state.players.find(p=>p.score>=WIN_AT);
  if(winner){
-  state.phase="finished";state.winner=winner.seat;state.msg="مبروك "+winner.name+"! كسب الحلقة";
+  state.phase="finished";state.winner=winner.seat;state.msg="🏆 "+hostLine("finish",state.round)+" "+winner.name+" كسب الحلقة!";
   speak(state.msg);sfx("win");bump();return;
  }
  state.round++;
  state.phase="announce";state.question=selectNewQuestion();state.lockedSeat=null;state.result=null;
- state.deadline=Date.now()+ANNOUNCE_SEC*1000;state.remaining=ANNOUNCE_SEC;
- state.msg="الحكم بيقرأ السؤال، جهّزوا إيديكم على الجرس";
- speak("السؤال رقم "+state.round+". "+state.question.q);
+ state.deadline=Date.now()+ANNOUNCE_SEC*1000;state.remaining=ANNOUNCE_SEC;state.speechOver=false;
+ state.msg="🎙️ الحكم بيقرأ السؤال، جهّزوا إيديكم على الجرس";
  bump();
+ speakQuestion(hostLine("intro",state.round)+" السؤال رقم "+state.round+". "+state.question.q,state.round);
 }
 function openBuzz(){
- if(!host||!state||state.phase!=="announce")return;
- state.phase="question";state.deadline=Date.now()+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;state.msg="الجرس مفتوح! أسرع واحد يضغط";
+ if(!host||!state||state.phase!=="announce"||Date.now()<state.deadline)return;
+ state.phase="question";state.deadline=Date.now()+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;state.msg="🔔 "+hostLine("start",state.round);
  sfx("ok");bump();
 }
 function claimBuzz(who){
  if(!host||!state||state.phase!=="question"||state.lockedSeat!==null||Date.now()>state.deadline)return;
  const p=state.players.find(x=>x.seat===who&&x.online);if(!p)return;
  state.lockedSeat=who;state.phase="answer";state.deadline=Date.now()+ANSWER_SEC*1000;state.remaining=ANSWER_SEC;
- state.msg=p.name+" سبق الجميع! اختار إجابتك";
+ state.msg="🔔 "+p.name+" سبق الجميع! اختار إجابتك";
  haptic();sfx("buzz");speak("الجرس مع "+p.name);
  bump();
 }
@@ -188,7 +213,7 @@ function resolveAnswer(isCorrect,choice,timedout=false){
  let msg,delta=0;
  if(!p){msg="الوقت خلص، محدش ضغط الجرس";}
  else{delta=isCorrect?1:-1;p.score+=delta;
-   msg=isCorrect?"إجابة صح! نقطة لـ "+p.name:timedout?"الوقت خلص يا "+p.name+"، خسر نقطة":"إجابة غلط يا "+p.name+"، خسر نقطة";
+   msg=isCorrect?hostLine("correct",state.round)+" نقطة لـ "+p.name:timedout?"الوقت خلص يا "+p.name+"، خسر نقطة":hostLine("wrong",state.round)+" "+p.name+" خسر نقطة";
  }
  state.phase="result";state.remaining=RESULT_SEC;state.deadline=Date.now()+RESULT_SEC*1000;
  state.result={name:p?.name||"مفيش حد",seat:p?.seat??-1,delta,correct:answer,chosen:choice===null?null:state.question.options[choice],ok:!!p&&isCorrect};
