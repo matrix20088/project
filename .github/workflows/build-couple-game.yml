@@ -37,4 +37,4 @@ jobs:
         run: |
           cp couple-game/app/build/outputs/apk/debug/app-debug.apk ElHoroobSawa-2.0.apk
           gh release delete couple-game-v3 --yes 2>/dev/null || true
-          gh release create couple-game-v3 ElHoroobSawa-v2.apk --title "الهروب سوا 2.0 — مغامرات الكبار" --notes "120 مهمة، 12 عالَم، 4 تحديات في كل مهمة، ومود رومانسي وجريء بالتراضي. ثبّت نفس APK على الجهازين."
+          gh release create couple-game-v3 ElHoroobSawa-2.0.apk --title "الهروب سوا 2.0 — مغامرات الكبار" --notes "120 مهمة، 12 عالَم، 4 تحديات في كل مهمة، ومود رومانسي وجريء بالتراضي. ثبّت نفس APK على الجهازين."
