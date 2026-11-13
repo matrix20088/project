@@ -41,25 +41,31 @@ button,input{font:inherit}button{cursor:pointer}#app{position:relative;min-heigh
 </head>
 <body><main id="app"></main>
 <script>
+window.addEventListener('error',function(e){
+  var root=document.getElementById('app');
+  if(root && root.textContent.trim()==='') root.innerHTML='<section style="margin:24px;padding:24px;border:1px solid #fe759f;border-radius:18px;color:#fff;background:#201e34;text-align:center"><h2>حصل خطأ في تشغيل اللعبة</h2><p>اقفل التطبيق وافتحه تاني، ولو المشكلة استمرت ابعتلنا صورة من الشاشة.</p><small>'+String(e.message||'حدث خطأ غير متوقع').replace(/[<>]/g,'')+'</small></section>';
+});
+</script>
+<script>
 const app=document.getElementById('app');
 let connected=false,host=false,mode='home',game=null,notice='',devices=[],sound=true,prevVersion=-1,pending=null;
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function jssend(packet){try{Native.send(JSON.stringify(packet));}catch(e){showError('تعذر إرسال الحركة');}}
 function audio(kind='ok'){try{if(!sound)return;let a=new(window.AudioContext||window.webkitAudioContext)();let o=a.createOscillator(),v=a.createGain();o.type='sine';o.frequency.value=kind==='bad'?180:kind==='win'?850:530;v.gain.setValueAtTime(.08,a.currentTime);v.gain.exponentialRampToValueAtTime(.001,a.currentTime+.16);o.connect(v);v.connect(a.destination);o.start();o.stop(a.currentTime+.17);o.onended=()=>a.close();}catch(e){}}
 function vibrate(){try{Native.vibrate();}catch(e){}}
-function top(){return '<div class="top"><div><div class="eyebrow">CO-OP ESCAPE MISSION</div><div class="logo">الهروب <span class="accent">سوا</span> 🚨</div></div><div class="pill">اتنين × موبايلين</div></div>';}
+function headerHtml(){return '<div class="top"><div><div class="eyebrow">CO-OP ESCAPE MISSION</div><div class="logo">الهروب <span class="accent">سوا</span> 🚨</div></div><div class="pill">اتنين × موبايلين</div></div>';}
 function menu(){
-mode='home';app.innerHTML=top()+`<section class="hero"><div class="orb">🕵️‍♀️</div><div class="tagline">عملية سرّية لشخصين فقط</div><h1>يا تهربوا <span class="accent">سوا</span><br>يا تتقفشوا <span class="cyan">سوا!</span></h1><p class="desc">واحد عميل جوه المبنى... والتاني هاكر برا بيشوف الفخاخ. الوقت ضدكم. لازم تتكلموا وتتعاونوا وتفكّوا الشفرة قبل الإنذار!</p></section><section class="panel"><button class="btn" onclick="makeRoom()">🚨 أنشئ المهمة</button><button class="btn cyanbg" onclick="listDevices()">🔗 انضم للمهمة</button><button class="btn alt" onclick="showHow()">🎮 إزاي بنلعب؟</button></section><p class="note">من غير نت • من غير حسابات • لازم بلوتوث واقتران أول مرة</p><div class="footer">مصممة لضحككم وذكاءكم... مش للخناق 😄</div>`;
+mode='home';app.innerHTML=headerHtml()+`<section class="hero"><div class="orb">🕵️‍♀️</div><div class="tagline">عملية سرّية لشخصين فقط</div><h1>يا تهربوا <span class="accent">سوا</span><br>يا تتقفشوا <span class="cyan">سوا!</span></h1><p class="desc">واحد عميل جوه المبنى... والتاني هاكر برا بيشوف الفخاخ. الوقت ضدكم. لازم تتكلموا وتتعاونوا وتفكّوا الشفرة قبل الإنذار!</p></section><section class="panel"><button class="btn" onclick="makeRoom()">🚨 أنشئ المهمة</button><button class="btn cyanbg" onclick="listDevices()">🔗 انضم للمهمة</button><button class="btn alt" onclick="showHow()">🎮 إزاي بنلعب؟</button></section><p class="note">من غير نت • من غير حسابات • لازم بلوتوث واقتران أول مرة</p><div class="footer">مصممة لضحككم وذكاءكم... مش للخناق 😄</div>`;
 }
 function showHow(){
-mode='how';app.innerHTML=top()+`<section class="panel"><h2>المهمة: سرقة ملف X 🗝️</h2><div class="how"><p><b>① ممر الليزر:</b> المخترق شايف الأبواب الآمنة، والعميل لازم يدخل من الباب الصح. ما ينفعش تعرف الطريق غير بالكلام!</p><p><b>② غرفة الشفرة:</b> كل واحد معاه نص الرمز السري. لازم توصلوا الأربعة أرقام قبل ما الوقت يخلص.</p><p><b>③ مفتاح الهروب:</b> لازم تدوسوا زرار الهروب على الموبايلين في نفس ثانيتين ونص.</p><p><b>⏱️</b> كل مهمة ليها 100 ثانية و4 فرص فقط. بعد الهروب بتبدلوا الأدوار وتزيد الصعوبة.</p><p><b>الاتصال:</b> اقترنوا من إعدادات البلوتوث في الموبايلين، واحد يفتح غرفة والثاني يختار اسمه من الأجهزة المقترنة.</p></div><button class="btn" onclick="menu()">جاهزين! 🔥</button></section>`;
+mode='how';app.innerHTML=headerHtml()+`<section class="panel"><h2>المهمة: سرقة ملف X 🗝️</h2><div class="how"><p><b>① ممر الليزر:</b> المخترق شايف الأبواب الآمنة، والعميل لازم يدخل من الباب الصح. ما ينفعش تعرف الطريق غير بالكلام!</p><p><b>② غرفة الشفرة:</b> كل واحد معاه نص الرمز السري. لازم توصلوا الأربعة أرقام قبل ما الوقت يخلص.</p><p><b>③ مفتاح الهروب:</b> لازم تدوسوا زرار الهروب على الموبايلين في نفس ثانيتين ونص.</p><p><b>⏱️</b> كل مهمة ليها 100 ثانية و4 فرص فقط. بعد الهروب بتبدلوا الأدوار وتزيد الصعوبة.</p><p><b>الاتصال:</b> اقترنوا من إعدادات البلوتوث في الموبايلين، واحد يفتح غرفة والثاني يختار اسمه من الأجهزة المقترنة.</p></div><button class="btn" onclick="menu()">جاهزين! 🔥</button></section>`;
 }
-function showError(t){notice=t;mode='error';app.innerHTML=top()+`<section class="panel center"><div style="font-size:57px">⚠️</div><h2>في حاجة عطّلت المهمة</h2><p class="desc">${esc(t)}</p><button class="btn" onclick="menu()">رجوع للبداية</button><button class="btn alt" onclick="Native.settings()">إعدادات البلوتوث</button></section>`;}
+function showError(t){notice=t;mode='error';app.innerHTML=headerHtml()+`<section class="panel center"><div style="font-size:57px">⚠️</div><h2>في حاجة عطّلت المهمة</h2><p class="desc">${esc(t)}</p><button class="btn" onclick="menu()">رجوع للبداية</button><button class="btn alt" onclick="Native.settings()">إعدادات البلوتوث</button></section>`;}
 function makeRoom(){pending='host';waiting('جاري فتح غرفة العملية...');Native.permission();}
-function waiting(message){mode='waiting';app.innerHTML=top()+`<section class="panel waiting"><div class="spinner"></div><h2>ثبّت مكانك يا عميل!</h2><p class="desc">${esc(message||'مستنيين الموبايل التاني يتصل')}</p><button class="btn alt" onclick="menu()">رجوع</button></section>`;}
+function waiting(message){mode='waiting';app.innerHTML=headerHtml()+`<section class="panel waiting"><div class="spinner"></div><h2>ثبّت مكانك يا عميل!</h2><p class="desc">${esc(message||'مستنيين الموبايل التاني يتصل')}</p><button class="btn alt" onclick="menu()">رجوع</button></section>`;}
 function listDevices(){pending='paired';waiting('بندور على الموبايلات المقترنة...');Native.permission();}
 function showDevices(){
-mode='devices';app.innerHTML=top()+`<section class="panel"><h2>اختار موبايل شريكك 📱</h2><p class="desc">لازم تكونوا عاملين اقتران Bluetooth من إعدادات الموبايلين الأول.</p>${devices.length?devices.map((d,i)=>`<button class="device" onclick="connectTo(${i})"><span><strong>${esc(d.name)}</strong><small>${esc(d.addr)}</small></span><span>←</span></button>`).join(''):'<p class="desc center">مفيش أجهزة مقترنة. افتح الإعدادات واعمل اقتران.</p>'}<button class="btn alt" onclick="Native.settings()">⚙️ افتح إعدادات البلوتوث</button><button class="btn alt" onclick="Native.paired()">🔄 حدّث الأجهزة</button><button class="btn alt" onclick="menu()">رجوع</button></section>`;
+mode='devices';app.innerHTML=headerHtml()+`<section class="panel"><h2>اختار موبايل شريكك 📱</h2><p class="desc">لازم تكونوا عاملين اقتران Bluetooth من إعدادات الموبايلين الأول.</p>${devices.length?devices.map((d,i)=>`<button class="device" onclick="connectTo(${i})"><span><strong>${esc(d.name)}</strong><small>${esc(d.addr)}</small></span><span>←</span></button>`).join(''):'<p class="desc center">مفيش أجهزة مقترنة. افتح الإعدادات واعمل اقتران.</p>'}<button class="btn alt" onclick="Native.settings()">⚙️ افتح إعدادات البلوتوث</button><button class="btn alt" onclick="Native.paired()">🔄 حدّث الأجهزة</button><button class="btn alt" onclick="menu()">رجوع</button></section>`;
 }
 function connectTo(i){let d=devices[i];if(d){waiting('بنحاول نوصل لـ '+d.name+' ...');Native.join(d.addr);}}
 window.onNative=function(type,detail){
@@ -129,7 +135,7 @@ function updateClock(){if(!game)return;const timer=document.getElementById('time
 function roleBox(name,description){return `<div class="role"><div class="rolelabel">دورك في المهمة</div><strong>${name}</strong><p>${description}</p></div>`;}
 function renderGame(){
  if(!connected||!game){menu();return;}mode='game';let g=game;
- let result=top()+clockHtml();
+ let result=headerHtml()+clockHtml();
  if(g.status!=='play'){
   const won=g.status==='win';
   result+=`<section class="panel center"><div class="confetti">${won?'🎉💎🚀':'🚨💥🔒'}</div><h1>${won?'هربتوا سوا!':'المهمة فشلت!'}</h1><p class="desc">${esc(g.last)}</p><div class="bigScore">${g.score}</div><div class="step">إجمالي نقاط الفريق</div><p class="desc">${won?'الدور القادم هيتبدّل وهتزيد صعوبة ممر الليزر.':'لسه فيه فرصة إنكم ترجعوا وتكسبوا!'}</p><button class="btn" onclick="choose('next',0)">${won?'🚀 المهمة اللي بعدها':'🔄 إعادة المهمة'}</button></section>`;
