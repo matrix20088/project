@@ -108,6 +108,27 @@ function loadAvatar(name,index){
   // leaves the human lying on the horizontal road plane. Stand it upright.
   object.rotation.x=Math.PI/2;
   object.updateWorldMatrix(true,true);
+  // Pose the original scanner T-pose rigs into a relaxed action-idle stance.
+  // Rotating the arm joints affects the actual skinned 3D mesh, not a 2D overlay.
+  for(const armName of ['rigLeftArm','rigRightArm']){
+    let bone=null;
+    object.traverse(n=>{if(n.isBone && n.name===armName)bone=n;});
+    if(!bone)continue;
+    const fore=bone.children.find(n=>n.isBone && n.name.includes('ForeArm'));
+    if(!fore)continue;
+    bone.updateWorldMatrix(true,true);
+    fore.updateWorldMatrix(true,true);
+    const shoulder=bone.getWorldPosition(new THREE.Vector3());
+    const elbow=fore.getWorldPosition(new THREE.Vector3());
+    const current=elbow.sub(shoulder).normalize();
+    const side=current.x<0?-1:1;
+    const desired=new THREE.Vector3(side*.22,-.96,.16).normalize();
+    const worldChange=new THREE.Quaternion().setFromUnitVectors(current,desired);
+    const parentWorld=bone.parent.getWorldQuaternion(new THREE.Quaternion());
+    const localChange=parentWorld.clone().invert().multiply(worldChange).multiply(parentWorld);
+    bone.quaternion.premultiply(localChange);
+    bone.updateWorldMatrix(true,true);
+  }
   const humanBox=new THREE.Box3().setFromObject(object);
   object.position.y-=humanBox.min.y;
   object.updateWorldMatrix(true,true);
