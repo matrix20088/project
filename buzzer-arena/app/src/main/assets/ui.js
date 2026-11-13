@@ -1,27 +1,29 @@
 function nav(){return `<div class="nav"><div class="navbrand"><span class="logo">🔔</span><span>جرس <span style="color:var(--yellow)">التحدي</span></span></div><div class="pill">٢–٤ لاعبين • الحكم الإلكتروني</div></div>`;}
 function renderHome(){
  const cats=[CAT_ALL,...CAT_KEYS];
- root.innerHTML=nav()+`<section class="hero"><div class="badgeHero">🔔</div><div class="kicker">من الأسرع على الجرس؟</div><h1>اللي هيسبق <em>هيكسب!</em></h1><p class="desc">أسئلة ومنافسة وضحك ونقاط... وحكم إلكتروني يحسم كل جولة.<br>إنتوا المتسابقين، مفيش كمبيوتر بيلعب ضدكم!</p></section>
+ root.innerHTML=nav()+`<section class="hero"><div class="badgeHero">🔔</div><div class="kicker">من الأسرع على الجرس؟</div><h1>اللي هيسبق <em>هيكسب!</em></h1><p class="desc">أسئلة ومنافسة وضحك ونقاط... وحكم إلكتروني <b>بيتكلم بصوت عربي</b> وبيحسم كل جولة.<br>إنتوا المتسابقين، مفيش كمبيوتر بيلعب ضدكم!</p><div class="questionCount">🎲 ${TOTAL_QUESTIONS} سؤال في ${CAT_KEYS.length} فئة متنوعة</div></section>
  <section class="card">
  <div class="kicker">جهزوا حلقة التحدي</div>
  <label class="label" for="nickname">اسمك في البرنامج</label><input id="nickname" class="field" maxlength="18" value="${esc(cfg.name)}" oninput="saveName(this.value)" placeholder="اسم المتسابق">
  <label class="label">عدد المتسابقين الحقيقيين</label><div class="counts">${[2,3,4].map(n=>`<button class="count ${cfg.target===n?"selected":""}" onclick="chooseTarget(${n})">${n}<span>لاعبين</span></button>`).join("")}</div>
  <label class="label" for="category">نوع الأسئلة</label><select class="field" id="category" onchange="chooseCategory(this.value)">${cats.map(v=>`<option value="${esc(v)}" ${cfg.category===v?"selected":""}>${esc(v)}</option>`).join("")}</select>
- <div class="voicecfg"><span>🎙️ <b>صوت الحكم</b><small>تعليق عربي حماسي حسب الأصوات الموجودة في موبايلك</small></span>
- <button class="voiceSwitch" onclick="toggleVoice()">${voiceOn?"🔊 شغّال":"🔇 صامت"}</button></div>
- <button class="btn ghost" onclick="previewVoice()">🔈 جرّب صوت الحكم</button>
  <button class="btn" onclick="openRoom()">🎙️ أنشئ غرفة وأنا أول لاعب</button>
  <button class="btn secondary" onclick="findRoom()">📱 انضم لغرفة لاعب تاني</button>
+ <div class="voiceSettings"><div><strong>🎙️ صوت الحكم</strong><small>بيتكلم من موبايل صاحب الغرفة</small></div><button class="voiceToggle" onclick="toggleVoice()">${voiceOn?"🔊 شغّال":"🔇 مقفول"}</button></div>
+ <button class="btn ghost" onclick="previewVoice()">🔊 جرّب صوت الحكم على الموبايل</button>
+ ${!voiceAvailable?'<p class="notice bad">الصوت العربي مش متاح على موبايلك حاليًا. فعّل محرك تحويل النص العربي لكلام من إعدادات الهاتف، وهتفضل اللعبة شغالة بدونه.</p>':""}
  <button class="btn ghost" onclick="renderHow()">🎮 طريقة اللعب</button>
  </section><p class="foot">🔒 اللعب محلي عبر البلوتوث • موبايل لكل لاعب • لحد ٤ أشخاص • من غير إنترنت أو حسابات</p>`;
 }
 function renderHow(){
- root.innerHTML=nav()+`<section class="card"><h2>🎤 نظام الحكم والجرس</h2><p class="desc">الحكم الإلكتروني يعلن الفئة والسؤال. بعد ما ينتهي العدّ التمهيدي، الجرس يفتح للكل.</p>
+ root.innerHTML=nav()+`<section class="card"><h2>🎤 نظام الحكم والجرس</h2><p class="desc">الحكم الإلكتروني يعلن الفئة والسؤال بصوت مصري مُركّب من محرك النطق بالعربي (حسب الأصوات المثبتة)، وبعد ما يخلص الكلام الجرس يفتح للكل.</p>
+ <p class="desc">🎙️ الحكم يقرأ السؤال بصوت عربي، والجرس ما يتفتحش غير بعد انتهاء القراءة. لو النطق العربي مش متاح، بيظهر السؤال ويتفتح الجرس بعد مهلة للقراءة.</p>
  <p class="desc">🔔 أول رسالة ضغط توصل لموبايل صاحب الغرفة هي اللي تكسب الجرس. الجرس بيتقفل على الباقيين.</p>
  <p class="desc">🧠 المتسابق الأسرع قدامه ٤ اختيارات و١٢ ثانية للإجابة. إجابة صح +١، غلط أو انتهاء وقت الإجابة −١.</p>
- <p class="desc">🏆 أول شخص يوصل ١٠ نقاط يفوز، والحكم يعلن اسمه تلقائيًا. صوت الحكم مش تقليد لشخص بعينه؛ هو صوت عربي آلي حسب محرك الكلام المثبت على جهازك.</p>
+ <p class="desc">🏆 أول شخص يوصل ١٠ نقاط يفوز، والحكم يعلن اسمه تلقائيًا.</p>
  <p class="desc">📱 اعملوا اقتران Bluetooth بين الموبايلات الأول. صاحب الغرفة يختار ٢ أو ٣ أو ٤، وكل واحد تاني ينضم من موبايله.</p>
  <p class="small">ملحوظة الإنصاف: ترتيب وصول الضغطات عبر البلوتوث هو معيار الحكم. ممكن يحصل فارق اتصال بسيط بين الأجهزة؛ ده نظام للعب المنزلي مش بطولة احترافية.</p>
+ <p class="small">الصوت صوت اصطناعي للمذيع الخاص باللعبة، مش استنساخ لصوت شخص حقيقي. علشان تسمعه، اتأكد إن تحويل النص إلى كلام بالعربي شغّال على جهاز صاحب الغرفة.</p>
  <button class="btn" onclick="renderHome()">جاهزين للمواجهة! ⚡</button></section>`;
 }
 function showWaiting(message){
@@ -50,7 +52,7 @@ function renderPlayers(lobby=false){
 function renderLobby(){
  const ready=allReady();
  root.innerHTML=nav()+`<div class="banner">🎤 استوديو جرس التحدي • ${state.target} متسابقين</div>
- <div class="judge"><div class="face">👨‍⚖️</div><div><strong>الحَكَم جاهز!</strong><p>الهدف ١٠ نقاط، الصح +١ والغلط −١</p></div></div>
+ <div class="judge"><div class="face">🎙️</div><div><strong>الحَكَم جاهز ويتكلم!</strong><p>الهدف ١٠ نقاط، الصح +١ والغلط −١</p></div></div>
  <section class="card"><h2>المتسابقين داخلين الاستوديو</h2><p class="desc">${playersConnected()} من ${state.target} متصلين • الفئة: ${esc(state.category)}</p>${renderPlayers(true)}
  ${host?`<button class="btn" ${ready?"":"disabled"} onclick="startMatch()">🚀 ابدأوا الحلقة!</button>`:`<div class="notice">${ready?"✅ الكل متصل، مستنيين صاحب الغرفة يبدأ":"⏳ مستنيين باقي اللاعبين..."}</div>`}
  <button class="btn ghost" onclick="backToMenu()">خروج من الغرفة</button></section>`;
@@ -77,7 +79,7 @@ function renderQuestion(){
  <section class="card"><div class="kicker">${esc(state.question?.cat)}</div><div class="question">${esc(state.question?.q)}</div></section>`;
  if(phase==="announce"){
    body+=`<div class="judge"><div class="face">🎙️</div><div><strong>استعدوا للجرس</strong><p>استنوا لما الحكم يقول الجرس مفتوح</p></div></div>`;
-   if(host)body+=`<p class="small center">الحكم هيفتح الجرس بعد ما يخلص قراءة السؤال. 🔊</p>`;
+   body+=`<div class="notice">🎧 الجرس هيفتح تلقائيًا لما الحكم يخلص قراءة السؤال.</div>`;
  }else if(phase==="question"){
    body+=`<div class="buzzerWrap"><button id="thebuzzer" class="buzzer" onclick="pressBuzzer()" ${online&&seat!==null?"":"disabled"}>🔔<small>اضغط!</small></button><p class="desc">أول ضغط يوصل للحكم بياخد حق الإجابة</p></div>`;
  }else{

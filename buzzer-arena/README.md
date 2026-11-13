@@ -20,3 +20,12 @@ No accounts, external servers or internet needed. No original third-party audiov
 
 ## Development
 `gradle -p buzzer-arena :app:assembleDebug` with Android SDK 35 and JDK17.
+
+## 2.0: More categories + energetic Arabic-speaking referee
+- 800+ offline, original Arabic multiple-choice questions across cinema, songs, football, geography, history, literature, science, technology, cooking, animals, gaming, language, rapid maths, reversed words and more.
+- The host device uses Android TextToSpeech with an Arabic language pack (attempts Egyptian Arabic then Saudi Arabic, then generic Arabic). It is a synthetic announcer voice, **not** an imitation of any specific real presenter.
+- The buzzer stays locked until the question narration finishes and a short grace interval passes; if Arabic TTS is unavailable, the question is displayed and an extra reading interval is provided.
+- Host can preview or disable the synthesized voice in settings.
+- Referee calls out the buzzer winner, congratulates or teases answers, and announces the champion.
+
+The app is meant for social play; Bluetooth arrival ordering is not latency-compensated and is not suitable for tournament-grade millisecond timing.

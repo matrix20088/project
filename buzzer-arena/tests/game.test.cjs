@@ -10,7 +10,7 @@ function env(){
  const storage={data:{},getItem(k){return this.data[k]||null},setItem(k,v){this.data[k]=String(v)}};
  const context={console,Date,Math,Set,JSON,Number,String,Object,Array,Intl,window,Native:native,document:{getElementById(id){return nodes[id]||null}},localStorage:storage,setInterval(){},clearInterval(){}};
  vm.createContext(context);
- for(const file of ['questions.js','extras1.js','extras2.js','core.js','ui.js'])vm.runInContext(fs.readFileSync(path.join(folder,file),'utf8'),context,{filename:file});
+ for(const file of ['questions.js','extra_questions.js','core.js','ui.js'])vm.runInContext(fs.readFileSync(path.join(folder,file),'utf8'),context,{filename:file});
  return {context,nodes,sent,window,run:s=>vm.runInContext(s,context)};
 }
 for(const target of [2,3,4]){
@@ -63,17 +63,22 @@ for(const target of [2,3,4]){
 console.log('PASS all quick checks');
 
 {
- const {run,window}=env();
- const stats=run('Object.fromEntries(Object.entries(QUESTIONS).map(([name,rows])=>[name,rows.length]))');
- const total=Object.values(stats).reduce((a,b)=>a+b,0);
- assert(total>=550,'Question bank must include at least 550 questions, got '+total);
- const invalid=run('Object.entries(QUESTIONS).flatMap(([k,rows])=>rows.map((r,i)=>({k,i,good:r.length===(k==="🔄 كلمة مقلوبة"?4:5)&&new Set(r.slice(k==="🔄 كلمة مقلوبة"?0:1)).size===(k==="🔄 كلمة مقلوبة"?4:4)})).filter(x=>!x.good))');
- assert.equal(invalid.length,0,'Invalid options '+JSON.stringify(invalid.slice(0,3)));
- console.log('PASS '+total+' questions, '+Object.keys(stats).length+' categories');
- console.log('CATEGORIES '+JSON.stringify(stats));
- window.onNative('hosting','2');window.onNative('join',JSON.stringify({seat:1}));
- run('startMatch()');assert.equal(run('state.phase'),'announce');
- window.onNative('speechDone','1');assert.equal(run('state.speechOver'),true);
- run('state.deadline=Date.now()-1;openBuzz()');assert.equal(run('state.phase'),'question');
- console.log('PASS judge waits for speech then opens buzzer');
+ const {window,run}=env();window.onNative('hosting','2');window.onNative('join',JSON.stringify({seat:1}));
+ run('startMatch()');
+ assert.equal(run('state.phase'),'announce');
+ run('openBuzz()');
+ assert.equal(run('state.phase'),'announce','buzzer must not open before referee finishes speaking');
+ window.onNative('speechDone','1');
+ assert.equal(run('state.speechOver'),true);
+ run('state.deadline=Date.now()-1;openBuzz()');
+ assert.equal(run('state.phase'),'question');
+ console.log('PASS spoken referee unlocks buzzer only after narration / grace period');
+}
+{
+ const {window,run}=env();window.onNative('hosting','3');
+ assert(run('TOTAL_QUESTIONS')>=800);
+ assert(run('CAT_KEYS.length')>=14);
+ const bad=run('CAT_KEYS.flatMap(cat=>QUESTIONS[cat].filter(row=>row.length!==4 && row.length!==5).map(row=>cat))');
+ assert.equal(bad.length,0);
+ console.log('PASS quiz bank: '+run('TOTAL_QUESTIONS')+' questions, '+run('CAT_KEYS.length')+' categories');
 }

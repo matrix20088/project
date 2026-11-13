@@ -42,4 +42,4 @@ jobs:
         run: |
           cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v2.apk
           gh release delete buzzer-arena-v2 --yes 2>/dev/null || true
-          gh release create buzzer-arena-v2 Jars-Al-Tahaddi-v2.apk --title "جرس التحدي 2.0 - بنك أسئلة موسع وحكم يتكلم" --notes "Arabic game show for 2–4 human players, 600+ varied questions in 14 categories and Egyptian Arabic text-to-speech judge with lively ORIGINAL commentary and fair buzzer opened after spoken question. Uninstall v1 first if debug signing differs. No AI opponent."
+          gh release create buzzer-arena-v2 Jars-Al-Tahaddi-v2.apk --title "جرس التحدي 2.0 — أسئلة كتير وحكم ناطق" --notes "Android game show for 2-4 real human players; 900+ original Arabic quiz questions and an Arabic text-to-speech referee, with a spoken-question buzzer gate and timed scoring. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."

@@ -1,7 +1,8 @@
 "use strict";
 const root=document.getElementById("root");
 const CAT_ALL="🌟 منوعات",CAT_KEYS=Object.keys(QUESTIONS),ICONS=["🔵","🩷","🟡","🟣"];
-const QUIZ_SEC=15,ANSWER_SEC=12,ANNOUNCE_SEC=18,RESULT_SEC=8,WIN_AT=10;
+const TOTAL_QUESTIONS=CAT_KEYS.reduce((n,k)=>n+QUESTIONS[k].length,0);
+const QUIZ_SEC=15,ANSWER_SEC=12,ANNOUNCE_SEC=26,RESULT_SEC=8,WIN_AT=10;
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const clean=s=>String(s??"").trim().replace(/[\r\n\t]+/g," ").slice(0,18)||"لاعب";
 const format=n=>Math.max(0,n|0);
@@ -132,6 +133,7 @@ window.onNative=(type,detail)=>{
    return;
   }
  }
+ if(type==="ttsStatus"){voiceAvailable=false;if(!state)renderHome();return;}
  if(type==="speechDone"){questionVoiceFinished(true,detail);return;}
  if(type==="speechUnavailable"){voiceAvailable=false;questionVoiceFinished(false,detail);return;}
  if(type==="error"){showError(detail);return;}
