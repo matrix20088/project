@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#0b1020">
+<title>الهروب سوا</title>
+<style>
+:root{color-scheme:dark;--surface:#171b35;--pink:#ff658d;--cyan:#39e7e3;--yellow:#ffcf6e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(ellipse at 50% -10%,#29224d 0%,#10152d 45%,#090d1d 100%);color:#fff;font:500 16px system-ui,'Noto Sans Arabic',sans-serif;min-height:100dvh;overflow-x:hidden}
+body:before{content:'';pointer-events:none;position:fixed;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(#0005,transparent 90%)}
+button,input{font:inherit}button{cursor:pointer}#app{position:relative;min-height:100dvh;max-width:520px;margin:auto;padding:24px 19px 35px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--cyan);font-weight:900}.logo{font-size:23px;font-weight:1000;letter-spacing:-1px}
+.pill{border:1px solid #3c435f;padding:7px 10px;border-radius:999px;font-size:12px;color:#cbd4ee;background:#1a2038}
+.hero{text-align:center;padding:32px 4px 24px}
+.orb{width:152px;height:152px;border-radius:50%;margin:0 auto 23px;display:grid;place-items:center;font-size:66px;background:radial-gradient(circle at 30% 24%,#fa84a4,#9137a9 55%,#2e2a76 90%);box-shadow:0 0 0 10px #e667a514,0 0 0 24px #e667a50c,0 25px 75px #fc467a55;animation:float 3s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-8px)}}h1{font-size:37px;line-height:1.22;margin:0;font-weight:1000;letter-spacing:-1.5px}h2{font-size:27px;line-height:1.45;margin:8px 0;font-weight:900}
+.desc{color:#acb9d4;line-height:1.8;font-size:15px}.accent{color:var(--pink)}.cyan{color:var(--cyan)}
+.panel{background:linear-gradient(135deg,#212747eb,#171b35eb);border:1px solid #393c60;border-radius:24px;padding:20px;box-shadow:0 12px 42px #0003;margin-top:17px}
+.btn{display:block;width:100%;border:0;border-radius:16px;min-height:57px;padding:13px 16px;color:#14182b;background:linear-gradient(110deg,#ff789e,#ff9c75);font-weight:900;font-size:16px;margin-top:11px;box-shadow:0 9px 24px #ff5d8930}
+.btn.alt{color:#e9f9ff;background:#252b49;border:1px solid #465274;box-shadow:none}.btn.cyanbg{background:linear-gradient(110deg,#38e7dc,#80d9ff);color:#042631}.btn:active{transform:scale(.98)}.btn:disabled{opacity:.48}
+.note{font-size:12px;color:#93a2bf;line-height:1.8;text-align:center;margin-top:14px}
+.device{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:right;border:1px solid #3e5277;background:#232945;color:#fff;padding:15px 13px;border-radius:14px;margin:10px 0}
+.device strong{display:block}.device small{display:block;color:#8394b3;font-size:11px;direction:ltr;text-align:right}
+.spinner{display:block;width:46px;height:46px;border:3px solid #37dedb40;border-top-color:#37dedb;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status{display:flex;align-items:center;justify-content:space-between;margin:21px 0 12px;gap:8px;flex-wrap:wrap}.chip{display:inline-flex;align-items:center;gap:7px;border-radius:14px;background:#232b49;border:1px solid #405077;padding:9px 13px;font-size:13px}.chip b{color:var(--yellow)}
+.timer{font-size:30px;font-weight:1000;color:var(--cyan);font-variant-numeric:tabular-nums}.timer.danger{color:var(--pink);animation:blink .7s infinite}@keyframes blink{50%{opacity:.58}}
+.track{height:7px;border-radius:20px;background:#28314f;overflow:hidden;margin-top:11px}.fill{height:100%;background:linear-gradient(90deg,#ff6f92,#56e4e0);border-radius:20px;transition:width .4s}
+.step{font-size:11px;color:#8bdadb;letter-spacing:1px;font-weight:900}.missiontitle{font-size:29px;font-weight:950;line-height:1.35;margin:12px 0}
+.role{padding:16px 17px;border:1px solid #3c5274;border-radius:18px;background:#17223a;margin:16px 0}.role .rolelabel{font-size:11px;color:var(--cyan);font-weight:850}.role strong{display:block;margin:3px 0 6px;font-size:19px}.role p{margin:0;color:#a9b8d3;font-size:14px;line-height:1.85}
+.route{display:flex;flex-direction:row;gap:8px;justify-content:center;flex-wrap:wrap;margin:19px 0 13px}.route .dot{width:27px;height:27px;border-radius:10px;display:grid;place-items:center;background:#2b3150;border:1px solid #515b7e;color:#b8c8df;font-size:12px}.route .dot.done{background:#18a9a0;border-color:#26c6ba;color:#fff}.route .dot.current{background:#ff678b;border-color:#ff9cba;color:#fff;box-shadow:0 0 0 5px #ff6f8e24}
+.doors{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:18px}.door{padding:22px 4px;border-radius:20px;border:1px solid #455b83;background:linear-gradient(180deg,#2a3354,#171d38);color:#e5f8ff;min-height:144px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;font-size:14px;font-weight:900}.door .symbol{font-size:40px}.door:active{background:#365269}
+.scan{display:flex;justify-content:space-around;gap:8px;margin:17px auto;border:1px solid #344b6e;background:#0d1e34;padding:18px 6px;border-radius:21px}.signal{width:29%;font-size:45px;text-align:center;padding:7px 0;filter:drop-shadow(0 0 14px #32d7e777);animation:float 2s ease-in-out infinite}
+.keypad{display:flex;gap:9px;justify-content:center;margin:21px 0;direction:ltr}.digit{width:23%;height:70px;display:grid;place-items:center;background:#0f1f36;border:1px solid #3c607c;border-radius:14px;font-size:30px;font-weight:900;color:#45f1e7}.digit.hidden{color:#60718d;border-style:dashed}
+.codeInput{display:block;width:100%;border:1px solid #627da6;border-radius:17px;background:#101e35;color:#fff;letter-spacing:14px;text-align:center;font-size:30px;padding:13px;direction:ltr;outline:none}.codeInput:focus{border-color:var(--cyan)}
+.bigTap{border:2px solid #ff90ae;background:radial-gradient(circle at 45% 35%,#ff9dbe,#ff527a 55%,#992a60 100%);border-radius:50%;width:190px;height:190px;display:block;margin:20px auto;color:#fff;font-size:20px;font-weight:1000;box-shadow:0 0 0 10px #f470a11c,0 0 0 25px #f470a110,0 17px 38px #ff5b8780;animation:pulse 1.5s infinite}.bigTap.armed{background:radial-gradient(circle,#60ffee,#179eaa);border-color:#bafff0}
+@keyframes pulse{50%{box-shadow:0 0 0 17px #f470a113,0 0 0 35px #f470a108,0 17px 38px #ff5b8780}}
+.alert{color:var(--yellow);background:#54451e3a;border:1px solid #706039;border-radius:16px;padding:12px 13px;font-size:14px;margin:16px 0;line-height:1.65;min-height:51px}.success{color:#50efc9;background:#145f5444;border-color:#237b73}.failure{color:#ff91af;background:#69203c44;border-color:#96496e}
+.center{text-align:center}.bigScore{font-size:64px;color:var(--yellow);font-weight:1000;line-height:1.3}.confetti{font-size:57px;letter-spacing:10px;animation:float 2s infinite}.footer{font-size:11px;color:#657899;text-align:center;margin-top:28px}.tagline{font-size:11px;letter-spacing:1px;color:#e3a8c5;font-weight:900;text-align:center}p{margin-top:7px}.how{font-size:14px;color:#a6b5d2;line-height:1.85}.how b{color:#fff}.waiting{padding:48px 8px;text-align:center}
+</style>
+</head>
+<body><main id="app"></main>
+<script>
+const app=document.getElementById('app');
+let connected=false,host=false,mode='home',game=null,notice='',devices=[],sound=true,prevVersion=-1,pending=null;
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function jssend(packet){try{Native.send(JSON.stringify(packet));}catch(e){showError('تعذر إرسال الحركة');}}
+function audio(kind='ok'){try{if(!sound)return;let a=new(window.AudioContext||window.webkitAudioContext)();let o=a.createOscillator(),v=a.createGain();o.type='sine';o.frequency.value=kind==='bad'?180:kind==='win'?850:530;v.gain.setValueAtTime(.08,a.currentTime);v.gain.exponentialRampToValueAtTime(.001,a.currentTime+.16);o.connect(v);v.connect(a.destination);o.start();o.stop(a.currentTime+.17);o.onended=()=>a.close();}catch(e){}}
+function vibrate(){try{Native.vibrate();}catch(e){}}
+function top(){return '<div class="top"><div><div class="eyebrow">CO-OP ESCAPE MISSION</div><div class="logo">الهروب <span class="accent">سوا</span> 🚨</div></div><div class="pill">اتنين × موبايلين</div></div>';}
+function menu(){
+mode='home';app.innerHTML=top()+`<section class="hero"><div class="orb">🕵️‍♀️</div><div class="tagline">عملية سرّية لشخصين فقط</div><h1>يا تهربوا <span class="accent">سوا</span><br>يا تتقفشوا <span class="cyan">سوا!</span></h1><p class="desc">واحد عميل جوه المبنى... والتاني هاكر برا بيشوف الفخاخ. الوقت ضدكم. لازم تتكلموا وتتعاونوا وتفكّوا الشفرة قبل الإنذار!</p></section><section class="panel"><button class="btn" onclick="makeRoom()">🚨 أنشئ المهمة</button><button class="btn cyanbg" onclick="listDevices()">🔗 انضم للمهمة</button><button class="btn alt" onclick="showHow()">🎮 إزاي بنلعب؟</button></section><p class="note">من غير نت • من غير حسابات • لازم بلوتوث واقتران أول مرة</p><div class="footer">مصممة لضحككم وذكاءكم... مش للخناق 😄</div>`;
+}
+function showHow(){
+mode='how';app.innerHTML=top()+`<section class="panel"><h2>المهمة: سرقة ملف X 🗝️</h2><div class="how"><p><b>① ممر الليزر:</b> المخترق شايف الأبواب الآمنة، والعميل لازم يدخل من الباب الصح. ما ينفعش تعرف الطريق غير بالكلام!</p><p><b>② غرفة الشفرة:</b> كل واحد معاه نص الرمز السري. لازم توصلوا الأربعة أرقام قبل ما الوقت يخلص.</p><p><b>③ مفتاح الهروب:</b> لازم تدوسوا زرار الهروب على الموبايلين في نفس ثانيتين ونص.</p><p><b>⏱️</b> كل مهمة ليها 100 ثانية و4 فرص فقط. بعد الهروب بتبدلوا الأدوار وتزيد الصعوبة.</p><p><b>الاتصال:</b> اقترنوا من إعدادات البلوتوث في الموبايلين، واحد يفتح غرفة والثاني يختار اسمه من الأجهزة المقترنة.</p></div><button class="btn" onclick="menu()">جاهزين! 🔥</button></section>`;
+}
+function showError(t){notice=t;mode='error';app.innerHTML=top()+`<section class="panel center"><div style="font-size:57px">⚠️</div><h2>في حاجة عطّلت المهمة</h2><p class="desc">${esc(t)}</p><button class="btn" onclick="menu()">رجوع للبداية</button><button class="btn alt" onclick="Native.settings()">إعدادات البلوتوث</button></section>`;}
+function makeRoom(){pending='host';waiting('جاري فتح غرفة العملية...');Native.permission();}
+function waiting(message){mode='waiting';app.innerHTML=top()+`<section class="panel waiting"><div class="spinner"></div><h2>ثبّت مكانك يا عميل!</h2><p class="desc">${esc(message||'مستنيين الموبايل التاني يتصل')}</p><button class="btn alt" onclick="menu()">رجوع</button></section>`;}
+function listDevices(){pending='paired';waiting('بندور على الموبايلات المقترنة...');Native.permission();}
+function showDevices(){
+mode='devices';app.innerHTML=top()+`<section class="panel"><h2>اختار موبايل شريكك 📱</h2><p class="desc">لازم تكونوا عاملين اقتران Bluetooth من إعدادات الموبايلين الأول.</p>${devices.length?devices.map((d,i)=>`<button class="device" onclick="connectTo(${i})"><span><strong>${esc(d.name)}</strong><small>${esc(d.addr)}</small></span><span>←</span></button>`).join(''):'<p class="desc center">مفيش أجهزة مقترنة. افتح الإعدادات واعمل اقتران.</p>'}<button class="btn alt" onclick="Native.settings()">⚙️ افتح إعدادات البلوتوث</button><button class="btn alt" onclick="Native.paired()">🔄 حدّث الأجهزة</button><button class="btn alt" onclick="menu()">رجوع</button></section>`;
+}
+function connectTo(i){let d=devices[i];if(d){waiting('بنحاول نوصل لـ '+d.name+' ...');Native.join(d.addr);}}
+window.onNative=function(type,detail){
+ if(type==='ready'){if(pending==='host'){pending=null;Native.host();}else if(pending==='paired'){pending=null;Native.paired();}return;}
+ if(type==='waiting'){waiting(detail);return;}
+ if(type==='error'){showError(detail);return;}
+ if(type==='paired'){try{devices=JSON.parse(detail);}catch(e){devices=[];}showDevices();return;}
+ if(type==='disconnected'){connected=false;game=null;showError(detail);return;}
+ if(type==='connected'){connected=true;host=(detail==='host');waiting('تم الاتصال! بنجهّز المهمة السرية...');if(host)setTimeout(()=>startMission(1,0),500);return;}
+ if(type==='message'){try{let p=JSON.parse(detail);
+  if(p.t==='S' && !host){let change=!game||p.g.version!==prevVersion;game=p.g;prevVersion=game.version;mode='game';if(change)renderGame();else updateClock();}
+  else if(p.t==='A' && host){execute(p.a,p.v,'guest');}
+ }catch(e){showError('وصلت رسالة غير مفهومة بين الجهازين');}}
+};
+function whoHacker(){return game&&game.mission%2===1?'host':'guest';}
+function myRole(){return (host?'host':'guest')===whoHacker()?'hacker':'runner';}
+function rand(n){return Math.floor(Math.random()*n);}
+function randomCode(){return Array.from({length:4},()=>rand(10)).join('');}
+function startMission(n,score){
+ if(!host)return;
+ game={mission:n,phase:0,status:'play',route:Array.from({length:5+Math.min(5,n)},()=>rand(3)),step:0,code:randomCode(),hearts:4,score:score||0,remaining:100,endsAt:Date.now()+100000,last:'اتكلموا بسرعة... الإنذار بدأ!',taps:{host:0,guest:0},version:1};
+ prevVersion=game.version;sync(true);
+}
+function sync(refresh){if(!host||!connected||!game)return;jssend({t:'S',g:game});if(refresh){prevVersion=game.version;renderGame();}else updateClock();}
+function choose(a,v){if(!connected||!game)return;if(host)execute(a,v,'host');else jssend({t:'A',a,v});}
+function execute(action,value,from){
+ if(!host||!game)return;let g=game;
+ if(action==='next'&&g.status!=='play'){startMission(g.status==='win'?g.mission+1:g.mission,g.score);return;}
+ if(g.status!=='play')return;
+ let runner=whoHacker()==='host'?'guest':'host',hacker=whoHacker();
+ if(action==='lane'&&g.phase===0&&from===runner){
+  if(!Number.isInteger(value)||value<0||value>2)return;
+  let correct=value===g.route[g.step];g.step++;
+  if(correct){g.score+=40;g.last='✅ ممتاز! الباب كان آمن. كملوا!';audio('ok');}
+  else{g.hearts--;g.last='🚨 ليزر! ضاعت فرصة. اسمع تعليمات الهاكر!';audio('bad');vibrate();}
+  if(g.hearts<=0){lose('الحراس قفشوكوا عند ممر الليزر!');}
+  else if(g.step>=g.route.length){g.phase=1;g.last='🔓 عديتوا الليزر! دلوقتي فكّوا القفل سوا.';}
+ }else if(action==='code'&&g.phase===1&&from===hacker){
+  let val=String(value||'').replace(/\D/g,'').slice(0,4);
+  if(val.length!==4)return;
+  if(val===g.code){g.score+=160;g.phase=2;g.last='🔐 الشفرة صح! فاضل تشغيل بوابة الهروب في نفس اللحظة.';audio('ok');}
+  else{g.hearts--;g.last='❌ شفرة غلط! ركزوا في ترتيب الأرقام.';audio('bad');vibrate();if(g.hearts<=0)lose('نظام الحماية قفل عليكم الشفرة!');}
+ }else if(action==='tap'&&g.phase===2){
+  let now=Date.now();
+  if(g.taps[from]>0)return;
+  if(g.taps.host+g.taps.guest===0)g.firstTap=now;
+  g.taps[from]=now;
+  if(g.taps.host&&g.taps.guest){
+   if(Math.abs(g.taps.host-g.taps.guest)<=2600){g.status='win';g.score+=300+g.hearts*60+g.remaining*2;g.last='🎉 نجحتوا! اتسللتوا بره قبل وصول الحراس.';audio('win');}
+   else{g.taps={host:0,guest:0};g.firstTap=0;g.last='⏱️ متأخرين عن بعض! حاولوا تاني مع العد التنازلي.';}
+  }else g.last='⏳ واحد ضغط... التاني لازم يضغط خلال ثانيتين ونص!';
+ }else return;
+ g.version++;sync(true);
+}
+function lose(reason){game.status='fail';game.last=reason;vibrate();}
+function clockTick(){
+ if(!host||!game||game.status!=='play')return;let g=game;g.remaining=Math.max(0,Math.ceil((g.endsAt-Date.now())/1000));
+ if(g.phase===2&&g.firstTap&&(g.taps.host||g.taps.guest)&&Date.now()-g.firstTap>2600){g.taps={host:0,guest:0};g.firstTap=0;g.last='⌛ التنسيق اتأخر. عدّوا 3، 2، 1 واضغطوا مع بعض!';g.version++;sync(true);}
+ if(g.remaining===0){lose('الوقت خلص... الحراس وصلوا!');g.version++;sync(true);}else sync(false);
+}
+setInterval(clockTick,1000);
+function clockHtml(){
+ if(!game)return '';let pct=Math.max(0,game.remaining);
+ return `<div class="status"><span class="chip">🎯 مهمة <b>#${game.mission}</b></span><span class="chip">❤️ ${'♥'.repeat(game.hearts)}${'♡'.repeat(4-game.hearts)}</span><span class="timer ${game.remaining<20?'danger':''}" id="timer">${game.remaining}ث</span></div><div class="track"><div class="fill" id="timefill" style="width:${pct}%"></div></div><div class="status"><span class="chip">⭐ نقاط <b>${game.score}</b></span><span class="chip">${myRole()==='hacker'?'💻 المخترق':'🕵️ العميل الميداني'}</span></div>`;
+}
+function updateClock(){if(!game)return;const timer=document.getElementById('timer'),fill=document.getElementById('timefill');if(timer){timer.textContent=game.remaining+'ث';timer.classList.toggle('danger',game.remaining<20);}if(fill)fill.style.width=Math.max(0,game.remaining)+'%';}
+function roleBox(name,description){return `<div class="role"><div class="rolelabel">دورك في المهمة</div><strong>${name}</strong><p>${description}</p></div>`;}
+function renderGame(){
+ if(!connected||!game){menu();return;}mode='game';let g=game;
+ let result=top()+clockHtml();
+ if(g.status!=='play'){
+  const won=g.status==='win';
+  result+=`<section class="panel center"><div class="confetti">${won?'🎉💎🚀':'🚨💥🔒'}</div><h1>${won?'هربتوا سوا!':'المهمة فشلت!'}</h1><p class="desc">${esc(g.last)}</p><div class="bigScore">${g.score}</div><div class="step">إجمالي نقاط الفريق</div><p class="desc">${won?'الدور القادم هيتبدّل وهتزيد صعوبة ممر الليزر.':'لسه فيه فرصة إنكم ترجعوا وتكسبوا!'}</p><button class="btn" onclick="choose('next',0)">${won?'🚀 المهمة اللي بعدها':'🔄 إعادة المهمة'}</button></section>`;
+  app.innerHTML=result;return;
+ }
+ result+=`<div class="step">مرحلة ${g.phase+1} من 3 — العملية جارية</div>`;
+ const hacker=myRole()==='hacker';
+ if(g.phase===0){
+  result+=`<h2 class="missiontitle">🚨 ممر الليزر</h2>`;
+  if(hacker){
+   result+=roleBox('💻 إنت المخترق','عندك خريطة الطريق الآمن! قول لشريكك ترتيب الأبواب بسرعة. كل باب له رقم: ١ أو ٢ أو ٣.');
+   result+=`<div class="panel"><div class="step">الكود السري للممر — ما يبانش على موبايل العميل</div><div class="route">${g.route.map((a,i)=>`<div class="dot ${i<g.step?'done':i===g.step?'current':''}">${a+1}</div>`).join('')}</div><p class="desc center">الباب الحالي: <b class="cyan" style="font-size:27px">${g.route[g.step]+1}</b></p><p class="note">شريكك هو اللي هيدوس الباب؛ إنت قلّه يختار إيه!</p></div>`;
+  }else{
+   result+=roleBox('🕵️ إنت العميل','قدامك 3 أبواب. واحد آمن والباقي مليان ليزر. اسمع من المخترق وافتح باب واحد فقط!');
+   result+=`<div class="route">${g.route.map((a,i)=>`<div class="dot ${i<g.step?'done':i===g.step?'current':''}">${i<g.step?'✓':i===g.step?'!':'·'}</div>`).join('')}</div><div class="doors">${[0,1,2].map(i=>`<button class="door" onclick="choose('lane',${i})"><span>الباب ${i+1}</span><span class="symbol">🚪</span><span>افتح ←</span></button>`).join('')}</div>`;
+  }
+ }else if(g.phase===1){
+  result+=`<h2 class="missiontitle">🔐 غرفة الشفرة</h2>`;
+  result+=roleBox(hacker?'💻 إنت اللي هتفتح القفل':'🕵️ إنت معاك نصف السر',
+    hacker?'إنت شايف الرقم الأول والثالث. شريكك شايف الثاني والرابع. اطلب منه الأرقام واكتب الشفرة كاملة.':'إنت شايف الرقم الثاني والرابع فقط. قولهم للشريك بالترتيب عشان يفتح القفل!');
+  result+=`<section class="panel"><div class="step center">رمز سري من 4 خانات</div><div class="keypad">${g.code.split('').map((c,i)=>{let seen=hacker?(i===0||i===2):(i===1||i===3);return `<div class="digit ${seen?'':'hidden'}">${seen?c:'?'}</div>`;}).join('')}</div>${hacker?`<input class="codeInput" id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••" aria-label="الشفرة من أربع خانات"><button class="btn cyanbg" onclick="submitCode()">🔓 افتح القفل</button>`:'<div class="scan"><span class="signal">📡</span><span class="signal">🔐</span><span class="signal">📲</span></div><p class="note">قول لشريكك الرقم الثاني والرابع... مش الشفرة كلها عندك!</p>'}</section>`;
+ }else if(g.phase===2){
+  let mine=g.taps[host?'host':'guest']>0;
+  let theirs=g.taps[host?'guest':'host']>0;
+  result+=`<h2 class="missiontitle">⚡ مفتاح الهروب</h2>`;
+  result+=roleBox('🤝 لازم تضغطوا في نفس اللحظة','الزرار ده بيشتغل لما كل واحد فيكم يدوس على موبايله خلال ثانيتين ونص. عدّوا بصوت عالي: 3... 2... 1!');
+  result+=`<button class="bigTap ${mine?'armed':''}" onclick="choose('tap',1)" ${mine?'disabled':''}>${mine?'✅ تم التفعيل':'⚡ اضغط دلوقتي!'}</button><p class="center desc">${mine?(theirs?'الاتنين فعلوا':'مستني شريكك يضغط...'):'متدوسش لوحدك... اتفقوا الأول!'}</p>`;
+ }
+ let cls=g.last.startsWith('✅')||g.last.startsWith('🔓')||g.last.startsWith('🔐')?'success':g.last.startsWith('❌')||g.last.startsWith('🚨')?'failure':'';
+ result+=`<div class="alert ${cls}">${esc(g.last)}</div><div class="footer">🎧 اتكلموا مع بعض • الخريطة مختلفة على كل موبايل</div>`;
+ app.innerHTML=result;
+}
+function submitCode(){let el=document.getElementById('code');if(el){let val=el.value.trim();if(val.length===4)choose('code',val);else{el.focus();el.placeholder='٤ أرقام';}}}
+menu();
+</script></body></html>

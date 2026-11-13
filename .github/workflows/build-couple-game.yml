@@ -1,0 +1,38 @@
+name: Build Escape Together APK
+on:
+  push:
+    branches: [couple-game-apk-2026]
+    paths:
+      - 'couple-game/**'
+      - '.github/workflows/build-couple-game.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Build debug APK
+        run: gradle -p couple-game :app:assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElHoroobSawa-APK
+          path: couple-game/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Publish APK release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete couple-game-v1 --yes 2>/dev/null || true
+          gh release create couple-game-v1 "couple-game/app/build/outputs/apk/debug/app-debug.apk#ElHoroobSawa.apk" --title "الهروب سوا - أندرويد" --notes "لعبة لشخصين على موبايلين عبر البلوتوث. ثبّت نفس APK على الجهازين، واقترن من إعدادات البلوتوث، ثم أنشئ غرفة من موبايل وانضم من الآخر."
