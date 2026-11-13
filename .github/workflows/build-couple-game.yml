@@ -35,5 +35,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete couple-game-v1 --yes 2>/dev/null || true
-          gh release create couple-game-v1 "couple-game/app/build/outputs/apk/debug/app-debug.apk#ElHoroobSawa.apk" --title "الهروب سوا - أندرويد" --notes "لعبة لشخصين على موبايلين عبر البلوتوث. ثبّت نفس APK على الجهازين، واقترن من إعدادات البلوتوث، ثم أنشئ غرفة من موبايل وانضم من الآخر."
+          cp couple-game/app/build/outputs/apk/debug/app-debug.apk ElHoroobSawa-v2.apk
+          gh release delete couple-game-v2 --yes 2>/dev/null || true
+          gh release create couple-game-v2 ElHoroobSawa-v2.apk --title "الهروب سوا 1.1 — إصلاح التشغيل" --notes "تم إصلاح الشاشة الفاضية عند بدء اللعبة. ثبّت نفس APK على الجهازين."
