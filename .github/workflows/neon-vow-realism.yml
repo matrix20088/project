@@ -24,12 +24,13 @@ jobs:
       - name: Install Blender and download licensed test scans
         run: |
           sudo apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y blender >/dev/null
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y blender python3-numpy >/dev/null
           mkdir -p neon-vow-realism/raw neon-vow-realism/app/src/main/assets/models
           for person in nathan sophia; do
             curl -fL --retry 3 "https://raw.githubusercontent.com/s0ck3t/VideoIntoBlenderModel/main/assets/rigs/renderpeople_${person}.fbx" -o "neon-vow-realism/raw/${person}.fbx"
             curl -fL --retry 3 "https://raw.githubusercontent.com/s0ck3t/VideoIntoBlenderModel/main/assets/rigs/renderpeople_${person}.png" -o "neon-vow-realism/raw/${person}.png"
             blender -b --python neon-vow-realism/scripts/convert_character.py -- "${person}" "neon-vow-realism/raw/${person}.fbx" "neon-vow-realism/raw/${person}.png" "neon-vow-realism/app/src/main/assets/models/${person}.glb"
+            test -s "neon-vow-realism/app/src/main/assets/models/${person}.glb"
           done
           ls -lh neon-vow-realism/app/src/main/assets/models/
       - name: Bundle Three.js scene and screenshot tools
