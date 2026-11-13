@@ -20,7 +20,10 @@ for obj in objects:
 mins=Vector(tuple(min(p[i] for p in all_points) for i in range(3)))
 maxs=Vector(tuple(max(p[i] for p in all_points) for i in range(3)))
 print("BOUNDING_BOX",label,tuple(round(v,4) for v in mins),tuple(round(v,4) for v in maxs))
-height=max(0.1,maxs.z-mins.z)
+dims=maxs-mins
+# FBX source scans use a different up axis; their longest dimension is
+# their actual full-body height (not Blender's Z before coordinate conversion).
+height=max(0.1,dims.x,dims.y,dims.z)
 scale=1.82/height
 root=bpy.data.objects.new("GameCharacter_"+label,None)
 bpy.context.collection.objects.link(root)
