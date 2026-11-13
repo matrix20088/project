@@ -1,33 +1,87 @@
 <!doctype html>
 <html lang="ar" dir="rtl"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
-<title>NEON VOW — Real 3D Material Test</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#091228">
+<title>NEON VOW — 3D Co-op</title>
 <style>
-*{box-sizing:border-box;touch-action:none;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:#071023;color:white;font-family:system-ui,sans-serif;width:100%;height:100%;overflow:hidden}
-#game{position:fixed;inset:0}canvas{display:block;outline:0}
-#hud{position:fixed;inset:0;pointer-events:none}
-.top{position:absolute;top:15px;left:25px;right:25px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.title{font-size:30px;letter-spacing:3px;font-weight:1000;text-shadow:0 2px 12px #040917}
-.title span{color:#ff68b7}
-.caption{font-size:11px;letter-spacing:2px;color:#b4d7e7;font-weight:700}
-.pill{background:#071629bf;border:1px solid #77e6f4b0;padding:9px 14px;border-radius:12px;font-size:12px;font-weight:800}
-.bottom{position:absolute;bottom:22px;left:22px;right:22px;display:flex;justify-content:space-between;align-items:end;gap:12px}
-.buttons{display:flex;gap:12px;align-items:center}
-.pad{height:138px;width:138px;background:#09203999;border:2px solid #8cedff70;border-radius:50%;display:grid;place-items:center;font-size:52px;color:#9bf9ff;pointer-events:auto;user-select:none;touch-action:none}
-.btn{height:90px;width:90px;border-radius:50%;display:grid;place-items:center;color:white;font-size:18px;font-weight:900;pointer-events:auto;user-select:none;touch-action:none;cursor:pointer}
-.btn.attack{background:#c33d91c9;border:3px solid #ff93d4}
-.btn.dash{background:#21719bc9;border:3px solid #7bf5ff}
-#loading{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#090e21ea;border:2px solid #59deff;padding:14px 20px;border-radius:16px;font-size:15px;font-weight:900;white-space:nowrap}
-.legal{position:absolute;top:60px;left:25px;color:#9ec0c5;font-size:10px;letter-spacing:1.3px}
-@media(max-height:480px){.title{font-size:24px}.pad{width:106px;height:106px}.btn{width:75px;height:75px;font-size:15px}.bottom{bottom:12px}}
-</style></head>
-<body><div id="game"></div>
-<div id="hud">
-<div class="top"><div><div class="title">NEON <span>VOW</span></div><div class="caption">REALISTIC 3D VISUAL PROTOTYPE</div></div><div class="pill">P1 &amp; P2 • THIRD-PERSON TEST</div></div>
-<div class="legal">RENDER TEST • NOT FINAL GAME ART</div>
-<div id="loading">جاري تحميل الشخصيات الحقيقية 0/2</div>
-<div class="bottom">
- <div id="control" class="pad">✣</div>
- <div class="buttons"><div id="dash" class="btn dash">اندفاع</div><div id="attack" class="btn attack">هجوم</div></div>
-</div></div><script src="game.js"></script></body></html>
+:root{font-family:system-ui,'Noto Sans Arabic',sans-serif;color:#f1f7ff;--a:#43e9f4;--b:#ff5ca7}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090f20;touch-action:none}
+#game,canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#game canvas{touch-action:none}
+#shade{position:fixed;inset:0;background:linear-gradient(90deg,#030a1b99,#0000 55%,#03091a88);pointer-events:none}
+#hud{position:fixed;inset:0;pointer-events:none;display:none}
+#hud.active{display:block}
+.hudtop{position:absolute;top:max(10px,env(safe-area-inset-top));left:18px;right:18px;display:flex;align-items:start;justify-content:space-between;gap:10px;direction:ltr}
+.brand{letter-spacing:3px;font-size:24px;font-weight:1000;font-style:italic;text-shadow:0 5px 16px #071428}
+.brand em{font-style:normal;color:var(--b)}
+#objective{font-size:12px;color:#f3f8ff;direction:rtl;font-weight:700;background:#101e35b8;border:1px solid #4ab9d04d;padding:8px 14px;border-radius:10px;margin-top:3px}
+.stats{display:flex;align-items:center;gap:9px}
+.stat{font-size:12px;padding:8px 11px;border-radius:11px;background:#0d1c32c9;border:1px solid #5475936e;white-space:nowrap}
+#pauseBtn{cursor:pointer;pointer-events:auto;background:#132942c9;border:1px solid #81d7ea65;color:white;font-size:23px;border-radius:12px;width:42px;height:40px}
+.missionbar{position:absolute;top:68px;left:16px;display:flex;gap:10px;flex-wrap:wrap;max-width:58%;direction:ltr}
+.health{background:#071d2cc4;border:1px solid #58b6d56e;padding:7px 9px;border-radius:12px;min-width:155px}
+.healthlabel{font-size:10px;color:#dbe7fe;margin-bottom:4px;display:flex;justify-content:space-between;direction:rtl}
+.bar{height:7px;border-radius:99px;background:#35445b;overflow:hidden}
+.bar>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#00b5d0,#6cfdff);border-radius:99px}
+.bar.pink>i{background:linear-gradient(90deg,#e34c97,#ffb7ee)}
+#bossHealth{position:absolute;top:83px;right:15px;min-width:130px;width:24%;display:none}
+#bossHealth .bar>i{background:linear-gradient(90deg,#ff502f,#ffd079)}
+#toast{position:absolute;top:29%;left:50%;transform:translate(-50%,-12px);text-align:center;min-width:170px;max-width:78%;padding:12px 22px;border-radius:12px;font-weight:850;font-size:15px;opacity:0;background:#081c32e8;border:1px solid #53e7f1b1;transition:opacity .2s,transform .2s}
+#toast.show{transform:translate(-50%,0);opacity:1}
+#controls{position:absolute;inset:0;direction:ltr}
+#joystick{position:absolute;bottom:max(25px,env(safe-area-inset-bottom));left:27px;width:135px;height:135px;border-radius:50%;border:2px solid #82e6ff66;background:#071c35a3;pointer-events:auto;touch-action:none;display:grid;place-items:center}
+#joystick:before{content:'';position:absolute;inset:20px;border-radius:50%;border:1px dashed #82efff38}
+#knob{width:61px;height:61px;border-radius:50%;border:3px solid #d1fbff99;background:linear-gradient(160deg,#4aaccadf,#123d79df);box-shadow:0 3px 21px #31d9ff4a;transform:translate(0,0)}
+.action{position:absolute;border-radius:50%;color:white;border:3px solid #fdc3edb2;pointer-events:auto;touch-action:none;font-weight:900;text-shadow:0 2px 8px #06071a;box-shadow:0 5px 30px #ff51b347}
+#attack{right:26px;bottom:max(32px,env(safe-area-inset-bottom));width:104px;height:104px;background:radial-gradient(circle at 30% 20%,#fa99d5,#962f85 67%,#542448)}
+#dash{right:145px;bottom:max(36px,env(safe-area-inset-bottom));width:65px;height:65px;background:radial-gradient(circle at 30% 20%,#75e7ff,#147ac3 70%,#193d65);border-color:#92edff}
+#interact{right:154px;bottom:max(121px,env(safe-area-inset-bottom) + 85px);width:59px;height:59px;background:radial-gradient(circle at 30% 20%,#ffe2aa,#a26832);border-color:#ffe59c}
+#statusline{position:absolute;left:20%;right:20%;bottom:13px;text-align:center;color:#a1cee2;font-size:11px;font-weight:700}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(105deg,#061025f5,#08152cdd 55%,#101a3bef);touch-action:pan-y;overflow-y:auto;padding:18px}
+#overlay.hidden{display:none}
+#panel{width:min(570px,100%);max-height:100%;overflow-y:auto;padding:15px 17px;border:1px solid #79d7f065;border-radius:22px;background:linear-gradient(150deg,#1b294ab9,#0d142acc);box-shadow:0 15px 65px #0009;backdrop-filter:blur(8px)}
+.headline{font-size:clamp(28px,5vw,43px);font-weight:1000;letter-spacing:2px;line-height:1.1;text-align:center;margin:8px 0;text-shadow:0 10px 40px #000}
+.headline em{font-style:normal;color:#ff7bc1}
+.kicker{text-align:center;letter-spacing:3px;color:#72ecf0;font-size:10px;font-weight:900}
+.lead{font-size:13px;line-height:1.85;color:#c1cfe9;text-align:center;max-width:460px;margin:13px auto}
+.characters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.person{border:1px solid #3d6a8c;border-radius:13px;background:linear-gradient(120deg,#122c4a,#153358);padding:10px 12px;text-align:center}
+.person:nth-child(2){border-color:#84547e;background:linear-gradient(120deg,#41264a,#2f2146)}
+.person b{font-size:14px}.person small{display:block;color:#adbed7;font-size:11px;margin-top:3px}
+.buttons{display:flex;flex-direction:column;gap:9px}
+.mainbtn{border:0;border-radius:13px;padding:12px 15px;min-height:45px;font-weight:900;font-size:14px;color:#fff;cursor:pointer;background:linear-gradient(100deg,#e74291,#ff9563);box-shadow:0 6px 24px #ff498533}
+.mainbtn.blue{background:linear-gradient(100deg,#138ebb,#29d9d1)}
+.mainbtn.ghost{background:#24364d;border:1px solid #6086a1;box-shadow:none}
+.mainbtn:disabled{opacity:.5}
+#devices button{display:block;width:100%;text-align:right;margin:7px 0}
+.foot{color:#8ca3bf;font-size:10px;line-height:1.7;text-align:center;margin-top:13px}
+#loading{position:fixed;bottom:12%;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:13px;border:1px solid #64d8ed7a;background:#07182bdc;font-size:13px;font-weight:800;color:white}
+@media(max-height:480px){#panel{padding:10px 14px}.characters{margin:6px 0}.lead{margin:5px auto;font-size:11px}.headline{font-size:26px}.missionbar{top:52px}.health{padding:4px 7px}.hudtop .brand{font-size:19px}#joystick{width:114px;height:114px}.action#attack{width:85px;height:85px}.action#dash{right:125px;width:60px;height:60px}.action#interact{right:137px;bottom:103px;width:50px;height:50px}}
+</style>
+</head><body>
+<div id="game"></div><div id="shade"></div>
+<section id="hud">
+ <div class="hudtop">
+   <div><div class="brand">NEON <em>VOW</em></div><div id="objective">المدينة المحظورة</div></div>
+   <div class="stats"><span class="stat" id="wave">WAVE 1</span><span class="stat" id="score">✦ 0000</span><button id="pauseBtn" aria-label="إيقاف">Ⅱ</button></div>
+ </div>
+ <div class="missionbar">
+  <div class="health"><div class="healthlabel">⚔️ آدم <span id="hp0t">100</span></div><div class="bar"><i id="hp0"></i></div></div>
+  <div class="health"><div class="healthlabel">✨ ليلى <span id="hp1t">100</span></div><div class="bar pink"><i id="hp1"></i></div></div>
+ </div>
+ <div class="health" id="bossHealth"><div class="healthlabel">👹 زعيم القطاع <span id="bosst">100%</span></div><div class="bar"><i id="boss"></i></div></div>
+ <div id="toast" role="status"></div>
+ <div id="controls">
+  <div id="joystick"><div id="knob"></div></div>
+  <button class="action" id="attack">⚔️<div style="font-size:11px">هجوم</div></button>
+  <button class="action" id="dash">💨</button>
+  <button class="action" id="interact">✦</button>
+ </div>
+ <div id="statusline">تحرّكوا مع بعض • افتحوا بوابات القطاعات</div>
+</section>
+<div id="loading">جاري تجهيز مدينة النيون والشخصيات…</div>
+<div id="overlay"><section id="panel"></section></div>
+<script src="game.js"></script>
+</body></html>
