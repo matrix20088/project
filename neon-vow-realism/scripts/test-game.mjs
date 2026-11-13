@@ -23,7 +23,7 @@ i=blank();i[0].special=3;
 const prevEnergy=s.players[0].energy;
 const fx=tick(s,i,.033);
 check(fx.some(e=>e.kind==="pulse"),"special skill event fires");
-check(s.players[0].energy===prevEnergy-60,"special consumes charge");
+check(s.players[0].energy<prevEnergy&&s.players[0].energy>=prevEnergy-60,"special consumes charge, with energy rewarded for kills");
 s.enemies.length=0;s.phase="gate";
 s.players[0].x=s.players[1].x=0;
 s.players[0].z=s.players[1].z=s.gateZ;
