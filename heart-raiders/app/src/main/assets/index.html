@@ -1,0 +1,40 @@
+<!doctype html><html lang="ar" dir="rtl"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>قلبين في مهمة — Heart Raiders</title>
+<style>
+:root{color-scheme:dark;--bg:#070b1a;--pink:#ff5eab;--aqua:#45f8eb;--muted:#a0aed2}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;width:100%;overflow:hidden;touch-action:none;background:#070b1a;color:#fff;font-family:system-ui,"Noto Sans Arabic",sans-serif}
+#world{display:block;position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#screen{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:calc(env(safe-area-inset-top) + 25px) 22px calc(env(safe-area-inset-bottom) + 36px);background:linear-gradient(180deg,#080c20bb 1%,#090b18e8 48%,#090b19f5 100%);display:flex;flex-direction:column;align-items:center}
+#screen.hidden{display:none}
+#screen>*{width:min(100%,520px);flex-shrink:0}
+.brandbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.brand{font-size:14px;font-weight:900;letter-spacing:.5px;color:#fefcff}.brand strong{color:var(--pink)}.tag{font-size:10px;letter-spacing:1.3px;color:#8cdce2;border:1px solid #4ad4d957;border-radius:40px;padding:9px 11px;background:#152c3b6b}
+.hero{text-align:center;padding-top:12px}.emblem{font-size:77px;filter:drop-shadow(0 8px 32px #fc5daa88);animation:bob 3s ease-in-out infinite;margin:3px auto 6px}@keyframes bob{50%{transform:translateY(-8px)}}
+.super{font-weight:1000;font-size:clamp(32px,9vw,54px);line-height:1.16;letter-spacing:-1.5px;margin:5px 0 12px;text-shadow:0 8px 25px #0008}.super span{color:var(--pink)}
+.sub{color:#b8c2e4;font-size:14px;line-height:1.85;margin:0 auto 12px;max-width:375px}
+.badges{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:17px 0}.badges span{padding:6px 10px;border-radius:9px;background:#ffffff13;font-size:11px;color:#c2d4ff;border:1px solid #ffffff20}
+.card{background:linear-gradient(145deg,#1d2541df,#151b30e8);border:1px solid #45547b99;border-radius:24px;padding:18px;box-shadow:0 15px 40px #0006;backdrop-filter:blur(8px)}
+.heroes{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:21px 0}
+.heroCard{border:1px solid #46527f;border-radius:19px;padding:13px 12px;background:linear-gradient(160deg,#26385c,#1b2944);min-height:132px;text-align:center}
+.heroCard:nth-child(2){background:linear-gradient(160deg,#4a255c,#242042);border-color:#805081}
+.heroCard .face{font-size:48px;line-height:1.3}.heroCard b{display:block;font-size:15px;margin-top:6px}.heroCard small{display:block;color:#a9bdd9;font-size:11px;margin-top:6px;line-height:1.55}
+.btn{display:block;width:100%;padding:15px 18px;min-height:57px;border:0;border-radius:17px;background:linear-gradient(100deg,#ff509c,#ff8d68);color:white;font-size:16px;font-weight:900;box-shadow:0 10px 26px #ff45803f;margin:9px 0}
+.btn:active{transform:scale(.98)}.btn.second{background:linear-gradient(105deg,#22bdcc,#2688d7);box-shadow:0 10px 26px #21cdd63b}.btn.ghost{background:#202b44a8;border:1px solid #4a5a7e;box-shadow:none;color:#dbe7fc}
+.btn:disabled{opacity:.44;box-shadow:none}
+.title{font-size:23px;font-weight:1000;line-height:1.4;margin:8px 0}.caption{font-size:12px;color:#a8b7ce;line-height:1.85}
+.kicker{font-size:11px;font-weight:900;color:#5ff5f2;letter-spacing:2px;margin-top:7px}
+.list{display:flex;flex-direction:column;gap:12px}.device{padding:14px 12px;border-radius:13px;background:#243653;border:1px solid #456082;color:white;text-align:right;font-size:15px}.device small{display:block;color:#8fa5c9;direction:ltr;text-align:right;font-size:11px;margin-top:5px}
+.center{text-align:center}.spinner{margin:26px auto;width:55px;height:55px;border-radius:50%;border:4px solid #43e7e936;border-top-color:#48f6ec;animation:spin .85s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.bottomnote{margin:25px auto 6px;text-align:center;color:#7f93ad;font-size:11px;line-height:1.7}
+#toast{position:fixed;top:calc(env(safe-area-inset-top) + 100px);left:12%;right:12%;padding:13px 16px;border-radius:15px;text-align:center;background:#152942ed;border:1px solid #4dcfe5aa;box-shadow:0 14px 32px #0008;color:#fff;z-index:99;pointer-events:none;opacity:0;transform:translateY(-20px);transition:opacity .22s,transform .22s}
+#toast.show{opacity:1;transform:translateY(0)}
+small.error{display:block;font-size:11px;color:#ffb1c2;padding:7px;margin-top:10px}
+@media (max-height:700px){#screen{padding-top:15px}.emblem{font-size:54px}.heroCard{min-height:90px;padding:8px}.heroCard .face{font-size:32px}.heroCard small{margin-top:0}.heroes{margin:10px 0}.super{font-size:32px}}
+</style>
+</head><body>
+<canvas id="world" aria-label="ساحة مغامرة قلبين في مهمة"></canvas>
+<main id="screen" aria-live="polite"></main>
+<div id="toast" aria-live="polite"></div>
+<script src="game.js"></script>
+</body></html>

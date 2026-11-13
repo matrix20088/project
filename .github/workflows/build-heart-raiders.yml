@@ -1,0 +1,40 @@
+name: Build Heart Raiders Android APK
+on:
+  push:
+    branches: [heart-raiders-action-2026]
+    paths:
+      - 'heart-raiders/**'
+      - '.github/workflows/build-heart-raiders.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Build APK
+        run: gradle -p heart-raiders :app:assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Heart-Raiders-APK
+          path: heart-raiders/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Release downloadable APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp heart-raiders/app/build/outputs/apk/debug/app-debug.apk Heart-Raiders.apk
+          gh release delete heart-raiders-v1 --yes 2>/dev/null || true
+          gh release create heart-raiders-v1 Heart-Raiders.apk --title "قلبين في مهمة — أكشن تعاوني لأندرويد" --notes "لعبة أكشن ثنائية عبر بلوتوث، شخصيتان متحركتان، 12 ساحة، 3 زعماء، مهارات وهجوم واندفاع. وتجربة فردية بلا إنترنت."
