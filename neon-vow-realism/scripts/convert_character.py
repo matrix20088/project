@@ -1,6 +1,7 @@
 import bpy
 import os
 import sys
+import numpy as np
 from mathutils import Vector
 
 # Blender runs once per character. Every rendered model is exported as a real GLB asset.
@@ -13,6 +14,27 @@ objects=[ob for ob in bpy.context.scene.objects if ob.type=="MESH"]
 if not objects: raise RuntimeError("FBX has no meshes: "+label)
 img=bpy.data.images.load(texture_path,check_existing=True)
 img.colorspace_settings.name="sRGB"
+# Recolour the original scan's neutral white street clothes into a realistic
+# darker cyberpunk fabric in the texture itself. Preserve skin, facial pixels,
+# wrinkles and the original high-frequency cloth texture.
+# No primitive block-shaped overlay is used on the body.
+pixels=np.empty(len(img.pixels),dtype=np.float32)
+img.pixels.foreach_get(pixels)
+rgba=pixels.reshape((-1,4))
+rgb=rgba[:,:3]
+hi=rgb.max(axis=1)
+lo=rgb.min(axis=1)
+lum=rgb.mean(axis=1)
+neutral=(hi-lo<0.21)&(lum>0.40)&(lo>0.32)
+tint=np.array([.23,.35,.57] if label=="nathan" else [.47,.28,.54],dtype=np.float32)
+rgb[neutral]=np.clip((lum[neutral,None]*(.7+rgb[neutral]*.3))*tint[None,:],0,1)
+denim=(rgb[:,2]>rgb[:,0]*1.20)&(rgb[:,2]>rgb[:,1]*1.02)&(lum>.10)&(~neutral)
+rgb[denim]*=np.array([.61,.64,.72],dtype=np.float32)
+img.pixels.foreach_set(pixels)
+img.filepath_raw=os.path.join(os.path.dirname(texture_path),label+"_cyber_texture.png")
+img.file_format="PNG"
+img.save()
+print("CYBER_TEXTURE",label,int(neutral.sum()),int(denim.sum()),"of",len(rgb))
 all_points=[]
 for obj in objects:
     for corner in obj.bound_box:

@@ -163,25 +163,22 @@ export function createVisuals(element){
    object.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;
      if(n.material){n.material.side=THREE.DoubleSide;n.material.needsUpdate=true;}}});
    heroGroups[index].add(object);
-   // Sculpted 3D cyber combat equipment, attached to the characters
-   // rather than painted on the screenshot. Clothing and faces remain scans.
-   const outfit=index===0?makeMat(0x253b60,.57,.35):makeMat(0x42324c,.55,.33);
+   // Keep the original photogrammetry body's natural curvature and folds.
+   // Only thin wearable equipment and small glowing details are overlaid:
+   // no cartoonish box armor over the realistic jacket.
+   const outfit=index===0?makeMat(0x253953,.45,.38):makeMat(0x3a314b,.4,.39);
    const trim=index===0?neonBlue:neonPink;
-   const jacket=new THREE.Mesh(new THREE.CylinderGeometry(.33,.32,.58,18),outfit);
-   jacket.scale.z=.83;jacket.position.set(0,1.34,0);jacket.castShadow=true;heroGroups[index].add(jacket);
-   const belt=new THREE.Mesh(new THREE.CylinderGeometry(.335,.325,.13,18),steel);
-   belt.scale.z=.83;belt.position.set(0,.99,0);heroGroups[index].add(belt);
+   const belt=new THREE.Mesh(new THREE.TorusGeometry(.305,.023,8,28),trim);
+   belt.rotation.x=Math.PI/2;belt.scale.y=.76;
+   belt.position.set(0,.99,0);heroGroups[index].add(belt);
+   const backPack=box(heroGroups[index],.31,.28,.115,outfit,0,1.30,.24);
+   backPack.castShadow=false;
+   box(heroGroups[index],.23,.035,.04,trim,0,1.38,.32);
    for(const side of [-1,1]){
-     const shoulder=sphere(heroGroups[index],.20,outfit,side*.36,1.53,.01,16);
-     shoulder.scale.z=.83;
-     box(heroGroups[index],.075,.54,.24,trim,side*.31,1.35,.1);
-     box(heroGroups[index],.18,.20,.27,outfit,side*.23,.75,.03);
+     const pad=sphere(heroGroups[index],.105,outfit,side*.34,1.55,0,14);
+     pad.scale.z=.7;
+     box(heroGroups[index],.045,.19,.085,trim,side*.25,1.42,.20);
    }
-   box(heroGroups[index],.38,.25,.055,trim,0,1.38,.31);
-   box(heroGroups[index],.45,.25,.055,trim,0,1.38,-.31);
-   const backpack=box(heroGroups[index],.5,.45,.24,outfit,0,1.29,.33);
-   backpack.material=outfit;
-   box(heroGroups[index],.35,.09,.06,trim,0,1.43,.47);
    object.updateWorldMatrix(true,true);
    for(const armName of ["rigLeftArm","rigRightArm"]){
     let bone=object.getObjectByName(armName);
@@ -217,11 +214,12 @@ export function createVisuals(element){
    // Lighting equipment: cyan energy sword and a hovering pink holographic companion.
    if(index===0){
     const sword=new THREE.Group();
-    cyl(sword,.065,.30,steel,0,.12,0);
-    cyl(sword,.11,.09,neonGold,0,.29,0);
-    const blade=new THREE.Mesh(new THREE.CylinderGeometry(.014,.072,1.23,10),neonBlue);
-    blade.position.y=.92;blade.castShadow=false;sword.add(blade);
-    sphere(sword,.095,neonBlue,0,1.54,0,12);
+    cyl(sword,.045,.24,steel,0,.10,0);
+    cyl(sword,.075,.055,neonGold,0,.23,0);
+    const bladeMat=makeMat(0x34bfde,.30,.14,0x21b9ff,1.25);
+    const blade=new THREE.Mesh(new THREE.CylinderGeometry(.007,.052,.82,8),bladeMat);
+    blade.position.y=.69;blade.castShadow=false;sword.add(blade);
+    sphere(sword,.047,bladeMat,0,1.10,0,10);
     scene.add(sword);heroData[index].prop=sword;
    }else{
     const drone=new THREE.Group();
@@ -240,18 +238,32 @@ export function createVisuals(element){
  const enemyEye=makeMat(0xff728d,.2,.15,0xf7245f,2.3);
  function robot(type){
   const g=new THREE.Group(),boss=type==="boss",scale=boss?2.4:type==="tank"?1.4:1;
-  box(g,.95,1.35,.64,robotM,0,1.1,0);
-  box(g,.77,.53,.59,robotDark,0,2.03,0);
-  box(g,.65,.10,.067,enemyEye,0,2.1,.33);
+  const accent=boss?neonGold:type==="shooter"?neonBlue:neonPink;
+  // Curved alloy plating, articulated legs and a helmeted optical sensor.
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.36,.63,6,16),robotM);
+  torso.position.set(0,1.26,0);torso.scale.z=.82;torso.castShadow=true;g.add(torso);
+  const plating=new THREE.Mesh(new THREE.SphereGeometry(.38,20,14),robotDark);
+  plating.scale.set(1,1.1,.65);plating.position.set(0,1.36,.11);g.add(plating);
+  const head=sphere(g,.31,robotM,0,2.09,0,20);head.scale.z=.86;
+  const face=sphere(g,.23,robotDark,0,2.08,.23,20);face.scale.set(1,.75,.45);
+  const sensor=new THREE.Mesh(new THREE.TorusGeometry(.105,.045,8,30),accent);
+  sensor.position.set(0,2.09,.36);g.add(sensor);
+  sphere(g,.047,enemyEye,0,2.09,.374,12);
   for(const side of [-1,1]){
-   box(g,.28,.97,.32,robotM,side*.64,1.1,0);
-   box(g,.32,.8,.37,robotDark,side*.26,.27,0);
+    const pa=sphere(g,.17,robotM,side*.49,1.72,0,16);pa.scale.z=.83;
+    const arm=cyl(g,.12,.73,robotM,side*.54,1.22,0);
+    arm.rotation.z=-side*.13;
+    sphere(g,.12,steel,side*.55,.88,0,12);
+    const leg=cyl(g,.14,.75,robotDark,side*.22,.43,0);
+    sphere(g,.17,robotM,side*.22,.23,.10,12).scale.z=1.35;
   }
-  sphere(g,.18,boss?neonGold:type==="shooter"?neonBlue:neonPink,0,1.1,.37);
+  const core=sphere(g,.17,accent,0,1.31,.33,12);
   if(boss){
+   const crown=new THREE.Mesh(new THREE.TorusGeometry(.49,.075,8,40),neonGold);
+   crown.position.set(0,2.15,.12);g.add(crown);
    for(const side of [-1,1]){
-    box(g,.3,1.15,.65,neonPink,side*.91,1.42,0);
-    sphere(g,.23,neonGold,side*.94,2.3,0);
+    const spike=new THREE.Mesh(new THREE.ConeGeometry(.18,.65,10),steel);
+    spike.position.set(side*.5,2.25,0);spike.rotation.z=-side*.35;g.add(spike);
    }
   }
   g.scale.setScalar(scale);
@@ -325,7 +337,7 @@ export function createVisuals(element){
        heroData[i].object.updateWorldMatrix(true,true);
        hand.getWorldPosition(prop.position);
        prop.position.y+=.05;
-       prop.rotation.set(0,g.rotation.y+.2,-.42+(p.attack>0?Math.sin(p.attack*22)*.45:0));
+       prop.rotation.set(.22,g.rotation.y+.2,-.35+(p.attack>0?Math.sin(p.attack*22)*.65:0));
       }else{prop.position.set(g.position.x+.45,1.15,g.position.z);}
     }else{
       prop.position.set(g.position.x+1.05,2.12+Math.sin(performance.now()*.003)*.12,g.position.z-.2);
