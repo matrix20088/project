@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
@@ -82,14 +83,31 @@ public class MainActivity extends Activity {
         web.loadUrl("file:///android_asset/index.html");
 
         speech=new TextToSpeech(getApplicationContext(), status->{
-            if(status==TextToSpeech.SUCCESS && speech!=null) {
-                int result=speech.setLanguage(new Locale("ar","EG"));
-                speechReady=result!=TextToSpeech.LANG_MISSING_DATA && result!=TextToSpeech.LANG_NOT_SUPPORTED;
-                if(speechReady){speech.setSpeechRate(1.04f);speech.setPitch(1.02f);}
+            if(status!=TextToSpeech.SUCCESS || speech==null){speechReady=false;return;}
+            Locale[] arabicLocales={new Locale("ar","EG"),new Locale("ar","SA"),new Locale("ar")};
+            for(Locale locale:arabicLocales){
+                int result=speech.setLanguage(locale);
+                if(result!=TextToSpeech.LANG_MISSING_DATA && result!=TextToSpeech.LANG_NOT_SUPPORTED){
+                    speechReady=true;break;
+                }
+            }
+            if(speechReady) {
+                speech.setSpeechRate(1.06f);
+                speech.setPitch(1.11f);
+                speech.setOnUtteranceProgressListener(new UtteranceProgressListener(){
+                    @Override public void onStart(String id){}
+                    @Override public void onDone(String id){reportSpeechEnd(id,true);}
+                    @Override public void onError(String id){reportSpeechEnd(id,false);}
+                });
             }
         });
     }
 
+    private void reportSpeechEnd(String id,boolean spoken) {
+        if(id!=null && id.startsWith("question-")){
+            fire(spoken?"speechDone":"speechUnavailable",id.substring("question-".length()));
+        }
+    }
     private void fire(String kind,String data) {
         runOnUiThread(()->{
             if(web!=null && !isFinishing()) web.evaluateJavascript(
@@ -261,8 +279,19 @@ public class MainActivity extends Activity {
         }
         @android.webkit.JavascriptInterface public void speak(String text){
             runOnUiThread(()->{
-                if(speechReady&&text!=null && !text.isEmpty()&&speech!=null)
-                    speech.speak(text,TextToSpeech.QUEUE_FLUSH,null,"judge");
+                if(speechReady&&text!=null&&!text.isEmpty()&&speech!=null)
+                    speech.speak(text,TextToSpeech.QUEUE_FLUSH,null,"judge-"+System.nanoTime());
+                else fire("ttsStatus","لا يوجد محرك نطق عربي جاهز على هذا الموبايل. يمكن تثبيت حزمة العربية من إعدادات تحويل النص إلى كلام.");
+            });
+        }
+        @android.webkit.JavascriptInterface public void speakQuestion(String text,String round){
+            runOnUiThread(()->{
+                final String id="question-"+(round==null?"":round.replaceAll("[^0-9]",""));
+                if(!speechReady||speech==null){
+                    reportSpeechEnd(id,false);return;
+                }
+                int outcome=speech.speak(text==null?"":text,TextToSpeech.QUEUE_FLUSH,null,id);
+                if(outcome==TextToSpeech.ERROR)reportSpeechEnd(id,false);
             });
         }
     }
