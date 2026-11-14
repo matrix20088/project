@@ -58,7 +58,8 @@ for(const n of [2,3,4]){
 {
  const e=env();join(e,3);e.run('startMatch()');open(e);
  const q=e.run('state.question.q');
- assert.equal(e.run('state.optionsShown'),false);
+ assert.equal(e.run('state.optionsShown'),true,'all four options must be visible BEFORE the buzzer');
+ assert.equal(e.run('state.optionsShownCount'),4);
  e.run('buzzOpenedAt=Date.now()-100;claimBuzz(1)');
  assert.equal(e.run('state.answerWindowSec'),6);
  assert.equal(e.run('state.optionsShown'),true);
