@@ -17,13 +17,13 @@ function renderHome(){
 }
 function renderHow(){
  root.innerHTML=nav()+`<section class="card"><h2>🎤 نظام الحكم والجرس</h2><p class="desc">الحكم الإلكتروني يعلن الفئة والسؤال بصوت مصري مُركّب من محرك النطق بالعربي (حسب الأصوات المثبتة)، وبعد ما يخلص الكلام الجرس يفتح للكل.</p>
- <p class="desc">🎙️ الحكم يخلص السؤال، والجرس يظهر <b>فورًا</b> قبل الاختيارات. الحكم بعدها يقول الاختيارات واحدة واحدة. لو حد ضرب الجرس، يتوقف نطق وعرض باقي الاختيارات للجمهور؛ صاحب الجرس يشوف الاختيارات كلها عشان يجاوب.</p>
+ <p class="desc">🎙️ الحكم يخلص السؤال والجرس يفتح فورًا. بعدها الاختيارات تتقال واحدة واحدة. <b>لو خطفت بدري</b> مش هتشوف الاختيارات اللي ما اتقالتش: هتكتب إجابتك بنفسك في خانة مخصوص. لو كل الاختيارات اتقالت قبل الخطف، تقدر تختار منها عادي.</p>
  <p class="desc">🔄 الكلمات المقلوبة صوت فقط: الحكم يتهجّاها حرف حرف ببطء؛ الكلمة وحروفها مش هتظهر قبل الإجابة. الفئة دي بتحتاج نطق عربي شغّال.</p>
  <p class="desc">🔔 أول رسالة ضغط توصل لموبايل صاحب الغرفة هي اللي تكسب الجرس. الجرس بيتقفل على الباقيين.</p>
  <p class="desc">⚡ اللي يضغط في أول ثانيتين من ظهور الجرس قدامه 6 ثواني للإجابة؛ الصح +1 والغلط أو السكوت −2. اللي يدوس بعد كده قدامه 12 ثانية؛ الصح +1 والغلط أو السكوت −1.</p>
- <p class="desc">🔄 لو الإجابة غلط أو الوقت خلص، الجرس يفتح تاني لنفس السؤال، والحكم يعيد الاختيارات من الأول. بعد اختيارين مختلفين غلط، السؤال يتقفل.</p>
+ <p class="desc">🔄 لو الإجابة المكتوبة أو المختارة غلط، أو الوقت خلص، الجرس يرجع يتفتح لنفس السؤال والاختيارات تتقال من البداية. بعد محاولتين غلط يتم إنهاء السؤال.</p>
  <p class="desc">🎯 الصعوبة حسب أعلى سكور: من 0 إلى 2 سهل، من 3 إلى 5 متوسط، ومن 6 نقاط صعب.</p>
- <p class="desc">👀 الاختيارات بتظهر عند كل اللاعبين بمجرد ما حد يكسب الجرس؛ الإجابة لصاحب الجرس فقط.</p>
+ <p class="desc">👀 كل اللاعبين بيشوفوا <b>فقط</b> الاختيارات اللي الحكم نطقها فعلًا. ممنوع إظهار أي اختيار لسه متقالش، حتى لصاحب الجرس.</p>
  <p class="desc">⏭️ صاحب الغرفة يقدر يتخطى السؤال، والضيوف يقدروا يطلبوا التخطي.</p>
  <p class="desc">🔔 عند قبول الضغط على الجرس بتتسمع رنّة جرس على أجهزة المتسابقين.</p>
  <p class="desc">🏆 أول شخص يوصل ١٠ نقاط يفوز، والحكم يعلن اسمه تلقائيًا.</p>
@@ -83,11 +83,11 @@ function updateTimerUI(){
 function optionGrid(clickable=false){
  if(!state?.question?.options)return "";
  const count=state.optionsShownCount??(state.optionsShown?4:0);
- const wrong=state.wrongChoices||[],canClick=clickable&&seat===state.lockedSeat&&state.phase==="answer";
+ const wrong=state.wrongChoices||[],canClick=clickable&&seat===state.lockedSeat&&state.phase==="answer"&&state.answerMode==="choice";
  // The winner can select one of the four answers. Spectators see ONLY already spoken choices.
- const visible=canClick?4:count;
+ const visible=count; // Never reveal an unheard option, even to a contestant who buzzed early.
  if(visible<=0)return "";
- return '<section class="card choicesCard"><div class="kicker">'+(canClick?"⚡ الجرس معاك! اختار إجابتك، وباقي الاختيارات اتوقف عرضها للكل":count<4?"🎧 الحكم بيقول الاختيارات واحدة واحدة":"👀 الأربع اختيارات اتقالوا والجرس مفتوح")+'</div><div class="options">'+state.question.options.map((opt,i)=>{
+ return '<section class="card choicesCard"><div class="kicker">'+(canClick?"الجرس معاك! اختار من الاختيارات المسموعة":count<4?"🎧 دي الاختيارات اللي اتقالت بس":"👀 الأربع اختيارات اتقالوا والجرس مفتوح")+'</div><div class="options">'+state.question.options.map((opt,i)=>{
    if(i>=visible)return '<div class="option optionPending" aria-label="الاختيار لم يظهر بعد"><i>'+["A","B","C","D"][i]+'</i><span>••••••••</span></div>';
    const mistaken=wrong.includes(i),cls=mistaken?"option wrong":canClick?"option selectChoice":"option spectator";
    return '<button class="'+cls+'" '+(canClick&&!mistaken?'onclick="selectOption('+i+')"':"disabled")+'><i>'+["A","B","C","D"][i]+'</i><span>'+esc(opt)+'</span>'+(mistaken?'<b class="wrongmark">❌ غلط</b>':"")+'</button>';
@@ -107,9 +107,23 @@ function renderQuestion(){
  let body=nav()+renderPlayers()+timeHeader()+
  '<div class="banner">'+(phase==="announce"?"🎙️ الحكم بيقرأ السؤال":phase==="question"?(state.retry?"🔔 جرس جديد — الاختيارات من أولها!":"🔔 الجرس مفتوح، اسبق الاختيارات!"):"🧠 الاختيارات وقفت — صاحب الجرس يجاوب")+'</div>'+
  '<section class="card"><div class="kicker">'+esc(state.question?.cat)+' • '+esc(level)+'</div><div class="question">'+
- (state.question?.audioOnly?"🎧 اسمع الكلمة المقلوبة من الحكم، من غير ما تتكتب على الشاشة.":esc(state.question?.q))+'</div></section>';
- // Show choices directly under the question, including all four before the FIRST buzzer reveal.
- body+=optionGrid(phase==="answer");
+ (state.question?.audioOnly?"🎧 اسمع الكلمة المقلوبة من الحكم، من غير ما تتكتب على الشاشة.":esc(state.question?.q))+
+ (state.question?.visual?'<div class="flagPhoto"><img src="flags/'+esc(state.question.visual)+'.svg" alt="صورة علم دولة — خمن اسم الدولة" decoding="async"></div>':"")+'</div></section>';
+ // Unheard answers are never shown. Early buzzer winners type from memory instead.
+ body+=optionGrid(phase==="answer"&&state.answerMode==="choice");
+ if(phase==="answer"&&state.answerMode==="text"){
+  if(seat===state.lockedSeat){
+   body+='<form class="answerTextCard" onsubmit="return submitTypedFromUI()">'+
+    '<div class="kicker">⚡ خطفت الجرس قبل ما تسمع باقي الاختيارات!</div>'+
+    '<h3>ورّينا شطارتك... اكتب الإجابة من دماغك</h3>'+
+    '<p class="small">الإجابة لازم تطابق الإجابة الصحيحة؛ بنقبل اختلاف الهمزات والتشكيل والمسافات.</p>'+
+    '<input id="typedAnswer" name="typedAnswer" type="text" maxlength="85" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="اكتب الإجابة هنا" aria-label="اكتب إجابتك" required>'+
+    '<button class="btn answerSubmit" type="submit">✅ ثبّت إجابتي</button>'+
+    '</form>';
+  }else{
+   body+='<div class="notice">📝 المتسابق خطف بدري، دلوقتي بيكتب الإجابة من دماغه. باقي الاختيارات مش هتظهر.</div>';
+  }
+ }
  if(phase==="announce"){
   body+='<div class="judge"><div class="face">🎙️</div><div><strong>اسمع الحكم وركّز!</strong><p>أول ما السؤال يخلص، الجرس يفتح فورًا، وبعدها الاختيارات تتقال واحدة واحدة.</p></div></div>';
   body+='<div class="notice">⚡ تقدر تخطف الجرس قبل ما الحكم يخلص كل الاختيارات.</div>';
@@ -122,7 +136,7 @@ function renderQuestion(){
   (state.fastBuzz?"⚡ خطف خاطف! 6 ثواني والخطأ −2":"🎯 ضغط متأني: 12 ثانية والخطأ −1")+'</p></div></div>';
   if(seat!==state.lockedSeat)body+='<div class="notice">⏸️ '+esc(locked?.name||"المتسابق")+' خطف الجرس؛ عرض باقي الاختيارات وقف. استنوا إجابته.</div>';
  }
- body+='<div class="attemptbar">❌ اختيارات غلط: '+(state.wrongChoices?.length||0)+' / 2</div>';
+ body+='<div class="attemptbar">❌ محاولات غلط: '+(state.wrongAttempts||0)+' / 2</div>';
  body+=skipControls();
  return body;
 }
@@ -134,7 +148,7 @@ function renderResult(){
  '<p class="desc">'+esc(state.msg)+'</p><div class="delta">'+(r.delta>0?"+"+r.delta:r.delta<0?"−"+Math.abs(r.delta):"0")+'</div>'+
  (r.ended?'<div class="notice ok"><b>الإجابة الصحيحة:</b> '+esc(r.correct||"—")+'</div>':
  '<div class="notice">🔒 الإجابة الصحيحة لسه سرية؛ الجرس هيفتح تاني!</div>')+
- (r.chosen?'<p class="small">الإجابة اللي اتجرّبت: '+esc(r.chosen)+'</p>':"")+
+ (r.chosen?'<p class="small">'+(r.typed?"الإجابة المكتوبة: ":"الإجابة اللي اتجرّبت: ")+esc(r.chosen)+'</p>':"")+
  optionGrid(false);
  if(r.retry)body+='<div class="notice">🔔 استعدوا: نفس السؤال هيفضل مفتوح لأي متسابق.</div>';
  body+=(host?'<button class="btn" onclick="advanceRound()">'+(r.retry?"🔔 افتح الجرس تاني":"➡️ السؤال اللي بعده")+'</button>':
@@ -157,7 +171,13 @@ function renderGame(){
   root.innerHTML=nav()+`<section class="card center"><div class="resultIcon">🔌</div><h2>توقف الاتصال</h2><p class="desc">${esc(state.msg)}</p>${host?`<button class="btn" onclick="resetToLobby()">رجوع للغرفة</button>`:""}<button class="btn ghost" onclick="backToMenu()">الرئيسية</button></section>`;
   return;
  }
- if(p==="announce"||p==="question"||p==="answer"){root.innerHTML=renderQuestion();return;}
+ if(p==="announce"||p==="question"||p==="answer"){
+  root.innerHTML=renderQuestion();
+  if(p==="answer"&&state.answerMode==="text"&&seat===state.lockedSeat){
+   try{document.getElementById("typedAnswer")?.focus();}catch(e){}
+  }
+  return;
+ }
  if(p==="result"){root.innerHTML=renderResult();return;}
  if(p==="finished"){root.innerHTML=renderFinished();return;}
  renderHome();

@@ -71,3 +71,15 @@ The app is meant for social play; Bluetooth arrival ordering is not latency-comp
 - If Android Arabic TTS is missing, options continue revealing on a fixed fallback timer. On actual phones, speech callbacks coordinate the sequence; the host remains authoritative.
 - A 22-second open-buzzer window allows multiple spoken options to play; the previous fast/late buzzer score rules and winner target remain.
 - Phone-to-phone Bluetooth clock synchronization is not perfect; buzz winner is determined by message arrival at the host.
+
+## v7.0 — Early buzz is now a written-answer challenge; real country flag pictures
+- First two seconds still count as a risky fast buzz: score penalty -2 if wrong or unanswered, +1 if correct. Delayed press keeps -1 penalty. Existing 6-second fast and 12-second delayed response timers remain.
+- Any buzz before all four choices have been narrated freezes public choices and presents the winning contestant with a **blank typed answer form** (not the four hidden answers). A contestant hears/sees only the choices read aloud before buzzing; other players see no additional choices either.
+- Android input auto-correction is disabled on the typed form. Answer scoring occurs on the **host**; the host compares conservative normalized Arabic strings (diacritics, common Alef/Hamza differences, final Ta Marbuta, optional definite article) plus a small explicit alias table, without loose fuzzy matching.
+- All network state packets to guests redact every answer option not yet publicly spoken, even if a player checks message contents.
+- After all four options have been spoken, normal selectable multiple-choice buttons are available to the first buzzer winner.
+- Every failed written or selected answer counts as a wrong attempt. Two wrong answers end the question; unanswered buzzes still reopen until the existing max timeout threshold. Incorrect option choices stay crossed out, without revealing the correct answer before the round ends.
+- True vector **country flag images** (e.g. Brazil), displayed locally as SVG files inside the Android APK, appear in flag questions. The referee asks **"لأي دولة هذا العلم؟"** without reading the flag emoji or country name.
+- Dedicated "🚩 تحدي أعلام العالم" category adds 68 flags and converts the earlier flag-emoji questions to the same picture format. Capitals and other text-only questions remain unchanged.
+- Flag art from [lipis/flag-icons](https://github.com/lipis/flag-icons), release v7.3.2, MIT License. The MIT license is bundled under `assets/flags/LICENSE` inside the APK. SVG files are downloaded from the pinned repository release **during CI**, then bundled for offline operation; no internet access is needed during gameplay.
+- No background server, ads, or computer players. 2–4 human players, Bluetooth, locally synthesized bell and Arabic TTS.

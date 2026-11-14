@@ -15,7 +15,7 @@ function env(){
  const cx={console,Date,Math,Set,JSON,Number,String,Object,Array,Intl,window,Native,
   document:{getElementById(id){return dom[id]||null}},localStorage:storage,setInterval(){},clearInterval(){}};
  vm.createContext(cx);
- for(const file of ['questions.js','extra_questions.js','hard_questions.js','movie_music_levels.js','core.js','ui.js'])vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),cx,{filename:file});
+ for(const file of ['questions.js','extra_questions.js','hard_questions.js','movie_music_levels.js','flag_questions.js','core.js','ui.js'])vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),cx,{filename:file});
  return {dom,calls,messages,window,run:s=>vm.runInContext(s,cx)};
 }
 function join(e,n){
@@ -49,7 +49,7 @@ function reveal(e,n=4){
 function correct(e,seat){
  e.run('buzzOpenedAt=Date.now()-3000;claimBuzz('+seat+')');
  assert.equal(e.run('state.phase'),'answer');
- e.run('submitAnswer('+seat+',answerIndex)');
+ e.run('submitTypedAnswer('+seat+',state.question.options[answerIndex])');
  assert.equal(e.run('state.phase'),'result');
 }
 for(const n of [2,3,4]){
@@ -77,12 +77,13 @@ for(const n of [2,3,4]){
  const winner=env();
  winner.window.onNative('message','{"t":"welcome","seat":1}');
  winner.window.onNative('message',JSON.stringify(e.messages.at(-1)));
- assert(winner.dom.root.innerHTML.includes('onclick="selectOption('),'buzzer winner sees four tappable choices');
- assert(!e.dom.root.innerHTML.includes('onclick="selectOption('),'other contestants cannot choose answers');
+ assert(!winner.dom.root.innerHTML.includes('onclick="selectOption('),'early winner must not see unspoken answers');
+ assert(winner.dom.root.innerHTML.includes('id="typedAnswer"'),'early winner gets free text input');
+ assert(!e.dom.root.innerHTML.includes('onclick="selectOption('),'spectators cannot select');
  e.window.onNative('choiceDone',oldToken);
  assert.equal(e.run('state.optionsShownCount'),1,'stale voice callback cannot reveal a new option');
  assert.equal(e.run('state.fastBuzz'),true);
- e.run('submitAnswer(1,(answerIndex+1)%4)');
+ e.run('submitTypedAnswer(1,state.question.options[(answerIndex+1)%4])');
  assert.equal(e.run('state.result.retry'),true);
  assert.equal(e.run('state.result.correct'),null);
  assert.equal(e.run('state.players.find(p=>p.seat===1).score'),-2);
@@ -95,8 +96,8 @@ for(const n of [2,3,4]){
  assert.equal(e.run('state.optionsShownCount'),1);
  e.run('buzzOpenedAt=Date.now()-3400;claimBuzz(1)');
  const wrong=e.run('state.question.options.findIndex((_,i)=>i!==answerIndex&&!state.wrongChoices.includes(i))');
- e.run('submitAnswer(1,'+wrong+')');
- assert.equal(e.run('state.wrongChoices.length'),2);
+ e.run('submitTypedAnswer(1,state.question.options['+wrong+'])');
+ assert.equal(e.run('state.wrongAttempts'),2);
  assert.equal(e.run('state.result.retry'),false);
  assert.equal(e.run('state.players.find(p=>p.seat===1).score'),-3);
  e.run('advanceRound()');
@@ -111,7 +112,10 @@ for(const n of [2,3,4]){
  assert(!e.dom.root.innerHTML.includes('••••••••'));
  e.run('claimBuzz(0)');
  assert.equal(e.run('state.phase'),'answer');
- console.log('PASS all 4 choices read and revealed with buzzer already open');
+ assert.equal(e.run('state.answerMode'),'choice');
+ e.run('submitAnswer(0,answerIndex)');
+ assert.equal(e.run('state.result.ok'),true);
+ console.log('PASS choices clickable after all 4 are spoken');
 }
 {
  const e=env();join(e,2);e.run('startMatch()');startQuestion(e);
@@ -177,4 +181,43 @@ for(const n of [2,3,4]){
  assert(!guest.dom.root.innerHTML.includes('onclick="selectOption('),'spectators cannot click answers');
  console.log('PASS guest syncing, frozen choices after buzz, single bell only');
 }
-console.log('ALL v6 TESTS PASSED');
+{
+ const e=env();join(e,2);
+ assert.equal(e.run('answerMatches("برازيل","البرازيل")'),true);
+ assert.equal(e.run('answerMatches("السعوديه","السعودية")'),true);
+ assert.equal(e.run('answerMatches("مُحَمَّد هُنَيْدِي","محمد هنيدي")'),true);
+ assert.equal(e.run('answerMatches("عمرو","عمرو دياب")'),false);
+ assert.equal(e.run('answerMatches("البرازيل","الأرجنتين")'),false);
+ e.run('state.category="🚩 تحدي أعلام العالم";startMatch()');
+ assert.equal(e.run('state.question.q'),"لأي دولة هذا العلم؟");
+ assert(/^[a-z]{2}$/.test(e.run('state.question.visual')));
+ assert(e.dom.root.innerHTML.includes('class="flagPhoto"'));
+ assert(!e.dom.root.innerHTML.includes(e.run('state.question.options[answerIndex]')));
+ const n=e.run('TOTAL_QUESTIONS');
+ assert(n>=1300,'number of questions: '+n);
+ console.log('PASS actual flag picture, no country leaked, strict Arabic matching and '+n+' questions');
+}
+{
+ const h=env(),g=env();join(h,2);
+ h.run('startMatch()');startQuestion(h);
+ g.window.onNative('message',JSON.stringify(h.messages.at(-1)));
+ assert.equal(g.run('state.question.options.filter(Boolean).length'),0,'host must hide unheard options from guest');
+ h.run('nextRevealAt=Date.now()-1;tick()');
+ g.window.onNative('message',JSON.stringify(h.messages.at(-1)));
+ assert.equal(g.run('state.question.options.filter(Boolean).length'),1,'guest can see only spoken choice');
+ h.run('claimBuzz(1)');
+ g.window.onNative('message',JSON.stringify(h.messages.at(-1)));
+ assert.equal(g.run('state.answerMode'),'text');
+ assert.equal(g.run('state.question.options.filter(Boolean).length'),1);
+ assert(g.dom.root.innerHTML.includes('id="typedAnswer"'));
+ g.dom.typedAnswer={value:'اختبار غلط',disabled:false,blur(){}};
+ g.run('submitTypedFromUI()');
+ const packet=g.messages.at(-1);
+ assert.equal(packet.t,'typed');
+ assert.equal(packet.text,'اختبار غلط');
+ h.window.onNative('remote',JSON.stringify({seat:1,msg:JSON.stringify(packet)}));
+ assert.equal(h.run('state.result.retry'),true);
+ assert.equal(h.run('state.result.delta'),-2);
+ console.log('PASS hidden choices not leaked in Bluetooth messages, real guest typed answer is scored');
+}
+console.log('ALL v7 TESTS PASSED');

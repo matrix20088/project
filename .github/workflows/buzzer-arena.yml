@@ -18,6 +18,30 @@ jobs:
           node-version: '22'
       - name: Verify two, three, four human modes and referee logic
         run: node buzzer-arena/tests/game.test.cjs
+      - name: Bundle real flag SVG pictures for offline Android play (flag-icons MIT)
+        run: |
+          set -euo pipefail
+          git clone --quiet --depth 1 --branch v7.3.2 https://github.com/lipis/flag-icons.git /tmp/buzzer-flag-icons
+          mkdir -p buzzer-arena/app/src/main/assets/flags
+          node <<'NODE'
+          const fs=require('fs'),vm=require('vm'),path=require('path');
+          const dir='buzzer-arena/app/src/main/assets';
+          const ctx={};vm.createContext(ctx);
+          for(const f of ['questions.js','extra_questions.js','hard_questions.js','movie_music_levels.js','flag_questions.js']){
+            vm.runInContext(fs.readFileSync(path.join(dir,f),'utf8'),ctx,{filename:f});
+          }
+          const codes=[...new Set(vm.runInContext('Object.values(FLAG_QUESTION_IMAGES)',ctx))];
+          for(const code of codes){
+            if(!/^[a-z]{2}$/.test(code))throw Error('Invalid flag code: '+code);
+            const src=path.join('/tmp/buzzer-flag-icons/flags/4x3',code+'.svg');
+            if(!fs.existsSync(src))throw Error('Missing upstream flag '+src);
+            fs.copyFileSync(src,path.join(dir,'flags',code+'.svg'));
+          }
+          fs.copyFileSync('/tmp/buzzer-flag-icons/LICENSE',path.join(dir,'flags','LICENSE'));
+          console.log('Packaged',codes.length,'real SVG country flags for offline play');
+          NODE
+          test -s buzzer-arena/app/src/main/assets/flags/br.svg
+          test -s buzzer-arena/app/src/main/assets/flags/eg.svg
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -33,13 +57,13 @@ jobs:
         run: gradle -p buzzer-arena :app:assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: Jars-Al-Tahaddi-v6-APK
+          name: Jars-Al-Tahaddi-v7-APK
           path: buzzer-arena/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish APK release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v6.apk
-          gh release delete buzzer-arena-v6 --yes 2>/dev/null || true
-          gh release create buzzer-arena-v6 Jars-Al-Tahaddi-v6.apk --title "جرس التحدي 6.0 — خطف الجرس وإعادة الاختيارات" --notes "Android game show for 2-4 real human players; 1200+ original Arabic questions with cinema, Egyptian movie references and music; adaptive score-based difficulty, shared options on buzz, automatic retry after wrong/timeout, mandatory next question after two wrong options, host skip/guest skip request, native metallic double-bell on accepted buzz, buzzer available the moment the question is spoken, options voiced and revealed progressively while the buzzer remains open, buzzing stops any remaining narrated options, retry replays choices from the first, improved metallic double-bell and more varied Arabic referee lines. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."
+          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v7.apk
+          gh release delete buzzer-arena-v7 --yes 2>/dev/null || true
+          gh release create buzzer-arena-v7 Jars-Al-Tahaddi-v7.apk --title "جرس التحدي 7.0 — اكتب الإجابة وصور الأعلام" --notes "Android game show for 2-4 real human players; 1200+ original Arabic questions with cinema, Egyptian movie references and music; adaptive score-based difficulty, shared options on buzz, automatic retry after wrong/timeout, mandatory next question after two wrong options, host skip/guest skip request, native metallic double-bell on accepted buzz, early buzz: type your own answer without seeing unrevealed options; exact normalized Arabic answer matching and early-buzz double penalty; late buzz after all spoken options retains multiple choice. Includes real offline SVG picture flags, no flag answer spoken by the referee. Original locally synthesized bell and 1300+ quiz questions. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."

@@ -8,6 +8,27 @@ const HARD_CATS=["🏛️ تاريخ للنخبة","🧬 علوم صعبة","�
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const clean=s=>String(s??"").trim().replace(/[\r\n\t]+/g," ").slice(0,18)||"لاعب";
 const format=n=>Math.max(0,n|0);
+function normalizeAnswer(s){
+ return String(s??"").normalize("NFKC").toLowerCase()
+  .replace(/[\u064b-\u065f\u0670\u0640\u200c-\u200f]/g,"")
+  .replace(/[إأآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")
+  .replace(/[٠-٩۰-۹]/g,c=>String("٠١٢٣٤٥٦٧٨٩".indexOf(c)>=0?"٠١٢٣٤٥٦٧٨٩".indexOf(c):"۰۱۲۳۴۵۶۷۸۹".indexOf(c)))
+  .replace(/[^\p{L}\p{N}.]+/gu,"").replace(/^ال(?=.{3})/,"");
+}
+const ANSWER_ALIASES={
+ "المملكة المتحدة":["بريطانيا","انجلترا","بريطانيا العظمى"],
+ "الولايات المتحدة":["أمريكا","الولايات المتحدة الأمريكية","امريكا"],
+ "الإمارات":["الإمارات العربية المتحدة"],
+ "السعودية":["المملكة العربية السعودية"],
+ "كوريا الجنوبية":["جمهورية كوريا"],
+ "هولندا":["الأراضي المنخفضة"],
+ "روسيا":["الاتحاد الروسي"]
+};
+function answerMatches(input,correct){
+ const guess=normalizeAnswer(input),truth=normalizeAnswer(correct);
+ if(!guess)return false;
+ return guess===truth||((ANSWER_ALIASES[correct]||[]).some(v=>normalizeAnswer(v)===guess));
+}
 const cfg={name:localStorage.getItem("buzzerName")||"لاعب 1",target:2,category:CAT_ALL};
 let host=false,seat=null,online=false,pending="",devices=[],state=null,answerIndex=-1;
 let usedQuestions=new Set(),lastVersion=-1,soundOn=true;
@@ -116,7 +137,17 @@ function mkLobby(n){
  question:null,lockedSeat:null,result:null,winner:null,msg:"المتسابقين لسه بيتجمعوا",version:1,deadline:0};
 }
 function bump(){if(!host||!state)return;state.version++;sync(true);}
-function sync(draw=false){if(!host||!state)return;send({t:"state",s:state});if(draw){lastVersion=state.version;renderGame();}}
+function sync(draw=false){
+ if(!host||!state)return;
+ // Never broadcast answers that have not been read aloud. This also protects early typed-answer rounds.
+ const publicState=JSON.parse(JSON.stringify(state));
+ if(publicState.question&&publicState.question.options){
+  const shown=publicState.phase==="finished"||publicState.result?.ended?4:(publicState.optionsShownCount||0);
+  publicState.question.options=publicState.question.options.map((v,i)=>i<shown?v:"");
+ }
+ send({t:"state",s:publicState});
+ if(draw){lastVersion=state.version;renderGame();}
+}
 function startHost(n){
  host=true;seat=0;online=true;state=mkLobby(n);answerIndex=-1;usedQuestions.clear();lastVersion=-1;
  renderGame();sync();
@@ -154,6 +185,7 @@ function handleRemote(info){
  }
  if(packet.t==="buzz")claimBuzz(seatNo);
  if(packet.t==="choice")submitAnswer(seatNo,Number(packet.i));
+ if(packet.t==="typed")submitTypedAnswer(seatNo,packet.text);
  if(packet.t==="skipRequest"){
    if(["announce","question","answer","result"].includes(state.phase)){
      state.skipRequests=state.skipRequests||[];
@@ -230,12 +262,14 @@ function selectNewQuestion(){
  const item=candidates[Math.floor(Math.random()*candidates.length)];
  usedQuestions.add(item.key);
  const reversed=item.cat==="🔄 كلمة مقلوبة";
+ const flagCode=typeof FLAG_QUESTION_IMAGES!=="undefined"?FLAG_QUESTION_IMAGES[item.key]:null;
  privateReverseLetters=reversed?spelledLetters(item.row[0]):[];
  const row=reversed?["🎧 اسمع الحروف من الحكم، وركّب الكلمة بالمقلوب.",...item.row]:item.row.slice();
+ if(flagCode)row[0]="لأي دولة هذا العلم؟";
  const options=row.slice(1).map((value,i)=>({value,correct:i===0}));
  for(let i=options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
  answerIndex=options.findIndex(x=>x.correct);
- return {cat:item.cat,q:row[0],options:options.map(x=>x.value),audioOnly:reversed,tier:item.tier};
+ return {cat:item.cat,q:row[0],options:options.map(x=>x.value),visual:flagCode||null,audioOnly:reversed,tier:item.tier};
 }
 function startMatch(){
  if(!host||!state||!allReady()||state.phase!=="lobby")return;
@@ -252,7 +286,8 @@ function newRound(){
  state.round++;
  state.phase="announce";state.question=selectNewQuestion();state.lockedSeat=null;state.result=null;
  state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;
- state.wrongChoices=[];state.answerTimeouts=0;state.optionsShown=false;state.optionsShownCount=0;
+ state.wrongChoices=[];state.wrongAttempts=0;state.wrongTexts=[];
+ state.answerTimeouts=0;state.optionsShown=false;state.optionsShownCount=0;
  state.choiceCycle=0;state.retry=false;state.skipRequests=[];
  state.buzzId=state.buzzId||0;
  nextRevealAt=0;choiceSpeaking=false;buzzOpenedAt=0;
@@ -307,6 +342,8 @@ function claimBuzz(who){
  const rush=(Date.now()-buzzOpenedAt)<=FAST_BUZZ_MS;
  state.fastBuzz=rush;state.answerWindowSec=rush?FAST_ANSWER_SEC:ANSWER_SEC;
  state.lockedSeat=who;state.phase="answer";
+ // Buzzing BEFORE all choices are read is a text challenge, NOT a multiple-choice shortcut.
+ state.answerMode=state.optionsShownCount<4?"text":"choice";
  nextRevealAt=0;choiceSpeaking=false;state.choiceCycle++; // invalidate old TTS callbacks
  try{Native.stopSpeech();}catch(e){}
  state.buzzId=(state.buzzId||0)+1;
@@ -323,24 +360,43 @@ function pressBuzzer(){
  if(host)claimBuzz(seat);else send({t:"buzz"});
 }
 function selectOption(i){
- if(!state||state.phase!=="answer"||seat!==state.lockedSeat)return;
+ if(!state||state.phase!=="answer"||state.answerMode!=="choice"||seat!==state.lockedSeat)return;
  if(!Number.isInteger(i)||i<0||i>3||state.wrongChoices?.includes(i))return;
  if(host)submitAnswer(seat,i);else send({t:"choice",i});
 }
 function submitAnswer(who,i){
- if(!host||!state||state.phase!=="answer"||state.lockedSeat!==who)return;
+ if(!host||!state||state.phase!=="answer"||state.answerMode!=="choice"||state.lockedSeat!==who)return;
  if(!Number.isInteger(i)||i<0||i>=4||state.wrongChoices?.includes(i)||Date.now()>state.deadline)return;
  resolveAnswer(i===answerIndex,i,false);
 }
-function resolveAnswer(isCorrect,choice,timedout=false){
+function submitTypedFromUI(){
+ if(!state||state.phase!=="answer"||state.answerMode!=="text"||state.lockedSeat!==seat)return false;
+ const elem=document.getElementById("typedAnswer");
+ const value=String(elem?.value||"").trim();
+ if(!value){if(elem){elem.placeholder="اكتب الإجابة الأول";elem.focus();}return false;}
+ if(value.length>85)return false;
+ if(host)submitTypedAnswer(seat,value);else send({t:"typed",text:value});
+ if(elem){elem.disabled=true;elem.blur();}
+ return false;
+}
+function submitTypedAnswer(who,text){
+ if(!host||!state||state.phase!=="answer"||state.answerMode!=="text"||state.lockedSeat!==who||Date.now()>state.deadline)return;
+ if(typeof text!=="string"||!text.trim()||text.length>85)return;
+ const correct=state.question.options[answerIndex];
+ const typed=String(text).trim();
+ resolveAnswer(answerMatches(typed,correct),null,false,typed);
+}
+function resolveAnswer(isCorrect,choice,timedout=false,typedAnswer=null){
  if(!host||!state||!["answer","question"].includes(state.phase))return;
  const currentPhase=state.phase;
  const p=state.players.find(x=>x.seat===state.lockedSeat);
  const answer=state.question?.options[answerIndex]||"—";
  let msg,delta=0;
  const validPick=!!p&&Number.isInteger(choice)&&choice>=0&&choice<4;
- if(validPick && !isCorrect && !state.wrongChoices.includes(choice)){
-   state.wrongChoices.push(choice);
+ if(validPick && !isCorrect && !state.wrongChoices.includes(choice))state.wrongChoices.push(choice);
+ if(p&&!isCorrect&&!timedout){
+  state.wrongAttempts=(state.wrongAttempts||0)+1;
+  if(typedAnswer!==null)state.wrongTexts.push(String(typedAnswer).slice(0,85));
  }
  if(p && timedout)state.answerTimeouts=(state.answerTimeouts||0)+1;
  if(!p){msg="⏰ "+hostLine("nobuzz")+" نبدأ سؤال جديد."; }
@@ -351,17 +407,18 @@ function resolveAnswer(isCorrect,choice,timedout=false){
    timedout?hostLine("timeout")+" "+p.name+" خسر "+loss+(loss===2?" نقطتين":" نقطة"):
    hostLine("wrong",state.round)+" "+p.name+" خسر "+loss+(loss===2?" نقطتين":" نقطة");
  }
- const wrongCount=state.wrongChoices.length;
+ const wrongCount=state.wrongAttempts||0;
  const endQuestion=!p||isCorrect||wrongCount>=2||state.answerTimeouts>=3;
  const again=!!p&&!endQuestion;
- if(wrongCount>=2&&!isCorrect)msg+=". ❌ اختيارين غلط، السؤال انتهى إجباريًا.";
+ if(wrongCount>=2&&!isCorrect)msg+=". ❌ محاولتين غلط، السؤال انتهى إجباريًا.";
  else if(again)msg+=". 🔄 "+hostLine("retry")+" أي حد يقدر يحاول!";
  if(p&&timedout&&again)msg+=" حتى نفس المتسابق.";
  state.phase="result";state.remaining=again?RETRY_SEC:RESULT_SEC;
  state.deadline=Date.now()+state.remaining*1000;
  state.result={
   name:p?.name||"مفيش حد",seat:p?.seat??-1,delta,correct:endQuestion?answer:null,
-  chosen:validPick?state.question.options[choice]:null,chosenIndex:validPick?choice:null,
+  chosen:typedAnswer!==null?String(typedAnswer):validPick?state.question.options[choice]:null,
+  chosenIndex:validPick?choice:null,typed:typedAnswer!==null,
   ok:!!p&&isCorrect,fast:!!p&&state.fastBuzz,retry:again,ended:endQuestion,
   wrongCount,skipped:false
  };
@@ -372,7 +429,7 @@ function resolveAnswer(isCorrect,choice,timedout=false){
 function reopenBuzz(){
  if(!host||!state||state.phase!=="result"||!state.result?.retry)return;
  state.phase="question";state.lockedSeat=null;
- state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;state.retry=true;
+ state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;state.answerMode=null;state.retry=true;
  buzzOpenedAt=Date.now();state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
  state.result=null;state.skipRequests=[];
  state.msg="🔔 "+hostLine("retry")+" الجرس فتح تاني والاختيارات هتتقال من الأول.";
@@ -404,7 +461,7 @@ function resetToLobby(){
  if(!host||!state)return;
  state.phase="lobby";state.round=0;state.winner=null;state.result=null;state.question=null;state.lockedSeat=null;state.players.forEach(p=>p.score=0);
  state.msg="هنبدأ حلقة جديدة";usedQuestions.clear();
- state.wrongChoices=[];state.skipRequests=[];state.optionsShown=false;state.optionsShownCount=0;state.choiceCycle=0;state.buzzId=0;
+ state.wrongChoices=[];state.wrongAttempts=0;state.wrongTexts=[];state.skipRequests=[];state.optionsShown=false;state.optionsShownCount=0;state.choiceCycle=0;state.buzzId=0;
  bump();
 }
 function tick(){
