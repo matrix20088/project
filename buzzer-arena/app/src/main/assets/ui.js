@@ -110,7 +110,7 @@ function renderQuestion(){
  (state.question?.audioOnly?"🎧 اسمع الكلمة المقلوبة من الحكم، من غير ما تتكتب على الشاشة.":esc(state.question?.q))+
  (state.question?.visual?'<div class="flagPhoto"><img src="flags/'+esc(state.question.visual)+'.svg" alt="صورة علم دولة — خمن اسم الدولة" decoding="async"></div>':"")+'</div></section>';
  // Unheard answers are never shown. Early buzzer winners type from memory instead.
- body+=optionGrid(phase==="answer"&&state.answerMode==="choice");
+ body+=optionGrid(phase==="answer"&&["hybrid","choice"].includes(state.answerMode));
  if(phase==="answer"&&["text","hybrid"].includes(state.answerMode)){
   if(seat===state.lockedSeat){
    body+='<form class="answerTextCard" onsubmit="return submitTypedFromUI()">'+
