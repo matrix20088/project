@@ -60,3 +60,14 @@ The app is meant for social play; Bluetooth arrival ordering is not latency-comp
 - All existing mechanics preserved: 2–4 humans, adaptive difficulty, scorecards, speed penalties, multiple attempts after wrong/timeouts, two distinct wrong choices to end the question, host skip and guest skip requests, synthetic double-bell.
 - On mobile portrait screens, the active buzzer is fixed near the bottom so it cannot be hidden below the options.
 - The first buzzer is surprise-timed; repeat buzzer on an incorrect answer retains the earlier fast reopening rule.
+
+## v6.0 — Immediate buzzer + interrupted choice narration
+- The buzzer is visible to all 2–4 phones immediately upon completion of the question narration.
+- All choices are then spoken aloud by the host's Arabic text-to-speech referee one by one, and displayed as they are spoken. No hidden surprise delay.
+- An accepted buzz freezes the audience's visible choices immediately and **stops the rest of the choice narration**. The buzz winner is privately shown all four tappable answer options, since the app needs a way to submit a multiple-choice answer. Other players see only options already read.
+- On a wrong response or answer timeout, the same question and buzzer reopen, and each choice is spoken **again from option A** (with previously wrong choices crossed out). After 2 distinct wrong selections, the round ends as before.
+- A richer original synthesized double metallic bell sounds on every connected device when the host accepts a buzz. All audio assets are generated programmatically, no samples copied from broadcast.
+- 10+ varied Egyptian Arabic referee phrases per category, with immediate repetitions prevented; spoken pacing and pitch vary lightly to feel less repetitive.
+- If Android Arabic TTS is missing, options continue revealing on a fixed fallback timer. On actual phones, speech callbacks coordinate the sequence; the host remains authoritative.
+- A 22-second open-buzzer window allows multiple spoken options to play; the previous fast/late buzzer score rules and winner target remain.
+- Phone-to-phone Bluetooth clock synchronization is not perfect; buzz winner is determined by message arrival at the host.

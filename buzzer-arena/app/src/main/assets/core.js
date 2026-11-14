@@ -2,8 +2,8 @@
 const root=document.getElementById("root");
 const CAT_ALL="🌟 منوعات",CAT_KEYS=Object.keys(QUESTIONS),ICONS=["🔵","🩷","🟡","🟣"];
 const TOTAL_QUESTIONS=CAT_KEYS.reduce((n,k)=>n+QUESTIONS[k].length,0);
-const QUIZ_SEC=15,ANSWER_SEC=12,FAST_ANSWER_SEC=6,FAST_BUZZ_MS=2000;
-const SECRET_DELAY_MAX_MS=10000,CHOICE_REVEAL_STEP_MS=1050,ANNOUNCE_SEC=70,RESULT_SEC=8,RETRY_SEC=3,WIN_AT=10;
+const QUIZ_SEC=22,ANSWER_SEC=12,FAST_ANSWER_SEC=6,FAST_BUZZ_MS=2000;
+const CHOICE_REVEAL_STEP_MS=350,ANNOUNCE_SEC=70,RESULT_SEC=8,RETRY_SEC=3,WIN_AT=10;
 const HARD_CATS=["🏛️ تاريخ للنخبة","🧬 علوم صعبة","🧭 جغرافيا متقدمة","🎨 فن وأدب","♟️ منطق صعب"];
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const clean=s=>String(s??"").trim().replace(/[\r\n\t]+/g," ").slice(0,18)||"لاعب";
@@ -29,18 +29,31 @@ function ringBell(){
  try{if(window.Native&&typeof Native.playBell==="function"){Native.playBell();return;}}catch(e){}
  sfx("buzz");
 }
-let hiddenOpenAt=0,nextRevealAt=0,speechWatchdogAt=0,buzzOpenedAt=0,privateReverseLetters=[];
+let nextRevealAt=0,choiceSpeaking=false,choiceSpeechDeadline=0,speechWatchdogAt=0,buzzOpenedAt=0,privateReverseLetters=[];
 const SPELL_NAMES={"ا":"ألف","أ":"ألف بهمزة فوق","إ":"ألف بهمزة تحت","آ":"ألف مد","ب":"باء","ت":"تاء","ث":"ثاء","ج":"جيم","ح":"حاء","خ":"خاء","د":"دال","ذ":"ذال","ر":"راء","ز":"زاي","س":"سين","ش":"شين","ص":"صاد","ض":"ضاد","ط":"طاء","ظ":"ظاء","ع":"عين","غ":"غين","ف":"فاء","ق":"قاف","ك":"كاف","ل":"لام","م":"ميم","ن":"نون","ه":"هاء","و":"واو","ي":"ياء","ى":"ألف مقصورة","ة":"تاء مربوطة","ء":"همزة","ئ":"ياء بهمزة","ؤ":"واو بهمزة"};
 function spelledLetters(word){return [...String(word)].reverse().filter(ch=>ch.trim()).map(ch=>SPELL_NAMES[ch]||ch);}
 let voiceOn=localStorage.getItem("buzzerVoice")!=="off",voiceAvailable=true;
 const HOST_LINES={
- intro:["يلا بينا نولّع المنافسة!","ركزوا معايا يا أبطال!","السؤال ده محتاج تركيز!","جهزوا إيديكم يا جماعة!","السؤال الجاي ممكن يقلب النتيجة!"],
- correct:["يا سلام! إجابة مظبوطة!","برافو عليك! إجابة صح!","هي دي الشطارة! إجابة صحيحة!","بوم! جبتها صح!"],
- wrong:["يا خسارة! الإجابة غلط!","لأ لأ، مش هي دي!","معلش، المرة الجاية أحسن!","للأسف، الإجابة مش مظبوطة!"],
- start:["يلا الجرس اتفتح!","الجرس مفتوح! مين الأسرع؟","على الجرس يا أبطال!"],
- finish:["مبروك يا بطل!","إيه الجمال ده! عندنا فائز!"]
+ intro:["يلا نبدأ جولة جديدة، ركزوا معايا!","السؤال ده محتاج عين صقر!","النتيجة ممكن تتقلب من السؤال ده!","مين معانا جاهز للخطفة؟","العين على الجرس يا أبطال!","هنا في معلومة مش أي حد يعرفها!","ورّونا مين فاكر ومين هيخمّن!","خدوا بالكم، سؤال يستاهل التركيز!","مش عاوز أشوف حد سرحان!","نبدأ تحدي جديد، جاهزين؟","ممكن حد يقلب النتيجة دلوقتي!","سؤال جديد، وخليكم أسرع من بعض!","يلا ورّونا الشطارة!","التركيز بقى يا نجوم، اللعب سخن!"],
+ correct:["يا سلام! إجابة مظبوطة!","برافو يا نجم، النقطة دي مستحقة!","إيه الدقة دي! إجابة صح!","جبتها في الجون!","أيوه كده، شغل عالي!","كنت واثق إنك هتعرفها!","برافو عليك، النقطة في جيبك!","إجابة قوية، تستاهل!","ياااه، هو ده الكلام!","صحيح، مبروك النقطة!","أنت صاحي معانا أهو!","قلبت السؤال لصالحك!"],
+ wrong:["يا خسارة! دي مش الإجابة!","لأ لأ، ركز المرة الجاية!","أوف، مش دي يا بطل!","المعلومة دي لسه مش مظبوطة!","ولا يهمك، خد بالك في اللي جاي!","كانت محاولة جريئة، بس غلط!","يا ساتر، الإجابة دي وقعتنا!","مش هي دي، نكمل المنافسة!","المرادي الحظ ما ساعدكش!","إجابة مش موفقة، لكن لسه في فرص!"],
+ timeout:["الوقت جري منك يا نجم!","مفيش إجابة؟ الثواني خلصت!","الحكم مش هيستنى أكتر من كده!","كنت محتاج ترد أسرع شوية!","خلص الوقت، يلا نرجع للمنافسة!","الساعة سبقتك المرة دي!","يا خسارة، الفرصة راحت!"],
+ buzz:["مين خطف الجرس مننا؟","ياااه، دي سرعة إيه دي!","الجرس اتخطف يا جماعة!","يا سلام، عندنا متسابق جريء!","إيد سريعة على الجرس!","صاحبنا هنا سبق الباقيين!","رن الجرس، كله يركز!","أهو حد قال أنا لها!"],
+ start:["الجرس مفتوح، ورّونا شطارتكم!","الجرس جاهز، مين الأسرع؟","يلا، اسبقوا الاختيارات!","أول واحد يضغط يجاوب!","الجرس معاكم من دلوقتي!"],
+ retry:["هنسمع الاختيارات من أولها!","فرصة تانية، نفس السؤال!","نرجع نسمع الاختيارات تاني!","لسه في فرصة لحد ما السؤال يخلص!","الجرس رجع، مين هيخطفها؟","المنافسة لسه مفتوحة!"],
+ nobuzz:["فين الناس؟ محدش ضغط!","الوقت خلص والجرس مستني!","واضح إن السؤال حيّر الكل!","محدش دخل السباق المرة دي!"],
+ skip:["ماشي، نسيب السؤال ده!","الحكم قرر يعدي السؤال!","نروح لسؤال جديد، يلا!"],
+ finish:["ألف مبروك، عندنا فائز!","النهارده في نجم كسب الحلقة!","دي كانت منافسة نار!","الجرس حسمها، مبروك!"]
 };
-function hostLine(kind,n=0){const l=HOST_LINES[kind];return l[(n+Math.floor(Math.random()*l.length))%l.length];}
+const hostHistory=Object.create(null);
+function hostLine(kind){
+ const lines=HOST_LINES[kind]||HOST_LINES.intro;
+ const prev=hostHistory[kind]??-1;
+ const jump=lines.length>1?1+Math.floor(Math.random()*(lines.length-1)):1;
+ const i=(prev+jump)%lines.length;
+ hostHistory[kind]=i;
+ return lines[i];
+}
 function toggleVoice(){voiceOn=!voiceOn;localStorage.setItem("buzzerVoice",voiceOn?"on":"off");renderHome();}
 function previewVoice(){try{Native.speak("أهلا بيكم في جرس التحدي! معانا اتنين أو تلاتة أو أربعة متسابقين، والنهارده هنشوف مين أسرع واحد على الجرس!")}catch(e){showError("تعذر تشغيل صوت الحكم: "+e.message);}}
 function speakQuestion(text,round){
@@ -65,13 +78,7 @@ function questionVoiceFinished(spoken,round){
  if(!host||!state||state.phase!=="announce"||String(state.round)!==String(round)||state.speechOver)return;
  if(!spoken&&state.question?.audioOnly){unavailableSpelling();return;}
  state.speechOver=true;
- // Four choices must be seen by ALL contestants before starting the secret 0–10s clock.
- // Only the authoritative host advances the reveal and chooses the secret moment.
- nextRevealAt=Date.now()+350;
- hiddenOpenAt=0;
- state.remaining=0;state.deadline=0; // No countdown or secret timestamp leaves the host.
- state.msg="👀 ركزوا... الاختيارات هتظهر للجميع واحدة واحدة، وبعدها الجرس هيفاجئكم!";
- bump();
+ openBuzz(); // The buzzer is available immediately after the question ends.
 }
 function native(name,arg){try{if(!window.Native||typeof Native[name]!=="function")throw new Error("التطبيق لازم يتفتح من أندرويد");if(arg===undefined)Native[name]();else Native[name](arg);}catch(e){showError(e.message);}}
 function send(p){native("send",JSON.stringify(p));}
@@ -188,6 +195,8 @@ window.onNative=(type,detail)=>{
  }
  if(type==="ttsStatus"||type==="voiceStatus"){voiceAvailable=detail==="ready";if(!state)renderHome();return;}
  if(type==="speechDone"){questionVoiceFinished(true,detail);return;}
+ if(type==="choiceDone"){choiceVoiceDone(detail);return;}
+ if(type==="choiceUnavailable"){voiceAvailable=false;choiceVoiceDone(detail);return;}
  if(type==="speechUnavailable"){voiceAvailable=false;questionVoiceFinished(false,detail);return;}
  if(type==="error"){showError(detail);return;}
  if(type==="disconnected"){online=false;host=false;seat=null;state=null;showError(detail||"انقطع اتصال البلوتوث");return;}
@@ -244,9 +253,9 @@ function newRound(){
  state.phase="announce";state.question=selectNewQuestion();state.lockedSeat=null;state.result=null;
  state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;
  state.wrongChoices=[];state.answerTimeouts=0;state.optionsShown=false;state.optionsShownCount=0;
- state.retry=false;state.skipRequests=[];
+ state.choiceCycle=0;state.retry=false;state.skipRequests=[];
  state.buzzId=state.buzzId||0;
- hiddenOpenAt=0;nextRevealAt=0;buzzOpenedAt=0;
+ nextRevealAt=0;choiceSpeaking=false;buzzOpenedAt=0;
  speechWatchdogAt=Date.now()+ANNOUNCE_SEC*1000;
  state.deadline=0;state.remaining=0;state.speechOver=false;
  state.msg="🎙️ الحكم بيقرأ السؤال، والجرس مخفي لحد ما يخلص.";
@@ -255,41 +264,55 @@ function newRound(){
  speakQuestion(intro+(state.question.audioOnly?"دلوقتي كلمة مقلوبة. ركزوا في الحروف بالترتيب.":state.question.q),state.round);
 }
 function revealNextChoice(){
- if(!host||!state||state.phase!=="announce"||!state.speechOver||!nextRevealAt||Date.now()<nextRevealAt)return;
+ if(!host||!state||state.phase!=="question"||!nextRevealAt||Date.now()<nextRevealAt)return;
+ if(choiceSpeaking&&Date.now()<choiceSpeechDeadline)return;
+ if(choiceSpeaking){try{Native.stopSpeech();}catch(e){} choiceSpeaking=false;}
  const shown=state.optionsShownCount||0;
- if(shown>=4)return;
- state.optionsShownCount=shown+1;
- state.optionsShown=state.optionsShownCount===4;
- if(state.optionsShown){
-   // Last option just became visible: only NOW start the surprise window.
-   // Keep at least one second for Bluetooth delivery before the buzzer appears.
-   const delay=1000+Math.floor(Math.random()*(SECRET_DELAY_MAX_MS-1000+1));
-   hiddenOpenAt=Date.now()+delay;
-   nextRevealAt=0;
-   state.msg="✅ الأربع اختيارات ظهروا! الجرس ممكن يظهر فجأة خلال 10 ثواني... اتجهزوا!";
- }else{
-   nextRevealAt=Date.now()+CHOICE_REVEAL_STEP_MS;
-   state.msg="👀 الاختيار "+state.optionsShownCount+" من 4 ظهر... ولسه الجرس مقفول!";
- }
+ if(shown>=4){nextRevealAt=0;return;}
+ const step=shown+1;
+ state.optionsShownCount=step;state.optionsShown=step===4;
+ state.msg=step===4?"👀 الاختيارات الأربعة ظهرت. مين أسرع واحد؟":"🎧 الحكم بيقول الاختيار "+step+" من 4. الجرس مفتوح!";
+ if(voiceOn&&voiceAvailable){
+  const token=state.round+"."+state.choiceCycle+"."+step;
+  choiceSpeaking=true;
+  choiceSpeechDeadline=Date.now()+Math.max(2300,Math.min(8000,1600+String(state.question.options[step-1]).length*130));
+  nextRevealAt=choiceSpeechDeadline;
+  try{Native.speakChoice(["الاختيار ألف: ","الاختيار باء: ","الاختيار جيم: ","الاختيار دال: "][step-1]+state.question.options[step-1],token);}
+  catch(e){choiceSpeaking=false;nextRevealAt=Date.now()+1300;}
+ }else{choiceSpeaking=false;nextRevealAt=step<4?Date.now()+1450:0;}
  bump();
 }
+function choiceVoiceDone(token){
+ if(!host||!state||state.phase!=="question"||!choiceSpeaking)return;
+ if(String(token)!==state.round+"."+state.choiceCycle+"."+state.optionsShownCount)return;
+ choiceSpeaking=false;
+ nextRevealAt=state.optionsShownCount<4?Date.now()+CHOICE_REVEAL_STEP_MS:0;
+}
 function openBuzz(){
- if(!host||!state||state.phase!=="announce"||!state.speechOver||!state.optionsShown||state.optionsShownCount!==4||!hiddenOpenAt||Date.now()<hiddenOpenAt)return;
+ if(!host||!state||state.phase!=="announce"||!state.speechOver)return;
  buzzOpenedAt=Date.now();
- state.phase="question";state.deadline=buzzOpenedAt+QUIZ_SEC*1000;
- state.remaining=QUIZ_SEC;state.msg="🔔 "+hostLine("start",state.round);
- haptic();sfx("ok");bump();
+ state.phase="question";state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
+ state.msg="🔔 "+hostLine("start")+" الاختيارات هتتقال واحدة واحدة.";
+ startChoiceCycle();bump();
+}
+function startChoiceCycle(){
+ state.choiceCycle=(state.choiceCycle||0)+1;
+ state.optionsShown=false;state.optionsShownCount=0;
+ choiceSpeaking=false;choiceSpeechDeadline=0;nextRevealAt=Date.now()+200;
+ try{Native.stopSpeech();}catch(e){}
 }
 function claimBuzz(who){
- if(!host||!state||state.phase!=="question"||!state.optionsShown||state.lockedSeat!==null||Date.now()>state.deadline)return;
+ if(!host||!state||state.phase!=="question"||state.lockedSeat!==null||Date.now()>state.deadline)return;
  const p=state.players.find(x=>x.seat===who&&x.online);if(!p)return;
  const rush=(Date.now()-buzzOpenedAt)<=FAST_BUZZ_MS;
  state.fastBuzz=rush;state.answerWindowSec=rush?FAST_ANSWER_SEC:ANSWER_SEC;
- state.lockedSeat=who;state.phase="answer";state.optionsShown=true;
+ state.lockedSeat=who;state.phase="answer";
+ nextRevealAt=0;choiceSpeaking=false;state.choiceCycle++; // invalidate old TTS callbacks
+ try{Native.stopSpeech();}catch(e){}
  state.buzzId=(state.buzzId||0)+1;
  state.deadline=Date.now()+state.answerWindowSec*1000;state.remaining=state.answerWindowSec;
  state.msg="🔔 "+p.name+(rush?" خطف الجرس! قدامه 6 ثواني؛ الغلط −2":" سبق الجميع! قدامه 12 ثانية؛ الغلط −1");
- haptic();ringBell();speak("الجرس مع "+p.name);
+ haptic();ringBell();speak(hostLine("buzz")+" "+p.name+"، اتفضل جاوب!");
  bump();
 }
 function pressBuzzer(){
@@ -320,19 +343,19 @@ function resolveAnswer(isCorrect,choice,timedout=false){
    state.wrongChoices.push(choice);
  }
  if(p && timedout)state.answerTimeouts=(state.answerTimeouts||0)+1;
- if(!p){msg="⏰ محدش ضغط الجرس. هنبدأ سؤالًا جديدًا.";}
+ if(!p){msg="⏰ "+hostLine("nobuzz")+" نبدأ سؤال جديد."; }
  else{
   delta=isCorrect?1:(state.fastBuzz?-2:-1);p.score+=delta;
   const loss=Math.abs(delta);
   msg=isCorrect?hostLine("correct",state.round)+" نقطة لـ "+p.name:
-   timedout?"الوقت خلص يا "+p.name+"، خسر "+loss+(loss===2?" نقطتين":" نقطة"):
+   timedout?hostLine("timeout")+" "+p.name+" خسر "+loss+(loss===2?" نقطتين":" نقطة"):
    hostLine("wrong",state.round)+" "+p.name+" خسر "+loss+(loss===2?" نقطتين":" نقطة");
  }
  const wrongCount=state.wrongChoices.length;
  const endQuestion=!p||isCorrect||wrongCount>=2||state.answerTimeouts>=3;
  const again=!!p&&!endQuestion;
  if(wrongCount>=2&&!isCorrect)msg+=". ❌ اختيارين غلط، السؤال انتهى إجباريًا.";
- else if(again)msg+=". 🔄 هنفتح الجرس تاني، وأي متسابق يقدر يحاول!";
+ else if(again)msg+=". 🔄 "+hostLine("retry")+" أي حد يقدر يحاول!";
  if(p&&timedout&&again)msg+=" حتى نفس المتسابق.";
  state.phase="result";state.remaining=again?RETRY_SEC:RESULT_SEC;
  state.deadline=Date.now()+state.remaining*1000;
@@ -349,14 +372,11 @@ function resolveAnswer(isCorrect,choice,timedout=false){
 function reopenBuzz(){
  if(!host||!state||state.phase!=="result"||!state.result?.retry)return;
  state.phase="question";state.lockedSeat=null;
- state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;
- state.retry=true;state.optionsShown=true;state.optionsShownCount=4;
- buzzOpenedAt=Date.now();
- state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
- state.result=null;
- state.skipRequests=[];
- state.msg="🔔 فرصة تانية! الجرس اتفتح للجميع، والاختيارات الغلط اتعلمت. أي حد يقدر يضغط!";
- bump();
+ state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;state.retry=true;
+ buzzOpenedAt=Date.now();state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
+ state.result=null;state.skipRequests=[];
+ state.msg="🔔 "+hostLine("retry")+" الجرس فتح تاني والاختيارات هتتقال من الأول.";
+ startChoiceCycle();bump();
 }
 function advanceRound(){
  if(!host||!state||state.phase!=="result")return;
@@ -366,10 +386,11 @@ function advanceRound(){
 function skipQuestion(){
  if(!host||!state||!["announce","question","answer","result"].includes(state.phase))return;
  const correct=state.question?.options[answerIndex]||"—";
- hiddenOpenAt=0;nextRevealAt=0;
+ nextRevealAt=0;choiceSpeaking=false;
+ try{Native.stopSpeech();}catch(e){}
  state.phase="result";state.remaining=3;state.deadline=Date.now()+3000;
  state.result={skipped:true,seat:-1,ok:false,delta:0,correct,chosen:null,retry:false,ended:true};
- state.msg="⏭️ صاحب الغرفة تخطّى السؤال. هنروح مباشرة للي بعده.";
+ state.msg="⏭️ "+hostLine("skip")+" هنروح للي بعده.";
  speak(state.msg);bump();
 }
 function requestSkip(){
@@ -383,18 +404,17 @@ function resetToLobby(){
  if(!host||!state)return;
  state.phase="lobby";state.round=0;state.winner=null;state.result=null;state.question=null;state.lockedSeat=null;state.players.forEach(p=>p.score=0);
  state.msg="هنبدأ حلقة جديدة";usedQuestions.clear();
- state.wrongChoices=[];state.skipRequests=[];state.optionsShown=false;state.optionsShownCount=0;state.buzzId=0;
+ state.wrongChoices=[];state.skipRequests=[];state.optionsShown=false;state.optionsShownCount=0;state.choiceCycle=0;state.buzzId=0;
  bump();
 }
 function tick(){
  if(!host||!state)return;
  const phase=state.phase,now=Date.now();
  if(phase==="announce"){
-  if(!state.speechOver&&now>=speechWatchdogAt){questionVoiceFinished(false,state.round);return;}
-  if(state.speechOver && nextRevealAt && now>=nextRevealAt)revealNextChoice();
-  if(state.speechOver && state.optionsShown && hiddenOpenAt && now>=hiddenOpenAt)openBuzz();
+  if(!state.speechOver&&now>=speechWatchdogAt)questionVoiceFinished(false,state.round);
   return;
  }
+ if(phase==="question"&&nextRevealAt&&now>=nextRevealAt)revealNextChoice();
  if(!["question","answer","result"].includes(phase))return;
  const remaining=Math.max(0,Math.ceil((state.deadline-now)/1000));
  if(remaining!==state.remaining){state.remaining=remaining;sync();updateTimerUI();}

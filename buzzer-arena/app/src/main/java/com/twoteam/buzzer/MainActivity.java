@@ -97,13 +97,18 @@ public class MainActivity extends Activity {
                     speech.setOnUtteranceProgressListener(new UtteranceProgressListener(){
                         @Override public void onStart(String id){}
                         @Override public void onDone(String id){
-                            if(id!=null&&id.matches("[0-9]+")){
-                                if(speech!=null) speech.setSpeechRate(1.0f);
+                            if(id==null)return;
+                            if(id.matches("[0-9]+")){
+                                if(speech!=null)speech.setSpeechRate(1.0f);
                                 fire("speechDone",id);
+                            }else if(id.startsWith("choice-")){
+                                fire("choiceDone",id.substring(7));
                             }
                         }
                         @Override public void onError(String id){
-                            if(id!=null&&id.matches("[0-9]+"))fire("speechUnavailable",id);
+                            if(id==null)return;
+                            if(id.matches("[0-9]+"))fire("speechUnavailable",id);
+                            else if(id.startsWith("choice-"))fire("choiceUnavailable",id.substring(7));
                         }
                     });
                 }
@@ -274,23 +279,26 @@ public class MainActivity extends Activity {
         }
         @android.webkit.JavascriptInterface public void disconnect(){shutdown(true);}
         // Short, layered metallic double-bell. Generated locally; no copyrighted audio or network.
+        // Original game-show bell: two brass-like strikes, harmonic overtones and a short resonant tail.
         @android.webkit.JavascriptInterface public void playBell(){
             new Thread(()->{
-                final int sampleRate=24000;
-                final int frames=(int)(sampleRate*0.83);
-                byte[] pcm=new byte[frames*2];
+                final int sampleRate=32000;
+                final int frames=(int)(sampleRate*1.08);
+                final byte[] pcm=new byte[frames*2];
                 for(int i=0;i<frames;i++){
-                    double t=(double)i/sampleRate;
-                    double first=bellWave(t,760.0);
-                    double second=bellWave(t-0.12,920.0)*0.62;
-                    double sample=Math.max(-1,Math.min(1,(first+second)*0.44));
-                    short value=(short)(sample*32767);
+                    final double t=(double)i/sampleRate;
+                    final double sound=bellWave(t,0.0,760.0,1.0)
+                        +bellWave(t,0.17,1010.0,0.76)
+                        +bellWave(t,0.36,760.0,0.25);
+                    // Soft limiter avoids harsh digital clipping.
+                    final double limited=Math.tanh(sound*0.57)*0.85;
+                    short value=(short)(limited*32767);
                     pcm[i*2]=(byte)(value&255);
                     pcm[i*2+1]=(byte)((value>>>8)&255);
                 }
                 AudioTrack track=null;
                 try{
-                    AudioAttributes attributes=new AudioAttributes.Builder()
+                    AudioAttributes attrs=new AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_GAME)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build();
                     AudioFormat format=new AudioFormat.Builder()
@@ -298,26 +306,27 @@ public class MainActivity extends Activity {
                         .setSampleRate(sampleRate)
                         .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build();
                     track=new AudioTrack.Builder()
-                        .setAudioAttributes(attributes)
+                        .setAudioAttributes(attrs)
                         .setAudioFormat(format)
                         .setTransferMode(AudioTrack.MODE_STATIC)
                         .setBufferSizeInBytes(pcm.length).build();
                     track.write(pcm,0,pcm.length);
                     track.play();
-                    Thread.sleep(850);
-                }catch(Exception e){Log.w("BuzzerBell","Failed to play game-show bell",e);}
+                    Thread.sleep(1110);
+                }catch(Exception e){Log.w("BuzzerBell","Game-show bell playback failed",e);}
                 finally{if(track!=null){try{track.stop();}catch(Exception ignored){}track.release();}}
             },"quiz-bell").start();
         }
-        private double bellWave(double time,double freq){
-            if(time<0)return 0;
-            double attack=1-Math.exp(-time*190);
-            double envelope=attack*Math.exp(-time*5.4);
-            double strike=Math.sin(2*Math.PI*freq*time)*0.60+
-                Math.sin(2*Math.PI*freq*1.51*time)*0.25+
-                Math.sin(2*Math.PI*freq*2.04*time)*0.10+
-                Math.sin(2*Math.PI*freq*2.93*time)*0.05;
-            return envelope*strike;
+        private double bellWave(double time,double start,double freq,double volume){
+            double t=time-start;
+            if(t<0)return 0;
+            double attack=1.0-Math.exp(-t*210);
+            double tail=attack*Math.exp(-t*5.0);
+            double partials=Math.sin(2*Math.PI*freq*t)*.60
+                +Math.sin(2*Math.PI*(freq*1.50)*t)*.24
+                +Math.sin(2*Math.PI*(freq*2.38)*t)*.10
+                +Math.sin(2*Math.PI*(freq*3.31)*t)*.06;
+            return volume*tail*partials;
         }
         @android.webkit.JavascriptInterface public void vibrate(){
             runOnUiThread(()->{
@@ -333,11 +342,27 @@ public class MainActivity extends Activity {
         @android.webkit.JavascriptInterface public void announce(String text,String utteranceId){
             runOnUiThread(()->{
                 if(speechReady&&text!=null&&!text.isEmpty()&&speech!=null){
+                    speech.setSpeechRate(0.97f+(float)(System.nanoTime()%11)/100.0f);
+                    speech.setPitch(1.01f+(float)(System.nanoTime()%12)/100.0f);
                     String id=(utteranceId==null||utteranceId.isEmpty())?"comment":utteranceId;
                     int result=speech.speak(text.substring(0,Math.min(500,text.length())),
                         TextToSpeech.QUEUE_FLUSH,null,id);
                     if(result==TextToSpeech.ERROR)fire("voiceStatus","unavailable");
                 }else fire("voiceStatus","unavailable");
+            });
+        }
+        @android.webkit.JavascriptInterface public void stopSpeech(){
+            runOnUiThread(()->{if(speech!=null)speech.stop();});
+        }
+        @android.webkit.JavascriptInterface public void speakChoice(String text,String token){
+            runOnUiThread(()->{
+                if(!speechReady||speech==null||text==null||text.isEmpty()){
+                    fire("choiceUnavailable",token);return;
+                }
+                speech.setSpeechRate(0.92f);
+                int rc=speech.speak(text.substring(0,Math.min(text.length(),300)),
+                    TextToSpeech.QUEUE_FLUSH,null,"choice-"+token);
+                if(rc==TextToSpeech.ERROR)fire("choiceUnavailable",token);
             });
         }
         @android.webkit.JavascriptInterface public void speakQuestion(String text,String round){

@@ -33,13 +33,13 @@ jobs:
         run: gradle -p buzzer-arena :app:assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: Jars-Al-Tahaddi-v5-APK
+          name: Jars-Al-Tahaddi-v6-APK
           path: buzzer-arena/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish APK release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v5.apk
-          gh release delete buzzer-arena-v5 --yes 2>/dev/null || true
-          gh release create buzzer-arena-v5 Jars-Al-Tahaddi-v5.apk --title "جرس التحدي 5.0 — الاختيارات قبل الجرس" --notes "Android game show for 2-4 real human players; 1200+ original Arabic questions with cinema, Egyptian movie references and music; adaptive score-based difficulty, shared options on buzz, automatic retry after wrong/timeout, mandatory next question after two wrong options, host skip/guest skip request, native metallic double-bell on accepted buzz, all choices progressively shown to every player before the first surprise buzzer within 10 seconds of the fourth choice, with Arabic voice referee. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."
+          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v6.apk
+          gh release delete buzzer-arena-v6 --yes 2>/dev/null || true
+          gh release create buzzer-arena-v6 Jars-Al-Tahaddi-v6.apk --title "جرس التحدي 6.0 — خطف الجرس وإعادة الاختيارات" --notes "Android game show for 2-4 real human players; 1200+ original Arabic questions with cinema, Egyptian movie references and music; adaptive score-based difficulty, shared options on buzz, automatic retry after wrong/timeout, mandatory next question after two wrong options, host skip/guest skip request, native metallic double-bell on accepted buzz, buzzer available the moment the question is spoken, options voiced and revealed progressively while the buzzer remains open, buzzing stops any remaining narrated options, retry replays choices from the first, improved metallic double-bell and more varied Arabic referee lines. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."
