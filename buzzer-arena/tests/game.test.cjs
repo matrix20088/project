@@ -199,6 +199,7 @@ for(const n of [2,3,4]){
 }
 {
  const h=env(),g=env();join(h,2);
+ g.window.onNative('message',JSON.stringify({t:'welcome',seat:1})); // Android Bluetooth assigns seat before game states.
  h.run('startMatch()');startQuestion(h);
  g.window.onNative('message',JSON.stringify(h.messages.at(-1)));
  assert.equal(g.run('state.question.options.filter(Boolean).length'),0,'host must hide unheard options from guest');
