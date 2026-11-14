@@ -108,3 +108,9 @@ The app is meant for social play; Bluetooth arrival ordering is not latency-comp
 - Online transport is polling based and uses a private Vercel Blob store for room meta, actions and sanitized host states. This is an **initial beta**, not a guaranteed low-latency competitive online server. Host/guest network delay can influence first-buzz decisions. Room IDs logically expire after one hour and a daily cron sweeps old objects.
 - Google Play preparation: compile & target SDK 36; AGP 8.10.1 + Gradle 8.11.1. CI produces a debug APK for direct installation and an **unsigned** release AAB as an artifact. A user-owned signing key, real-device tests, store listing, identity verification and Play Console access are required before store submission.
 - Privacy policy: the server's `/privacy.html`; avoid showing private session tokens to other participants.
+
+## v11.0 — Official golden bell visual identity
+- User-approved concept: original **جرس التحدي** name, metallic gold quiz bell on a deep indigo/navy background.
+- Android's launcher icon now uses the cropped icon artwork (no large poster text) as a drawable for normal and round launcher entries.
+- The high-resolution 512 × 512 32-bit PNG for Play Console is delivered separately from the build; Play Store icons and in-app Android launcher icons are separate assets.
+- No game mechanics, questions, network settings, host flow or scoring rules changed from v10.0.
