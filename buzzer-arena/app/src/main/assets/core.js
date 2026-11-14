@@ -3,7 +3,7 @@ const root=document.getElementById("root");
 const CAT_ALL="🌟 منوعات",CAT_KEYS=Object.keys(QUESTIONS),ICONS=["🔵","🩷","🟡","🟣"];
 const TOTAL_QUESTIONS=CAT_KEYS.reduce((n,k)=>n+QUESTIONS[k].length,0);
 const QUIZ_SEC=15,ANSWER_SEC=12,FAST_ANSWER_SEC=6,FAST_BUZZ_MS=2000;
-const SECRET_DELAY_MAX_MS=15000,ANNOUNCE_SEC=70,RESULT_SEC=8,RETRY_SEC=3,WIN_AT=10;
+const SECRET_DELAY_MAX_MS=10000,CHOICE_REVEAL_STEP_MS=1050,ANNOUNCE_SEC=70,RESULT_SEC=8,RETRY_SEC=3,WIN_AT=10;
 const HARD_CATS=["🏛️ تاريخ للنخبة","🧬 علوم صعبة","🧭 جغرافيا متقدمة","🎨 فن وأدب","♟️ منطق صعب"];
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const clean=s=>String(s??"").trim().replace(/[\r\n\t]+/g," ").slice(0,18)||"لاعب";
@@ -29,7 +29,7 @@ function ringBell(){
  try{if(window.Native&&typeof Native.playBell==="function"){Native.playBell();return;}}catch(e){}
  sfx("buzz");
 }
-let hiddenOpenAt=0,speechWatchdogAt=0,buzzOpenedAt=0,privateReverseLetters=[];
+let hiddenOpenAt=0,nextRevealAt=0,speechWatchdogAt=0,buzzOpenedAt=0,privateReverseLetters=[];
 const SPELL_NAMES={"ا":"ألف","أ":"ألف بهمزة فوق","إ":"ألف بهمزة تحت","آ":"ألف مد","ب":"باء","ت":"تاء","ث":"ثاء","ج":"جيم","ح":"حاء","خ":"خاء","د":"دال","ذ":"ذال","ر":"راء","ز":"زاي","س":"سين","ش":"شين","ص":"صاد","ض":"ضاد","ط":"طاء","ظ":"ظاء","ع":"عين","غ":"غين","ف":"فاء","ق":"قاف","ك":"كاف","ل":"لام","م":"ميم","ن":"نون","ه":"هاء","و":"واو","ي":"ياء","ى":"ألف مقصورة","ة":"تاء مربوطة","ء":"همزة","ئ":"ياء بهمزة","ؤ":"واو بهمزة"};
 function spelledLetters(word){return [...String(word)].reverse().filter(ch=>ch.trim()).map(ch=>SPELL_NAMES[ch]||ch);}
 let voiceOn=localStorage.getItem("buzzerVoice")!=="off",voiceAvailable=true;
@@ -65,10 +65,12 @@ function questionVoiceFinished(spoken,round){
  if(!host||!state||state.phase!=="announce"||String(state.round)!==String(round)||state.speechOver)return;
  if(!spoken&&state.question?.audioOnly){unavailableSpelling();return;}
  state.speechOver=true;
- const secret=Math.floor(Math.random()*(SECRET_DELAY_MAX_MS+1));
- hiddenOpenAt=Date.now()+secret;
- state.remaining=0;state.deadline=0; // The exact reveal time is PRIVATE to the referee phone.
- state.msg="🎙️ السؤال خلص. الجرس ممكن يظهر في أي لحظة... خلي عينك على الشاشة!";
+ // Four choices must be seen by ALL contestants before starting the secret 0–10s clock.
+ // Only the authoritative host advances the reveal and chooses the secret moment.
+ nextRevealAt=Date.now()+350;
+ hiddenOpenAt=0;
+ state.remaining=0;state.deadline=0; // No countdown or secret timestamp leaves the host.
+ state.msg="👀 ركزوا... الاختيارات هتظهر للجميع واحدة واحدة، وبعدها الجرس هيفاجئكم!";
  bump();
 }
 function native(name,arg){try{if(!window.Native||typeof Native[name]!=="function")throw new Error("التطبيق لازم يتفتح من أندرويد");if(arg===undefined)Native[name]();else Native[name](arg);}catch(e){showError(e.message);}}
@@ -241,9 +243,10 @@ function newRound(){
  state.round++;
  state.phase="announce";state.question=selectNewQuestion();state.lockedSeat=null;state.result=null;
  state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;
- state.wrongChoices=[];state.answerTimeouts=0;state.optionsShown=false;state.retry=false;state.skipRequests=[];
+ state.wrongChoices=[];state.answerTimeouts=0;state.optionsShown=false;state.optionsShownCount=0;
+ state.retry=false;state.skipRequests=[];
  state.buzzId=state.buzzId||0;
- hiddenOpenAt=0;buzzOpenedAt=0;
+ hiddenOpenAt=0;nextRevealAt=0;buzzOpenedAt=0;
  speechWatchdogAt=Date.now()+ANNOUNCE_SEC*1000;
  state.deadline=0;state.remaining=0;state.speechOver=false;
  state.msg="🎙️ الحكم بيقرأ السؤال، والجرس مخفي لحد ما يخلص.";
@@ -251,15 +254,34 @@ function newRound(){
  const intro=hostLine("intro",state.round)+" السؤال رقم "+state.round+". ";
  speakQuestion(intro+(state.question.audioOnly?"دلوقتي كلمة مقلوبة. ركزوا في الحروف بالترتيب.":state.question.q),state.round);
 }
+function revealNextChoice(){
+ if(!host||!state||state.phase!=="announce"||!state.speechOver||!nextRevealAt||Date.now()<nextRevealAt)return;
+ const shown=state.optionsShownCount||0;
+ if(shown>=4)return;
+ state.optionsShownCount=shown+1;
+ state.optionsShown=state.optionsShownCount===4;
+ if(state.optionsShown){
+   // Last option just became visible: only NOW start the surprise window.
+   // Keep at least one second for Bluetooth delivery before the buzzer appears.
+   const delay=1000+Math.floor(Math.random()*(SECRET_DELAY_MAX_MS-1000+1));
+   hiddenOpenAt=Date.now()+delay;
+   nextRevealAt=0;
+   state.msg="✅ الأربع اختيارات ظهروا! الجرس ممكن يظهر فجأة خلال 10 ثواني... اتجهزوا!";
+ }else{
+   nextRevealAt=Date.now()+CHOICE_REVEAL_STEP_MS;
+   state.msg="👀 الاختيار "+state.optionsShownCount+" من 4 ظهر... ولسه الجرس مقفول!";
+ }
+ bump();
+}
 function openBuzz(){
- if(!host||!state||state.phase!=="announce"||!state.speechOver||!hiddenOpenAt||Date.now()<hiddenOpenAt)return;
+ if(!host||!state||state.phase!=="announce"||!state.speechOver||!state.optionsShown||state.optionsShownCount!==4||!hiddenOpenAt||Date.now()<hiddenOpenAt)return;
  buzzOpenedAt=Date.now();
  state.phase="question";state.deadline=buzzOpenedAt+QUIZ_SEC*1000;
  state.remaining=QUIZ_SEC;state.msg="🔔 "+hostLine("start",state.round);
  haptic();sfx("ok");bump();
 }
 function claimBuzz(who){
- if(!host||!state||state.phase!=="question"||state.lockedSeat!==null||Date.now()>state.deadline)return;
+ if(!host||!state||state.phase!=="question"||!state.optionsShown||state.lockedSeat!==null||Date.now()>state.deadline)return;
  const p=state.players.find(x=>x.seat===who&&x.online);if(!p)return;
  const rush=(Date.now()-buzzOpenedAt)<=FAST_BUZZ_MS;
  state.fastBuzz=rush;state.answerWindowSec=rush?FAST_ANSWER_SEC:ANSWER_SEC;
@@ -328,7 +350,7 @@ function reopenBuzz(){
  if(!host||!state||state.phase!=="result"||!state.result?.retry)return;
  state.phase="question";state.lockedSeat=null;
  state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;
- state.retry=true;state.optionsShown=true;
+ state.retry=true;state.optionsShown=true;state.optionsShownCount=4;
  buzzOpenedAt=Date.now();
  state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
  state.result=null;
@@ -344,7 +366,7 @@ function advanceRound(){
 function skipQuestion(){
  if(!host||!state||!["announce","question","answer","result"].includes(state.phase))return;
  const correct=state.question?.options[answerIndex]||"—";
- hiddenOpenAt=0;
+ hiddenOpenAt=0;nextRevealAt=0;
  state.phase="result";state.remaining=3;state.deadline=Date.now()+3000;
  state.result={skipped:true,seat:-1,ok:false,delta:0,correct,chosen:null,retry:false,ended:true};
  state.msg="⏭️ صاحب الغرفة تخطّى السؤال. هنروح مباشرة للي بعده.";
@@ -361,7 +383,7 @@ function resetToLobby(){
  if(!host||!state)return;
  state.phase="lobby";state.round=0;state.winner=null;state.result=null;state.question=null;state.lockedSeat=null;state.players.forEach(p=>p.score=0);
  state.msg="هنبدأ حلقة جديدة";usedQuestions.clear();
- state.wrongChoices=[];state.skipRequests=[];state.optionsShown=false;state.buzzId=0;
+ state.wrongChoices=[];state.skipRequests=[];state.optionsShown=false;state.optionsShownCount=0;state.buzzId=0;
  bump();
 }
 function tick(){
@@ -369,7 +391,8 @@ function tick(){
  const phase=state.phase,now=Date.now();
  if(phase==="announce"){
   if(!state.speechOver&&now>=speechWatchdogAt){questionVoiceFinished(false,state.round);return;}
-  if(state.speechOver&&hiddenOpenAt&&now>=hiddenOpenAt)openBuzz();
+  if(state.speechOver && nextRevealAt && now>=nextRevealAt)revealNextChoice();
+  if(state.speechOver && state.optionsShown && hiddenOpenAt && now>=hiddenOpenAt)openBuzz();
   return;
  }
  if(!["question","answer","result"].includes(phase))return;

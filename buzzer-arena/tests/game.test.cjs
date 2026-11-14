@@ -19,11 +19,25 @@ function open(e){
  assert(!e.dom.root.innerHTML.includes('id="thebuzzer"'));
  e.window.onNative('speechDone',String(e.run('state.round')));
  assert.equal(e.run('state.speechOver'),true);
+ assert.equal(e.run('state.optionsShownCount'),0);
+ assert.equal(e.run('hiddenOpenAt'),0,'surprise clock must not begin before the fourth option');
+ assert.equal(e.run('state.deadline'),0,'never reveal a countdown');
+ for(let i=1;i<=4;i++){
+  e.run('nextRevealAt=Date.now()-1;tick()');
+  assert.equal(e.run('state.phase'),'announce','buzzer stays hidden during sequential choices');
+  assert.equal(e.run('state.optionsShownCount'),i);
+  assert(!e.dom.root.innerHTML.includes('id="thebuzzer"'));
+  if(i<4){
+   assert.equal(e.run('hiddenOpenAt'),0,'no secret clock before last option');
+   assert(e.dom.root.innerHTML.includes('••••••••'),'unrevealed choices remain hidden');
+  }
+ }
+ assert.equal(e.run('state.optionsShown'),true);
+ assert(!e.dom.root.innerHTML.includes('••••••••'));
  const delay=e.run('hiddenOpenAt-Date.now()');
- assert(delay>=-300&&delay<=15000);
- assert.equal(e.run('state.deadline'),0);
+ assert(delay>=900&&delay<=10000,'buzzer must appear 1–10 seconds AFTER fourth option, got '+delay);
  e.run('hiddenOpenAt=Date.now()+4000;openBuzz()');
- assert.equal(e.run('state.phase'),'announce');
+ assert.equal(e.run('state.phase'),'announce','cannot force the buzzer before surprise time');
  e.run('hiddenOpenAt=Date.now()-1;tick()');
  assert.equal(e.run('state.phase'),'question');
  assert(e.dom.root.innerHTML.includes('id="thebuzzer"'));
@@ -132,4 +146,27 @@ for(const n of [2,3,4]){
  assert.equal(g.calls.filter(c=>c.type==='bell').length,1);
  console.log('PASS one bell per accepted buzz on guest');
 }
-console.log('ALL v4 TESTS PASS');
+
+{
+ const h=env(),g=env();join(h,2);
+ h.run('startMatch()');
+ const applyLast=()=>g.window.onNative('message',JSON.stringify(h.messages[h.messages.length-1]));
+ applyLast();
+ assert.equal(g.run('state.optionsShownCount'),0);
+ h.window.onNative('speechDone',String(h.run('state.round')));
+ applyLast();
+ for(let i=1;i<=4;i++){
+  h.run('nextRevealAt=Date.now()-1;tick()');
+  applyLast();
+  assert.equal(g.run('state.optionsShownCount'),i,'guest must see choice reveal '+i);
+  assert(!g.dom.root.innerHTML.includes('id="thebuzzer"'),'guest cannot see early buzzer');
+  const opts=Array.from(g.run('state.question.options'));
+  const visible=opts.slice(0,i);
+  for(const opt of visible)assert(g.dom.root.innerHTML.includes(opt),'visible option absent from guest: '+opt);
+ }
+ h.run('hiddenOpenAt=Date.now()-1;tick()');
+ applyLast();
+ assert(g.dom.root.innerHTML.includes('id="thebuzzer"'));
+ console.log('PASS sequential shared choices synced to guest, surprise buzzer only afterward');
+}
+console.log('ALL v5 TESTS PASS');

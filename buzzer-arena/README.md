@@ -51,3 +51,12 @@ The app is meant for social play; Bluetooth arrival ordering is not latency-comp
 - An accepted buzzer press triggers an original, locally synthesized double metallic bell via Android AudioTrack on each participating device. It is not an external audio file, copied show effect or sample.
 - Host's Bluetooth message order still determines which contestant wins; timestamps are not compensated across phones.
 - 15-second secret post-speech window remains for the **first reveal**. Re-openings are immediate after short feedback.
+
+## v5.0 — Four choices BEFORE the surprise buzzer
+- Once the referee finishes speaking the question (or spelling the reverse word), all players see the answer choices being revealed one by one. The first choice appears after 350 ms, then each of the next three appears about 1.05 seconds apart.
+- Each choice reveal is controlled by the **Bluetooth host** and the entire state is broadcast to the other 1–3 players, guaranteeing that the game shares the same reveal count.
+- The very last choice is displayed before the secret reveal timer is ever started. The host randomly opens the buzzer **1–10 seconds after option four**; the exact timing is kept private, with no visible countdown.
+- The answer choices remain visible while the buzzer is waiting, and throughout the rest of the question; contestants cannot select them unless they won the buzzer.
+- All existing mechanics preserved: 2–4 humans, adaptive difficulty, scorecards, speed penalties, multiple attempts after wrong/timeouts, two distinct wrong choices to end the question, host skip and guest skip requests, synthetic double-bell.
+- On mobile portrait screens, the active buzzer is fixed near the bottom so it cannot be hidden below the options.
+- The first buzzer is surprise-timed; repeat buzzer on an incorrect answer retains the earlier fast reopening rule.

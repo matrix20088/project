@@ -74,6 +74,36 @@ strong,b{font-weight:900}
 .skipline{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin:14px 0 8px}
 .skipButton{padding:12px 16px;border:1px solid #678a9d;border-radius:13px;background:#1b3450;color:#cfeaff;font-family:inherit;font-size:13px;font-weight:850;min-height:46px}
 .skipCount{font-size:12px;color:#ffe9a9}
+
+/* 5.0: options unlock visibly one by one; active buzzer stays tappable on a phone. */
+.optionPending{
+  border:1px dashed #526587;background:#14203b;color:#7086a6;
+  opacity:.62;min-height:56px;display:flex;align-items:center;gap:13px;
+}
+.optionPending i{color:#7b94b8;font-size:22px;font-style:normal}
+.choicesCard{padding:13px}
+.choicesCard .options{gap:8px;margin-top:10px}
+.choicesCard .option{min-height:56px}
+.choicesCard .option:not(.optionPending){animation:choiceFade .28s ease-out}
+@keyframes choiceFade{from{opacity:.35;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:520px){
+  #root{padding-bottom:162px}
+  .buzzerWrap{
+    position:fixed;bottom:8px;right:10px;left:10px;z-index:30;
+    display:flex;align-items:center;justify-content:center;gap:14px;
+    margin:0;padding:8px 12px;border-radius:19px;
+    border:1px solid #ff82a288;background:#09112cea;
+    box-shadow:0 0 22px #060a1cd9;backdrop-filter:blur(9px)
+  }
+  .buzzerWrap .buzzer{
+    width:113px;height:113px;border-width:6px;font-size:28px;
+    margin:0;flex:0 0 113px;box-shadow:0 0 20px #fb615973
+  }
+  .buzzerWrap .buzzer small{font-size:14px}
+  .buzzerWrap .desc{max-width:165px;text-align:right;font-size:11px;line-height:1.5;margin:0}
+  .choicesCard .option{min-height:50px;font-size:14px}
+  .question{min-height:80px;padding:8px 4px}
+}
 </style></head>
 <body><main id="root"></main>
 <script src="questions.js"></script><script src="extra_questions.js"></script><script src="hard_questions.js"></script><script src="movie_music_levels.js"></script><script src="core.js"></script><script src="ui.js"></script>
