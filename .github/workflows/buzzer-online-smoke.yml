@@ -1,0 +1,20 @@
+name: Smoke-test online quiz room relay
+on:
+  push:
+    branches: [buzzer-arena-2026]
+    paths:
+      - 'buzzer-arena/online-server/**'
+      - '.github/workflows/buzzer-online-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Vercel live six-digit rooms and guest authentication
+        run: node buzzer-arena/online-server/tests/smoke.mjs
