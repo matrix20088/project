@@ -417,7 +417,9 @@ for(const n of [2,3,4]){
  e.run('claimBuzz(1)');
  assert.equal(e.run('state.answerMode'),'text');
  assert.equal(e.run('state.answerWindowSec'),15,'fast answer gets 15 seconds to type');
- assert(e.dom.root.innerHTML.includes('كتابة فقط')||e.dom.root.innerHTML.includes('كتابة'));
+ const guest=env();guest.window.onNative('message','{"t":"welcome","seat":1}');
+ guest.window.onNative('message',JSON.stringify(e.messages.at(-1)));
+ assert(guest.dom.root.innerHTML.includes('id="typedAnswer"'),'daily riddle gives text input to buzzer winner');
  e.run('submitAnswer(1,0)');
  assert.equal(e.run('state.phase'),'answer','forged multiple-choice answer is rejected');
  e.run('submitTypedAnswer(1,state.question.options[answerIndex])');
@@ -440,7 +442,9 @@ for(const n of [2,3,4]){
 }
 {
  const memory={};
- const first=env(memory);join(first,2);first.run('startMatch()');startQuestion(first);
+ const first=env(memory);join(first,2);
+ first.run('state.players[0].name="أحمد";state.players[1].name="عادل";refreshRivalry()');
+ first.run('startMatch()');startQuestion(first);
  for(let i=0;i<10;i++){
   if(i){first.run('advanceRound()');startQuestion(first);}
   correct(first,1);
@@ -453,6 +457,7 @@ for(const n of [2,3,4]){
  first.run('resetToLobby()');
  assert(first.dom.root.innerHTML.includes('سجل المنافسات السابقة'),'same pair sees their previous match while waiting');
  const newApp=env(memory);join(newApp,2);
+ newApp.run('state.players[0].name="أحمد";state.players[1].name="عادل";refreshRivalry();renderGame()');
  assert.equal(newApp.run('state.rivalry.played'),1,'rivalry survives reopening the app on the same host');
  assert.equal(newApp.run('state.rivalry.wins[1]'),1);
  newApp.run('startMatch()');startQuestion(newApp);
