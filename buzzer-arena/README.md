@@ -83,3 +83,12 @@ The app is meant for social play; Bluetooth arrival ordering is not latency-comp
 - Dedicated "🚩 تحدي أعلام العالم" category adds 68 flags and converts the earlier flag-emoji questions to the same picture format. Capitals and other text-only questions remain unchanged.
 - Flag art from [lipis/flag-icons](https://github.com/lipis/flag-icons), release v7.3.2, MIT License. The MIT license is bundled under `assets/flags/LICENSE` inside the APK. SVG files are downloaded from the pinned repository release **during CI**, then bundled for offline operation; no internet access is needed during gameplay.
 - No background server, ads, or computer players. 2–4 human players, Bluetooth, locally synthesized bell and Arabic TTS.
+
+## v8.0 — Hybrid answers if the buzzer interrupts after some options
+- 0 choices already announced: the buzzer winner receives only the free-text answer form.
+- 1, 2 or 3 choices already announced: **the winner can tap any of those visible choices or type a different answer** in a separate free-text field. A correct answer might be one of the still-unspoken choices; guessing it in text is fair.
+- 4 choices already announced: the winner can tap any of the four regular multiple-choice buttons; no unnecessary typing form.
+- Other contestants still see the shared narrated choices but cannot select.
+- Both the client and the authoritative Bluetooth host reject forged selections of option indexes not actually narrated, even if someone sends a custom Bluetooth packet.
+- Unspoken options remain redacted in every outgoing state packet. Rushing in the first two seconds still has a doubled penalty (-2 wrong/timeout), while later buzzes retain -1 wrong/timeout.
+- The same question reopens after a wrong answer, with the original choices spoken again from the first option, until the existing two-wrong limit or other completion conditions.

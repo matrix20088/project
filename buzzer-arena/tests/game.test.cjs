@@ -77,8 +77,10 @@ for(const n of [2,3,4]){
  const winner=env();
  winner.window.onNative('message','{"t":"welcome","seat":1}');
  winner.window.onNative('message',JSON.stringify(e.messages.at(-1)));
- assert(!winner.dom.root.innerHTML.includes('onclick="selectOption('),'early winner must not see unspoken answers');
- assert(winner.dom.root.innerHTML.includes('id="typedAnswer"'),'early winner gets free text input');
+ assert.equal(winner.run('state.answerMode'),'hybrid','one visible choice enables both selection and text');
+ assert(winner.dom.root.innerHTML.includes('onclick="selectOption(0)"'),'first spoken choice must be selectable');
+ assert(!winner.dom.root.innerHTML.includes('onclick="selectOption(1)"'),'unheard second choice must NOT be selectable');
+ assert(winner.dom.root.innerHTML.includes('id="typedAnswer"'),'early winner gets free text input too');
  assert(!e.dom.root.innerHTML.includes('onclick="selectOption('),'spectators cannot select');
  e.window.onNative('choiceDone',oldToken);
  assert.equal(e.run('state.optionsShownCount'),1,'stale voice callback cannot reveal a new option');
@@ -208,7 +210,7 @@ for(const n of [2,3,4]){
  assert.equal(g.run('state.question.options.filter(Boolean).length'),1,'guest can see only spoken choice');
  h.run('claimBuzz(1)');
  g.window.onNative('message',JSON.stringify(h.messages.at(-1)));
- assert.equal(g.run('state.answerMode'),'text');
+ assert.equal(g.run('state.answerMode'),'hybrid');
  assert.equal(g.run('state.question.options.filter(Boolean).length'),1);
  assert(g.dom.root.innerHTML.includes('id="typedAnswer"'));
  g.dom.typedAnswer={value:'اختبار غلط',disabled:false,blur(){}};
@@ -221,4 +223,78 @@ for(const n of [2,3,4]){
  assert.equal(h.run('state.result.delta'),-2);
  console.log('PASS hidden choices not leaked in Bluetooth messages, real guest typed answer is scored');
 }
-console.log('ALL v7 TESTS PASSED');
+
+{
+ for(const shown of [0,1,2,3,4]){
+  const h=env(),g=env();join(h,2);
+  g.window.onNative('message',JSON.stringify({t:'welcome',seat:1}));
+  h.run('startMatch()');startQuestion(h);
+  for(let i=0;i<shown;i++){
+    h.run('nextRevealAt=Date.now()-1;tick()');
+    const recent=h.calls.filter(x=>x.type==='choice').at(-1);
+    h.window.onNative('choiceDone',recent.token);
+  }
+  assert.equal(h.run('state.optionsShownCount'),shown);
+  h.run('claimBuzz(1)');
+  g.window.onNative('message',JSON.stringify(h.messages.at(-1)));
+  const mode=shown===0?'text':shown===4?'choice':'hybrid';
+  assert.equal(h.run('state.answerMode'),mode);
+  assert.equal(g.run('state.answerMode'),mode);
+  assert.equal(g.run('state.question.options.filter(Boolean).length'),shown,'network must expose ONLY spoken options');
+  const visible=Array.from(g.run('state.question.options'));
+  for(let i=0;i<4;i++){
+    const enabled=g.dom.root.innerHTML.includes('onclick="selectOption('+i+')"');
+    assert.equal(enabled, i<shown,'selectable answer '+i+' while '+shown+' spoken');
+    if(i>=shown)assert.equal(visible[i],'','unspoken options must stay empty');
+  }
+  assert.equal(g.dom.root.innerHTML.includes('id="typedAnswer"'),shown<4,
+    'free text enabled until fourth choice has been spoken');
+  if(shown<4){
+    g.run('selectOption('+shown+')');
+    assert.equal(g.messages.filter(m=>m.t==='choice').length,0,'client cannot send unspoken choice');
+    h.run('submitAnswer(1,'+shown+')');
+    assert.equal(h.run('state.phase'),'answer','host rejects forged unspoken choice');
+  }
+  if(shown>0){
+    g.run('selectOption(0)');
+    const sent=g.messages.at(-1);
+    assert.equal(sent.t,'choice');
+    assert.equal(sent.i,0);
+    h.window.onNative('remote',JSON.stringify({seat:1,msg:JSON.stringify(sent)}));
+    assert.equal(h.run('state.phase'),'result','selection of spoken choice must be scored');
+  }else{
+    g.dom.typedAnswer={value:'جواب خاطئ',disabled:false,blur(){}};
+    g.run('submitTypedFromUI()');
+    const sent=g.messages.at(-1);
+    assert.equal(sent.t,'typed');
+    h.window.onNative('remote',JSON.stringify({seat:1,msg:JSON.stringify(sent)}));
+    assert.equal(h.run('state.phase'),'result','free-text answer works with zero spoken choices');
+  }
+  console.log('PASS '+shown+' spoken choices: click visible choices or type if unrevealed choices remain');
+ }
+}
+{
+ // With two spoken options, the written answer may represent the fourth (still hidden) option.
+ const h=env(),g=env();join(h,2);g.window.onNative('message',JSON.stringify({t:'welcome',seat:1}));
+ h.run('startMatch()');startQuestion(h);
+ for(let i=0;i<2;i++){
+  h.run('nextRevealAt=Date.now()-1;tick()');
+  h.window.onNative('choiceDone',h.calls.filter(x=>x.type==='choice').at(-1).token);
+ }
+ h.run('claimBuzz(1)');
+ g.window.onNative('message',JSON.stringify(h.messages.at(-1)));
+ assert.equal(g.run('state.answerMode'),'hybrid');
+ assert(!g.dom.root.innerHTML.includes('onclick="selectOption(3)"'));
+ assert(g.dom.root.innerHTML.includes('onclick="selectOption(0)"'));
+ assert(g.dom.root.innerHTML.includes('onclick="selectOption(1)"'));
+ g.dom.typedAnswer={value:h.run('state.question.options[answerIndex]'),disabled:false,blur(){}};
+ g.run('submitTypedFromUI()');
+ const message=g.messages.at(-1);
+ assert.equal(message.t,'typed');
+ h.window.onNative('remote',JSON.stringify({seat:1,msg:JSON.stringify(message)}));
+ assert.equal(h.run('state.result.ok'),true,'correct written answer is accepted before all four choices');
+ assert.equal(h.run('state.result.delta'),1);
+ console.log('PASS hybrid 2-choice free text can answer with a still unspoken option');
+}
+
+console.log('ALL v8 TESTS PASSED');

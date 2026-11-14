@@ -57,13 +57,13 @@ jobs:
         run: gradle -p buzzer-arena :app:assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: Jars-Al-Tahaddi-v7-APK
+          name: Jars-Al-Tahaddi-v8-APK
           path: buzzer-arena/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - name: Publish APK release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v7.apk
-          gh release delete buzzer-arena-v7 --yes 2>/dev/null || true
-          gh release create buzzer-arena-v7 Jars-Al-Tahaddi-v7.apk --title "جرس التحدي 7.0 — اكتب الإجابة وصور الأعلام" --notes "Android game show for 2-4 real human players; 1200+ original Arabic questions with cinema, Egyptian movie references and music; adaptive score-based difficulty, shared options on buzz, automatic retry after wrong/timeout, mandatory next question after two wrong options, host skip/guest skip request, native metallic double-bell on accepted buzz, early buzz: type your own answer without seeing unrevealed options; exact normalized Arabic answer matching and early-buzz double penalty; late buzz after all spoken options retains multiple choice. Includes real offline SVG picture flags, no flag answer spoken by the referee. Original locally synthesized bell and 1300+ quiz questions. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."
+          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v8.apk
+          gh release delete buzzer-arena-v8 --yes 2>/dev/null || true
+          gh release create buzzer-arena-v8 Jars-Al-Tahaddi-v8.apk --title "جرس التحدي 8.0 — اختار المسموع أو اكتب إجابتك" --notes "Android game show for 2-4 real human players; 1200+ original Arabic questions with cinema, Egyptian movie references and music; adaptive score-based difficulty, shared options on buzz, automatic retry after wrong/timeout, mandatory next question after two wrong options, host skip/guest skip request, native metallic double-bell on accepted buzz, early buzz after 1-3 spoken answers: select any spoken answer OR type a new one; before the first spoken answer type only, after all four select normally; no hidden options are selectable over Bluetooth and the fast-buzz double penalty remains; late buzz after all spoken options retains multiple choice. Includes real offline SVG picture flags, no flag answer spoken by the referee. Original locally synthesized bell and 1300+ quiz questions. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."

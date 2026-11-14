@@ -17,7 +17,7 @@ function renderHome(){
 }
 function renderHow(){
  root.innerHTML=nav()+`<section class="card"><h2>🎤 نظام الحكم والجرس</h2><p class="desc">الحكم الإلكتروني يعلن الفئة والسؤال بصوت مصري مُركّب من محرك النطق بالعربي (حسب الأصوات المثبتة)، وبعد ما يخلص الكلام الجرس يفتح للكل.</p>
- <p class="desc">🎙️ الحكم يخلص السؤال والجرس يفتح فورًا. بعدها الاختيارات تتقال واحدة واحدة. <b>لو خطفت بدري</b> مش هتشوف الاختيارات اللي ما اتقالتش: هتكتب إجابتك بنفسك في خانة مخصوص. لو كل الاختيارات اتقالت قبل الخطف، تقدر تختار منها عادي.</p>
+ <p class="desc">🎙️ الحكم يخلص السؤال والجرس يفتح فورًا، وبعدها يقول الاختيارات واحدة واحدة. لو خطفت بعد اختيار أو اتنين أو تلاتة، تقدر <b>تختار من الاختيارات اللي اتقالت فعلًا أو تكتب إجابة من عندك</b> في خانة الكتابة. لو خطفت قبل أول اختيار، هتكتب الإجابة فقط. وبعد ظهور الأربع اختيارات، تقدر تختار منهم عادي.</p>
  <p class="desc">🔄 الكلمات المقلوبة صوت فقط: الحكم يتهجّاها حرف حرف ببطء؛ الكلمة وحروفها مش هتظهر قبل الإجابة. الفئة دي بتحتاج نطق عربي شغّال.</p>
  <p class="desc">🔔 أول رسالة ضغط توصل لموبايل صاحب الغرفة هي اللي تكسب الجرس. الجرس بيتقفل على الباقيين.</p>
  <p class="desc">⚡ اللي يضغط في أول ثانيتين من ظهور الجرس قدامه 6 ثواني للإجابة؛ الصح +1 والغلط أو السكوت −2. اللي يدوس بعد كده قدامه 12 ثانية؛ الصح +1 والغلط أو السكوت −1.</p>
@@ -83,11 +83,11 @@ function updateTimerUI(){
 function optionGrid(clickable=false){
  if(!state?.question?.options)return "";
  const count=state.optionsShownCount??(state.optionsShown?4:0);
- const wrong=state.wrongChoices||[],canClick=clickable&&seat===state.lockedSeat&&state.phase==="answer"&&state.answerMode==="choice";
+ const wrong=state.wrongChoices||[],canClick=clickable&&seat===state.lockedSeat&&state.phase==="answer"&&["hybrid","choice"].includes(state.answerMode);
  // The winner can select one of the four answers. Spectators see ONLY already spoken choices.
  const visible=count; // Never reveal an unheard option, even to a contestant who buzzed early.
  if(visible<=0)return "";
- return '<section class="card choicesCard"><div class="kicker">'+(canClick?"الجرس معاك! اختار من الاختيارات المسموعة":count<4?"🎧 دي الاختيارات اللي اتقالت بس":"👀 الأربع اختيارات اتقالوا والجرس مفتوح")+'</div><div class="options">'+state.question.options.map((opt,i)=>{
+ return '<section class="card choicesCard"><div class="kicker">'+(canClick?(count<4?"⚡ اختار من اللي سمعته، أو اكتب إجابة مختلفة تحت":"✅ اختار الإجابة الصحيحة"):count<4?"🎧 دي الاختيارات اللي الحكم قالها فقط":"👀 الأربع اختيارات اتقالوا والجرس مفتوح")+'</div><div class="options">'+state.question.options.map((opt,i)=>{
    if(i>=visible)return '<div class="option optionPending" aria-label="الاختيار لم يظهر بعد"><i>'+["A","B","C","D"][i]+'</i><span>••••••••</span></div>';
    const mistaken=wrong.includes(i),cls=mistaken?"option wrong":canClick?"option selectChoice":"option spectator";
    return '<button class="'+cls+'" '+(canClick&&!mistaken?'onclick="selectOption('+i+')"':"disabled")+'><i>'+["A","B","C","D"][i]+'</i><span>'+esc(opt)+'</span>'+(mistaken?'<b class="wrongmark">❌ غلط</b>':"")+'</button>';
@@ -111,12 +111,12 @@ function renderQuestion(){
  (state.question?.visual?'<div class="flagPhoto"><img src="flags/'+esc(state.question.visual)+'.svg" alt="صورة علم دولة — خمن اسم الدولة" decoding="async"></div>':"")+'</div></section>';
  // Unheard answers are never shown. Early buzzer winners type from memory instead.
  body+=optionGrid(phase==="answer"&&state.answerMode==="choice");
- if(phase==="answer"&&state.answerMode==="text"){
+ if(phase==="answer"&&["text","hybrid"].includes(state.answerMode)){
   if(seat===state.lockedSeat){
    body+='<form class="answerTextCard" onsubmit="return submitTypedFromUI()">'+
-    '<div class="kicker">⚡ خطفت الجرس قبل ما تسمع باقي الاختيارات!</div>'+
-    '<h3>ورّينا شطارتك... اكتب الإجابة من دماغك</h3>'+
-    '<p class="small">الإجابة لازم تطابق الإجابة الصحيحة؛ بنقبل اختلاف الهمزات والتشكيل والمسافات.</p>'+
+    '<div class="kicker">⚡ '+(state.answerMode==="hybrid"?"ممكن تختار من اللي اتقال، أو تكتب إجابة تانية!":"خطفت الجرس قبل أول اختيار!")+'</div>'+
+    '<h3>'+(state.answerMode==="hybrid"?"الإجابة مش في الاختيارات الظاهرة؟ اكتبها بنفسك":"ورّينا شطارتك... اكتب الإجابة من دماغك")+'</h3>'+
+    '<p class="small">هنصحح إجابتك مع مراعاة اختلاف الهمزات والتشكيل. الاختيارات اللي لسه ما اتقالتش هتفضل مخفية.</p>'+
     '<input id="typedAnswer" name="typedAnswer" type="text" maxlength="85" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="اكتب الإجابة هنا" aria-label="اكتب إجابتك" required>'+
     '<button class="btn answerSubmit" type="submit">✅ ثبّت إجابتي</button>'+
     '</form>';

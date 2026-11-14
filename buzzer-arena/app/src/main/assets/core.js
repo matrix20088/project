@@ -342,8 +342,9 @@ function claimBuzz(who){
  const rush=(Date.now()-buzzOpenedAt)<=FAST_BUZZ_MS;
  state.fastBuzz=rush;state.answerWindowSec=rush?FAST_ANSWER_SEC:ANSWER_SEC;
  state.lockedSeat=who;state.phase="answer";
- // Buzzing BEFORE all choices are read is a text challenge, NOT a multiple-choice shortcut.
- state.answerMode=state.optionsShownCount<4?"text":"choice";
+ // Choose ONLY among the already narrated options; write the answer if it has not been narrated.
+ // 0 spoken => text; 1-3 spoken => visible options + free text; all 4 => normal multiple-choice.
+ state.answerMode=state.optionsShownCount===0?"text":state.optionsShownCount<4?"hybrid":"choice";
  nextRevealAt=0;choiceSpeaking=false;state.choiceCycle++; // invalidate old TTS callbacks
  try{Native.stopSpeech();}catch(e){}
  state.buzzId=(state.buzzId||0)+1;
@@ -360,17 +361,18 @@ function pressBuzzer(){
  if(host)claimBuzz(seat);else send({t:"buzz"});
 }
 function selectOption(i){
- if(!state||state.phase!=="answer"||state.answerMode!=="choice"||seat!==state.lockedSeat)return;
- if(!Number.isInteger(i)||i<0||i>3||state.wrongChoices?.includes(i))return;
+ if(!state||state.phase!=="answer"||!["hybrid","choice"].includes(state.answerMode)||seat!==state.lockedSeat)return;
+ if(!Number.isInteger(i)||i<0||i>=state.optionsShownCount||i>=4||state.wrongChoices?.includes(i))return;
  if(host)submitAnswer(seat,i);else send({t:"choice",i});
 }
 function submitAnswer(who,i){
- if(!host||!state||state.phase!=="answer"||state.answerMode!=="choice"||state.lockedSeat!==who)return;
- if(!Number.isInteger(i)||i<0||i>=4||state.wrongChoices?.includes(i)||Date.now()>state.deadline)return;
+ if(!host||!state||state.phase!=="answer"||!["hybrid","choice"].includes(state.answerMode)||state.lockedSeat!==who)return;
+ // Authoritative validation: guests cannot select a choice the referee has not yet spoken.
+ if(!Number.isInteger(i)||i<0||i>=state.optionsShownCount||i>=4||state.wrongChoices?.includes(i)||Date.now()>state.deadline)return;
  resolveAnswer(i===answerIndex,i,false);
 }
 function submitTypedFromUI(){
- if(!state||state.phase!=="answer"||state.answerMode!=="text"||state.lockedSeat!==seat)return false;
+ if(!state||state.phase!=="answer"||!["text","hybrid"].includes(state.answerMode)||state.lockedSeat!==seat)return false;
  const elem=document.getElementById("typedAnswer");
  const value=String(elem?.value||"").trim();
  if(!value){if(elem){elem.placeholder="اكتب الإجابة الأول";elem.focus();}return false;}
@@ -380,7 +382,7 @@ function submitTypedFromUI(){
  return false;
 }
 function submitTypedAnswer(who,text){
- if(!host||!state||state.phase!=="answer"||state.answerMode!=="text"||state.lockedSeat!==who||Date.now()>state.deadline)return;
+ if(!host||!state||state.phase!=="answer"||!["text","hybrid"].includes(state.answerMode)||state.lockedSeat!==who||Date.now()>state.deadline)return;
  if(typeof text!=="string"||!text.trim()||text.length>85)return;
  const correct=state.question.options[answerIndex];
  const typed=String(text).trim();
