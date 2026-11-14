@@ -1,19 +1,30 @@
 function nav(){return `<div class="nav"><div class="navbrand"><span class="logo">🔔</span><span>جرس <span style="color:var(--yellow)">التحدي</span></span></div><div class="pill">٢–٤ لاعبين • الحكم الإلكتروني</div></div>`;}
 function renderHome(){
  const cats=[CAT_ALL,...CAT_KEYS];
- root.innerHTML=nav()+`<section class="hero"><div class="badgeHero">🔔</div><div class="kicker">من الأسرع على الجرس؟</div><h1>اللي هيسبق <em>هيكسب!</em></h1><p class="desc">أسئلة ومنافسة وضحك ونقاط... وحكم إلكتروني <b>بيتكلم بصوت عربي</b> وبيحسم كل جولة.<br>إنتوا المتسابقين، مفيش كمبيوتر بيلعب ضدكم!</p><div class="questionCount">🎲 ${TOTAL_QUESTIONS} سؤال في ${CAT_KEYS.length} فئة متنوعة</div></section>
+ root.innerHTML=nav()+`<section class="hero"><div class="badgeHero">🔔</div><div class="kicker">من الأسرع على الجرس؟</div><h1>اللي هيسبق <em>هيكسب!</em></h1><p class="desc">أسئلة ومنافسة وضحك ونقاط... وحكم إلكتروني <b>بيتكلم بصوت عربي</b> وبيحسم كل جولة.<br>العبوا أونلاين مع أصحابكم برقم غرفة، أو ضيفوا كمبيوتر منافس اختياري!</p><div class="questionCount">🎲 ${TOTAL_QUESTIONS} سؤال في ${CAT_KEYS.length} فئة متنوعة</div></section>
  <section class="card">
  <div class="kicker">جهزوا حلقة التحدي</div>
  <label class="label" for="nickname">اسمك في البرنامج</label><input id="nickname" class="field" maxlength="18" value="${esc(cfg.name)}" oninput="saveName(this.value)" placeholder="اسم المتسابق">
- <label class="label">عدد المتسابقين الحقيقيين</label><div class="counts">${[2,3,4].map(n=>`<button class="count ${cfg.target===n?"selected":""}" onclick="chooseTarget(${n})">${n}<span>لاعبين</span></button>`).join("")}</div>
+ <label class="label">عدد مقاعد الغرفة (شامل الكمبيوتر لو اتفعل)</label><div class="counts">${[2,3,4].map(n=>`<button class="count ${cfg.target===n?"selected":""}" onclick="chooseTarget(${n})">${n}<span>لاعبين</span></button>`).join("")}</div>
  <label class="label" for="category">نوع الأسئلة</label><select class="field" id="category" onchange="chooseCategory(this.value)">${cats.map(v=>`<option value="${esc(v)}" ${cfg.category===v?"selected":""}>${esc(v)}</option>`).join("")}</select>
- <button class="btn" onclick="openRoom()">🎙️ أنشئ غرفة وأنا أول لاعب</button>
- <button class="btn secondary" onclick="findRoom()">📱 انضم لغرفة لاعب تاني</button>
+ <div class="onlineSection">
+  <div class="kicker">🌐 غرفة أونلاين برقم سري</div>
+  <label class="botToggle"><input type="checkbox" onchange="chooseBot(this.checked)" ${cfg.bot?"checked":""}><span><b>🤖 أضف منافس كمبيوتر</b><small>الكمبيوتر بيحجز مقعد واحد من العدد المختار</small></span></label>
+  <button class="btn" onclick="openOnlineRoom()">🌐 أنشئ غرفة أونلاين</button>
+  <label class="label" for="roomNumber">ادخل برقم الغرفة</label>
+  <input id="roomNumber" class="field roomInput" type="text" inputmode="numeric" maxlength="6" placeholder="مثلاً 483921" aria-label="رقم الغرفة المكوّن من 6 أرقام">
+  <button class="btn secondary" onclick="joinOnlineRoom()">🔑 انضم للغرفة أونلاين</button>
+ </div>
+ <div class="bluetoothSection">
+  <div class="kicker">🔵 اللعب القريب بدون إنترنت</div>
+  <button class="btn ghost" onclick="openRoom()">🎙️ أنشئ غرفة بلوتوث</button>
+  <button class="btn ghost" onclick="findRoom()">📱 انضم لغرفة بلوتوث</button>
+ </div>
  <div class="voiceSettings"><div><strong>🎙️ صوت الحكم</strong><small>بيتكلم من موبايل صاحب الغرفة</small></div><button class="voiceToggle" onclick="toggleVoice()">${voiceOn?"🔊 شغّال":"🔇 مقفول"}</button></div>
  <button class="btn ghost" onclick="previewVoice()">🔊 جرّب صوت الحكم على الموبايل</button>
  ${!voiceAvailable?'<p class="notice bad">الصوت العربي مش متاح على موبايلك حاليًا. فعّل محرك تحويل النص العربي لكلام من إعدادات الهاتف، وهتفضل اللعبة شغالة بدونه.</p>':""}
  <button class="btn ghost" onclick="renderHow()">🎮 طريقة اللعب</button>
- </section><p class="foot">🔒 اللعب محلي عبر البلوتوث • موبايل لكل لاعب • لحد ٤ أشخاص • من غير إنترنت أو حسابات</p>`;
+ </section><p class="foot">🌐 غرف خاصة برقم من 6 أرقام • ٢–٤ مقاعد • كمبيوتر اختياري • البلوتوث ما زال متاحًا • صاحب الغرفة يفضل فاتح التطبيق</p>`;
 }
 function renderHow(){
  root.innerHTML=nav()+`<section class="card"><h2>🎤 نظام الحكم والجرس</h2><p class="desc">الحكم الإلكتروني يعلن الفئة والسؤال بصوت مصري مُركّب من محرك النطق بالعربي (حسب الأصوات المثبتة)، وبعد ما يخلص الكلام الجرس يفتح للكل.</p>
@@ -27,8 +38,8 @@ function renderHow(){
  <p class="desc">⏭️ صاحب الغرفة يقدر يتخطى السؤال، والضيوف يقدروا يطلبوا التخطي.</p>
  <p class="desc">🔔 عند قبول الضغط على الجرس بتتسمع رنّة جرس على أجهزة المتسابقين.</p>
  <p class="desc">🏆 أول شخص يوصل ١٠ نقاط يفوز، والحكم يعلن اسمه تلقائيًا.</p>
- <p class="desc">📱 اعملوا اقتران Bluetooth بين الموبايلات الأول. صاحب الغرفة يختار ٢ أو ٣ أو ٤، وكل واحد تاني ينضم من موبايله.</p>
- <p class="small">ملحوظة الإنصاف: ترتيب وصول الضغطات عبر البلوتوث هو معيار الحكم. ممكن يحصل فارق اتصال بسيط بين الأجهزة؛ ده نظام للعب المنزلي مش بطولة احترافية.</p>
+ <p class="desc">🌐 أونلاين: صاحب الغرفة يختار ٢ إلى ٤ مقاعد، وممكن يضيف كمبيوتر كمنافس، وبعدها يبعت رقم الغرفة المكوّن من 6 أرقام لباقي اللاعبين. لازم صاحب الغرفة يفضل فاتح التطبيق.</p><p class="desc">🔵 بلوتوث: اعملوا اقتران بين الأجهزة القريبة واتصلوا من الإعدادات بدون إنترنت.</p>
+ <p class="small">ملحوظة: الحكم بيحدد الفائز حسب ترتيب وصول الضغطات لجهاز صاحب الغرفة. اختلاف سرعة الإنترنت أو البلوتوث ممكن يأثر، فاللعب أونلاين تجريبي ومش بطولة تنافسية احترافية.</p>
  <p class="small">الصوت صوت اصطناعي للمذيع الخاص باللعبة، مش استنساخ لصوت شخص حقيقي. علشان تسمعه، اتأكد إن تحويل النص إلى كلام بالعربي شغّال على جهاز صاحب الغرفة.</p>
  <button class="btn" onclick="renderHome()">جاهزين للمواجهة! ⚡</button></section>`;
 }
@@ -36,7 +47,7 @@ function showWaiting(message){
  root.innerHTML=nav()+`<div class="card center"><div class="spin"></div><h2>بنجهز الغرفة</h2><p class="desc">${esc(message)}</p><button class="btn ghost" onclick="backToMenu()">رجوع</button></div>`;
 }
 function showError(message){
- root.innerHTML=nav()+`<div class="card center"><div class="resultIcon">⚠️</div><h2>في مشكلة في الاتصال</h2><p class="desc">${esc(message)}</p><button class="btn ghost" onclick="native('settings')">⚙️ إعدادات البلوتوث</button><button class="btn" onclick="backToMenu()">الصفحة الرئيسية</button></div>`;
+ root.innerHTML=nav()+`<div class="card center"><div class="resultIcon">⚠️</div><h2>في مشكلة في الاتصال</h2><p class="desc">${esc(message)}</p>${roomMode==="bluetooth"?'<button class="btn ghost" onclick="native(\'settings\')">⚙️ إعدادات البلوتوث</button>':""}<button class="btn" onclick="backToMenu()">الصفحة الرئيسية</button></div>`;
 }
 function showDevices(){
  root.innerHTML=nav()+`<section class="card"><h2>📱 موبايل صاحب الغرفة</h2><p class="desc">اختار الجهاز اللي فتح الغرفة، بعد ما تعملوا Pair مرة واحدة من إعدادات البلوتوث.</p>
@@ -51,7 +62,7 @@ function renderPlayers(lobby=false){
   Array.from({length:state.target},(_,i)=>{
    const p=state.players.find(p=>p.seat===i);
    if(!p)return lobby?`<div class="player"><div class="avatar">➕</div><span class="name">مكان فاضي</span><small>مستني لاعب ${i+1}</small></div>`:"";
-   if(lobby)return `<div class="player ${p.online?"online":""}"><span class="avatar">${ICONS[i]}</span><span class="name">${esc(p.name)}</span><small>${p.online?"✅ متصل":"🔌 خارج الغرفة"} ${i===0?"• صاحب الغرفة":""}</small></div>`;
+   if(lobby)return `<div class="player ${p.online?"online":""}"><span class="avatar">${ICONS[i]}</span><span class="name">${esc(p.name)}</span><small>${p.bot?"🤖 منافس كمبيوتر":p.online?"✅ متصل":"🔌 خارج الغرفة"} ${i===0?"• صاحب الغرفة":""}</small></div>`;
    return `<div class="scorecard"><span>${ICONS[i]} ${esc(p.name)}</span><b>${p.score}</b></div>`;
   }).join("")+"</div>";
 }
@@ -59,6 +70,7 @@ function renderLobby(){
  const ready=allReady();
  root.innerHTML=nav()+`<div class="banner">🎤 استوديو جرس التحدي • ${state.target} متسابقين</div>
  <div class="judge"><div class="face">🎙️</div><div><strong>الحَكَم جاهز ويتكلم!</strong><p>الصح +١ والغلط −١ أو −٢ حسب سرعة الخطف</p></div></div>
+ ${state.roomCode||onlineRoomCode?'<div class="roomCodeCard"><small>🌐 رقم الغرفة — ابعته لأصحابك</small><strong>'+esc(state.roomCode||onlineRoomCode)+'</strong><small>صالحة لمدة ساعة • صاحب الغرفة لازم يفضل متصلًا</small></div>':""}
  <section class="card"><h2>المتسابقين داخلين الاستوديو</h2><p class="desc">${playersConnected()} من ${state.target} متصلين • الفئة: ${esc(state.category)}</p>${renderPlayers(true)}
  ${host?`<button class="btn" ${ready?"":"disabled"} onclick="startMatch()">🚀 ابدأوا الحلقة!</button>`:`<div class="notice">${ready?"✅ الكل متصل، مستنيين صاحب الغرفة يبدأ":"⏳ مستنيين باقي اللاعبين..."}</div>`}
  <button class="btn ghost" onclick="backToMenu()">خروج من الغرفة</button></section>`;

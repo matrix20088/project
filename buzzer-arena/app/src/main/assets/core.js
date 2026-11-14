@@ -29,7 +29,8 @@ function answerMatches(input,correct){
  if(!guess)return false;
  return guess===truth||((ANSWER_ALIASES[correct]||[]).some(v=>normalizeAnswer(v)===guess));
 }
-const cfg={name:localStorage.getItem("buzzerName")||"لاعب 1",target:2,category:CAT_ALL};
+const cfg={name:localStorage.getItem("buzzerName")||"لاعب 1",target:2,category:CAT_ALL,bot:false};
+let roomMode="bluetooth",onlineRoomCode="",botActionAt=0,botAnswerAt=0,botWillAnswerCorrect=false;
 let host=false,seat=null,online=false,pending="",devices=[],state=null,answerIndex=-1;
 let usedQuestions=new Set(),lastVersion=-1,soundOn=true;
 let lastTapAt=0;
@@ -230,23 +231,42 @@ function speak(s,mood="normal"){
 }
 function saveName(s){cfg.name=clean(s);try{localStorage.setItem("buzzerName",cfg.name)}catch(e){}}
 function chooseTarget(v){cfg.target=Math.min(4,Math.max(2,Number(v)||2));renderHome();}
+function chooseBot(v){cfg.bot=!!v;renderHome();}
+function openOnlineRoom(){
+ cfg.name=clean(document.getElementById("nickname")?.value||cfg.name);
+ roomMode="online";onlineRoomCode="";pending="";
+ showWaiting("بنجهز سيرفر الغرفة...");
+ try{Native.onlineCreate(cfg.target,cfg.bot);}catch(e){showError("التطبيق محتاج نسخة أونلاين: "+e.message);}
+}
+function joinOnlineRoom(){
+ cfg.name=clean(document.getElementById("nickname")?.value||cfg.name);
+ const raw=String(document.getElementById("roomNumber")?.value||"").trim();
+ if(!/^[1-9][0-9]{5}$/.test(raw)){showError("اكتب رقم الغرفة المكوّن من 6 أرقام");return;}
+ roomMode="online";onlineRoomCode=raw;pending="";
+ showWaiting("بندخل غرفة "+raw+"...");
+ try{Native.onlineJoin(raw);}catch(e){showError("التطبيق محتاج نسخة أونلاين: "+e.message);}
+}
 function chooseCategory(v){cfg.category=CAT_KEYS.includes(v)?v:CAT_ALL;}
 function backToMenu(){
  if(online){native("disconnect");online=false;}
- host=false;seat=null;state=null;answerIndex=-1;pending="";devices=[];lastVersion=-1;renderHome();
+ host=false;seat=null;state=null;answerIndex=-1;pending="";devices=[];lastVersion=-1;onlineRoomCode="";roomMode="bluetooth";botActionAt=0;botAnswerAt=0;renderHome();
 }
 window.backToMenu=backToMenu;
 function openRoom(){
  cfg.name=clean(document.getElementById("nickname")?.value||cfg.name);
+ roomMode="bluetooth";cfg.bot=false;
  pending="host";showWaiting("شغّل البلوتوث واسمح بالتوصيل...");native("permission");
 }
 function findRoom(){
  cfg.name=clean(document.getElementById("nickname")?.value||cfg.name);
+ roomMode="bluetooth";
  pending="guest";showWaiting("بندور على الموبايلات المقترنة...");native("permission");
 }
 function connectTo(i){if(!devices[i])return;showWaiting("جاري الاتصال بـ "+devices[i].name+" ...");native("join",devices[i].addr);}
 function mkLobby(n){
- return {phase:"lobby",target:n,category:cfg.category,round:0,remaining:0,players:[{seat:0,name:clean(cfg.name),score:0,online:true}],
+ const players=[{seat:0,name:clean(cfg.name),score:0,online:true}];
+ if(roomMode==="online"&&cfg.bot)players.push({seat:n-1,name:"كمبيوتر 🤖",score:0,online:true,bot:true});
+ return {phase:"lobby",target:n,category:cfg.category,round:0,remaining:0,players,
  question:null,lockedSeat:null,result:null,winner:null,msg:"المتسابقين لسه بيتجمعوا",version:1,deadline:0};
 }
 function bump(){if(!host||!state)return;state.version++;sync(true);}
@@ -263,6 +283,7 @@ function sync(draw=false){
 }
 function startHost(n){
  host=true;seat=0;online=true;state=mkLobby(n);answerIndex=-1;usedQuestions.clear();lastVersion=-1;
+ state.roomCode=roomMode==="online"?onlineRoomCode:"";
  renderGame();sync();
 }
 function playersConnected(){return state?state.players.filter(p=>p.online).length:0;}
@@ -317,6 +338,11 @@ window.onNative=(type,detail)=>{
   return;
  }
  if(type==="hosting"){startHost(Number(detail)||cfg.target);return;}
+ if(type==="roomCode"){
+  onlineRoomCode=String(detail||"");
+  if(state){state.roomCode=onlineRoomCode;renderGame();}return;
+ }
+ if(type==="onlineWarning"){console.warn("Online room:",detail);return;}
  if(type==="waiting"){showWaiting(detail);return;}
  if(type==="paired"){try{devices=JSON.parse(detail);}catch(e){devices=[];}showDevices();return;}
  if(type==="connected"){host=false;online=true;seat=null;state=null;showWaiting("تم الاتصال! مستنيين تأكيد الدخول...");return;}
@@ -344,7 +370,7 @@ window.onNative=(type,detail)=>{
  if(type==="choiceUnavailable"){voiceAvailable=false;choiceVoiceDone(detail);return;}
  if(type==="speechUnavailable"){voiceAvailable=false;questionVoiceFinished(false,detail);return;}
  if(type==="error"){showError(detail);return;}
- if(type==="disconnected"){online=false;host=false;seat=null;state=null;showError(detail||"انقطع اتصال البلوتوث");return;}
+ if(type==="disconnected"){online=false;host=false;seat=null;state=null;showError(detail||"انقطع الاتصال بالغرفة");return;}
 };
 function selectNewQuestion(){
  const requested=difficultyByScore(state.players.map(p=>p.score));
@@ -412,7 +438,7 @@ function newRound(){
  state.answerTimeouts=0;state.optionsShown=false;state.optionsShownCount=0;
  state.choiceCycle=0;state.retry=false;state.skipRequests=[];
  state.buzzId=state.buzzId||0;
- nextRevealAt=0;choiceSpeaking=false;buzzOpenedAt=0;
+ nextRevealAt=0;choiceSpeaking=false;buzzOpenedAt=0;botActionAt=0;botAnswerAt=0;
  speechWatchdogAt=Date.now()+ANNOUNCE_SEC*1000;
  state.deadline=0;state.remaining=0;state.speechOver=false;
  const recap=shouldReadStandings(state.round,state.players)?standingsNarration(state.players):"";
@@ -453,7 +479,7 @@ function openBuzz(){
  buzzOpenedAt=Date.now();
  state.phase="question";state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
  state.msg="🔔 "+hostLine("start")+" الاختيارات هتتقال واحدة واحدة.";
- startChoiceCycle();bump();
+ startChoiceCycle();scheduleBot();bump();
 }
 function startChoiceCycle(){
  state.choiceCycle=(state.choiceCycle||0)+1;
@@ -467,6 +493,11 @@ function claimBuzz(who){
  const rush=(Date.now()-buzzOpenedAt)<=FAST_BUZZ_MS;
  state.fastBuzz=rush;state.answerWindowSec=rush?FAST_ANSWER_SEC:ANSWER_SEC;
  state.lockedSeat=who;state.phase="answer";
+ botActionAt=0;
+ if(p.bot){
+  botWillAnswerCorrect=Math.random()<({easy:.62,medium:.43,hard:.27}[state.question?.tier]??.4);
+  botAnswerAt=Date.now()+1500+Math.floor(Math.random()*2600);
+ }
  // Choose ONLY among the already narrated options; write the answer if it has not been narrated.
  // 0 spoken => text; 1-3 spoken => visible options + free text; all 4 => normal multiple-choice.
  state.answerMode=state.optionsShownCount===0?"text":state.optionsShownCount<4?"hybrid":"choice";
@@ -560,7 +591,7 @@ function reopenBuzz(){
  buzzOpenedAt=Date.now();state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
  state.result=null;state.skipRequests=[];
  state.msg="🔔 "+hostLine("retry")+" الجرس فتح تاني والاختيارات هتتقال من الأول.";
- startChoiceCycle();bump();
+ startChoiceCycle();scheduleBot();bump();
 }
 function advanceRound(){
  if(!host||!state||state.phase!=="result")return;
@@ -591,8 +622,34 @@ function resetToLobby(){
  state.wrongChoices=[];state.wrongAttempts=0;state.wrongTexts=[];state.skipRequests=[];state.optionsShown=false;state.optionsShownCount=0;state.choiceCycle=0;state.buzzId=0;
  bump();
 }
+function scheduleBot(){
+ botActionAt=0;botAnswerAt=0;
+ if(!host||!state||roomMode!=="online")return;
+ const bot=state.players.find(p=>p.bot&&p.online);
+ if(!bot)return;
+ // Humans receive a fair reaction window: bot never buzzes instantly.
+ botActionAt=Date.now()+2500+Math.floor(Math.random()*4000);
+}
+function botTick(){
+ if(!host||!state||roomMode!=="online")return;
+ const bot=state.players.find(p=>p.bot&&p.online);
+ if(!bot)return;
+ if(state.phase==="question"&&botActionAt&&Date.now()>=botActionAt){
+  botActionAt=0;
+  if(Math.random()<.75)claimBuzz(bot.seat);
+ }
+ if(state.phase==="answer"&&state.lockedSeat===bot.seat&&botAnswerAt&&Date.now()>=botAnswerAt){
+  botAnswerAt=0;
+  const wrong=state.question.options.findIndex((_,i)=>i!==answerIndex&&!state.wrongChoices?.includes(i));
+  const pick=botWillAnswerCorrect?answerIndex:wrong;
+  if(pick<0)return;
+  if(state.answerMode==="choice" && pick<state.optionsShownCount)submitAnswer(bot.seat,pick);
+  else submitTypedAnswer(bot.seat,state.question.options[pick]);
+ }
+}
 function tick(){
  if(!host||!state)return;
+ botTick();
  const phase=state.phase,now=Date.now();
  if(phase==="announce"){
   if(!state.speechOver&&now>=speechWatchdogAt)questionVoiceFinished(false,state.round);

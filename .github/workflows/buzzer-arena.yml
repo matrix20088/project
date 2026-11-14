@@ -18,6 +18,10 @@ jobs:
           node-version: '22'
       - name: Verify two, three, four human modes and referee logic
         run: node buzzer-arena/tests/game.test.cjs
+      - name: Validate backend syntax and room logic
+        run: |
+          node --check buzzer-arena/online-server/api/room.js
+          node --check buzzer-arena/online-server/api/cleanup.js
       - name: Bundle real flag SVG pictures for offline Android play (flag-icons MIT)
         run: |
           set -euo pipefail
@@ -49,21 +53,26 @@ jobs:
       - name: Install Android SDK
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.10.2'
+          gradle-version: '8.11.1'
       - name: Build Android APK
-        run: gradle -p buzzer-arena :app:assembleDebug --no-daemon --stacktrace
+        run: gradle -p buzzer-arena :app:assembleDebug :app:bundleRelease --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: Jars-Al-Tahaddi-v9-APK
+          name: Jars-Al-Tahaddi-v10-APK
           path: buzzer-arena/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Jars-Al-Tahaddi-v10-unsigned-AAB
+          path: buzzer-arena/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
       - name: Publish APK release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v9.apk
-          gh release delete buzzer-arena-v9 --yes 2>/dev/null || true
-          gh release create buzzer-arena-v9 Jars-Al-Tahaddi-v9.apk --title "جرس التحدي 9.0 — حكم كوميدي ونشرة السكور وخمن المكان" --notes "Android game show for 2-4 real human players; 1200+ original Arabic questions with cinema, Egyptian movie references and music; adaptive score-based difficulty, shared options on buzz, automatic retry after wrong/timeout, mandatory next question after two wrong options, host skip/guest skip request, native metallic double-bell on accepted buzz, early buzz after 1-3 spoken answers: select any spoken answer OR type a new one; before the first spoken answer type only, after all four select normally; no hidden options are selectable over Bluetooth and the fast-buzz double penalty remains; late buzz after all spoken options retains multiple choice. Includes real offline SVG picture flags, no flag answer spoken by the referee. Original locally synthesized bell and 1420+ quiz questions; 122 new offline guess-the-country / city / landmark clue questions; referee reads complete scoreboard every 3 rounds and once near victory, with playful situational one-liners and nonrepeating variation; expressive original synthetic TTS moods. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."
+          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Jars-Al-Tahaddi-v10.apk
+          gh release delete buzzer-arena-v10 --yes 2>/dev/null || true
+          gh release create buzzer-arena-v10 Jars-Al-Tahaddi-v10.apk --title "جرس التحدي 10.0 — غرف أونلاين ومنافس كمبيوتر" --notes "Online private 6-digit rooms served by Vercel with a single optional computer contestant; host still determines buzz/score, and rooms last one hour. Also retains classic offline Bluetooth. Developer release APK for testing; unsigned AAB is CI artifact requiring user-owned signing key before Google Play submission; target SDK 36. Android game show for 2-4 seats; 1200+ original Arabic questions with cinema, Egyptian movie references and music; adaptive score-based difficulty, shared options on buzz, automatic retry after wrong/timeout, mandatory next question after two wrong options, host skip/guest skip request, native metallic double-bell on accepted buzz, early buzz after 1-3 spoken answers: select any spoken answer OR type a new one; before the first spoken answer type only, after all four select normally; no hidden options are selectable over Bluetooth and the fast-buzz double penalty remains; late buzz after all spoken options retains multiple choice. Includes real offline SVG picture flags, no flag answer spoken by the referee. Original locally synthesized bell and 1420+ quiz questions; 122 new offline guess-the-country / city / landmark clue questions; referee reads complete scoreboard every 3 rounds and once near victory, with playful situational one-liners and nonrepeating variation; expressive original synthetic TTS moods. Install the same APK on all paired devices. Voice needs an Arabic TTS language pack."

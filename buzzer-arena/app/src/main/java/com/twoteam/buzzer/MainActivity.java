@@ -50,6 +50,18 @@ public class MainActivity extends Activity {
     private volatile int expected = 2;
     private TextToSpeech speech;
     private boolean speechReady = false;
+    private volatile OnlineRelay online;
+    private void onlineCreate(int players,boolean bot){
+        shutdown(true);
+        OnlineRelay relay=new OnlineRelay((event,detail)->fire(event,detail));
+        online=relay;
+        relay.create(Math.min(4,Math.max(2,players)),bot);
+    }
+    private void onlineJoin(String code){
+        shutdown(true);
+        OnlineRelay relay=new OnlineRelay((event,detail)->fire(event,detail));
+        online=relay;relay.join(code);
+    }
 
     static class Peer {
         final int seat;
@@ -134,6 +146,8 @@ public class MainActivity extends Activity {
         return true;
     }
     private void shutdown(boolean intentional) {
+        OnlineRelay relay=online;online=null;
+        if(relay!=null)relay.close();
         synchronized(lock) {
             epoch++;hosting=false;
             try{if(server!=null)server.close();}catch(Exception ignored){}
@@ -152,6 +166,8 @@ public class MainActivity extends Activity {
     }
     private void sendLine(String msg) {
         if(msg==null || msg.indexOf('\n')>=0 || msg.indexOf('\r')>=0 || msg.length()>80000)return;
+        OnlineRelay relay=online;
+        if(relay!=null&&relay.isActive()){relay.send(msg);return;}
         synchronized(lock){
             if(hosting) {
                 for(Peer p:clients.values())p.send(msg);
@@ -257,6 +273,12 @@ public class MainActivity extends Activity {
             });
         }
         @android.webkit.JavascriptInterface public void host(int n){runOnUiThread(()->startHost(n));}
+        @android.webkit.JavascriptInterface public void onlineCreate(int n,boolean bot){
+            runOnUiThread(()->MainActivity.this.onlineCreate(n,bot));
+        }
+        @android.webkit.JavascriptInterface public void onlineJoin(String code){
+            runOnUiThread(()->MainActivity.this.onlineJoin(code));
+        }
         @android.webkit.JavascriptInterface public void join(String address){runOnUiThread(()->MainActivity.this.join(address));}
         @android.webkit.JavascriptInterface public void send(String msg){sendLine(msg);}
         @android.webkit.JavascriptInterface public void paired(){

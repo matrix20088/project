@@ -100,3 +100,11 @@ The app is meant for social play; Bluetooth arrival ordering is not latency-comp
 - A one-time extra narration happens when any contestant reaches 8 points. Score narration is **prepended to the same spoken question utterance**, so it never interrupts a question, options or answer; the buzzer stays closed until reading finishes.
 - **122 original geography description questions** split into 🌍 Guess the country and 🏙️ Guess the city/landmark; all are easy/medium/hard and read aloud without naming the answer. Mixed category choices weight geography description ~25% (when available), entertainment ~54%, everything else ~21%.
 - Same local multiplayer Bluetooth and v8 multiple-choice/typed hybrid rules. Original game-show bell remains.
+
+## v10.0 — Online rooms with a six-digit code and optional CPU player
+- Create an internet room on the new dedicated Vercel backend; send a six-digit room number to join from other locations. The host runs the referee and remains open; guests poll the server securely with per-player session tokens.
+- Supports 2–4 total seats with zero or one optional computer. Computer reactions are delayed randomly, and probability of a correct answer decreases with difficulty. One human can play against the CPU in a 2-seat online room. Normal multiplayer scoring and varied judge voices remain.
+- Offline Bluetooth is still available.
+- Online transport is polling based and uses a private Vercel Blob store for room meta, actions and sanitized host states. This is an **initial beta**, not a guaranteed low-latency competitive online server. Host/guest network delay can influence first-buzz decisions. Room IDs logically expire after one hour and a daily cron sweeps old objects.
+- Google Play preparation: compile & target SDK 36; AGP 8.10.1 + Gradle 8.11.1. CI produces a debug APK for direct installation and an **unsigned** release AAB as an artifact. A user-owned signing key, real-device tests, store listing, identity verification and Play Console access are required before store submission.
+- Privacy policy: the server's `/privacy.html`; avoid showing private session tokens to other participants.

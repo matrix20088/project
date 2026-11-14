@@ -10,7 +10,9 @@ function env(){
   spellQuestion(text,letters,round){calls.push({type:'spell',letters:JSON.parse(letters),round})},
   speakChoice(text,token){calls.push({type:'choice',text,token})},
   stopSpeech(){calls.push({type:'stop'})},
-  playBell(){calls.push({type:'bell'})},disconnect(){},settings(){}
+  playBell(){calls.push({type:'bell'})},disconnect(){},settings(){},
+  onlineCreate(target,bot){calls.push({type:'onlineCreate',target,bot})},
+  onlineJoin(code){calls.push({type:'onlineJoin',code})}
  };
  const window={Native},storage={data:{},getItem(k){return this.data[k]||null},setItem(k,v){this.data[k]=String(v)}};
  const cx={console,Date,Math,Set,JSON,Number,String,Object,Array,Intl,window,Native,
@@ -379,4 +381,43 @@ for(const n of [2,3,4]){
  console.log('PASS '+all+' questions across '+n+' categories including 122 place/country riddles and adaptive levels');
 }
 
-console.log('ALL v9 TESTS PASSED');
+
+{
+ const e=env();e.run('cfg.target=3;cfg.bot=true;openOnlineRoom()');
+ const call=e.calls.find(v=>v.type==='onlineCreate');
+ assert(call&&call.target===3&&call.bot===true,'online room uses requested seat count and bot option');
+ e.window.onNative('hosting','3');
+ e.window.onNative('roomCode','621843');
+ assert.equal(e.run('state.roomCode'),'621843');
+ assert(e.dom.root.innerHTML.includes('621843'),'host lobby displays the six-digit invite code');
+ e.window.onNative('join',JSON.stringify({seat:1,device:'friend'}));
+ e.window.onNative('remote',JSON.stringify({seat:1,msg:JSON.stringify({t:'hello',name:'عادل'})}));
+ assert(e.run('allReady()'),'2 humans + 1 computer fill a 3-seat room');
+ assert.equal(e.run('state.players.find(p=>p.bot).seat'),2);
+ assert(e.dom.root.innerHTML.includes('كمبيوتر'));
+ console.log('PASS online create with room number, one reserved bot seat, two human players');
+}
+{
+ const e=env();e.run('cfg.bot=true;cfg.target=2;roomMode="online";startHost(2)');
+ assert(e.run('allReady()'),'one human plus CPU satisfies 2-seat minimum');
+ e.run('startMatch()');startQuestion(e);
+ e.run('claimBuzz(1)');
+ assert.equal(e.run('state.players.find(p=>p.seat===1).bot'),true);
+ assert(e.run('botAnswerAt')>Date.now());
+ e.run('botWillAnswerCorrect=true;botAnswerAt=Date.now()-1;tick()');
+ assert.equal(e.run('state.phase'),'result','computer must be able to submit its own answer');
+ assert.equal(e.run('state.result.ok'),true);
+ assert.equal(e.run('state.players[1].score'),1);
+ console.log('PASS optional CPU plays as a real seat with delayed and scoreable answers');
+}
+{
+ const e=env();e.run('cfg.bot=false;cfg.target=4;roomMode="online";startHost(4)');
+ assert.equal(e.run('state.players.filter(p=>p.bot).length'),0);
+ e.window.onNative('join',JSON.stringify({seat:1,device:'remote'}));
+ e.window.onNative('join',JSON.stringify({seat:2,device:'remote'}));
+ e.window.onNative('join',JSON.stringify({seat:3,device:'remote'}));
+ assert(e.run('allReady()'),'4 remote/host humans all fit without bot');
+ console.log('PASS full online four-human mode without computer');
+}
+
+console.log('ALL v10 TESTS PASSED');
