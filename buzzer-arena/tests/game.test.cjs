@@ -330,15 +330,16 @@ for(const n of [2,3,4]){
 {
  const e=env();join(e,3);
  e.run('startMatch()');startQuestion(e);
+ const currentName=e.run('state.players.find(p=>p.seat===1).name');
  e.run('claimBuzz(1)');
  const buzz=e.calls.filter(x=>x.type==='mood').at(-1);
  assert.equal(buzz.mood,'excited');
- assert(buzz.text.includes('لاعب 2'),'fast buzz banter must mention winner by name');
+ assert(buzz.text.includes(currentName),'fast buzz banter must mention current connected player name');
  e.run('submitTypedAnswer(1,"إجابة خاطئة")');
  assert.equal(e.run('state.result.delta'),-2);
  const roast=e.calls.filter(x=>x.type==='mood').at(-1);
  assert.equal(roast.mood,'tease');
- assert(roast.text.includes('لاعب 2'),'playful wrong-answer quip is about participant, no generic repetition');
+ assert(roast.text.includes(currentName),'playful wrong-answer quip is about current participant');
  e.run('advanceRound()');
  e.run('buzzOpenedAt=Date.now()-3100;claimBuzz(0)');
  const slow=e.calls.filter(x=>x.type==='mood').at(-1);
