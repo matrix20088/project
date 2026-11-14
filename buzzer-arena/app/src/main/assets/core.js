@@ -3,6 +3,7 @@ const root=document.getElementById("root");
 const CAT_ALL="🌟 منوعات",CAT_KEYS=Object.keys(QUESTIONS),ICONS=["🔵","🩷","🟡","🟣"];
 const TOTAL_QUESTIONS=CAT_KEYS.reduce((n,k)=>n+QUESTIONS[k].length,0);
 const QUIZ_SEC=22,ANSWER_SEC=12,FAST_ANSWER_SEC=6,FAST_BUZZ_MS=2000;
+const DAILY_QUIZ_SEC=35,DAILY_ANSWER_SEC=25,DAILY_FAST_ANSWER_SEC=15;
 const CHOICE_REVEAL_STEP_MS=350,ANNOUNCE_SEC=70,RESULT_SEC=10,RETRY_SEC=7,WIN_AT=10;
 const HARD_CATS=["🏛️ تاريخ للنخبة","🧬 علوم صعبة","🧭 جغرافيا متقدمة","🎨 فن وأدب","♟️ منطق صعب"];
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
@@ -27,7 +28,8 @@ const ANSWER_ALIASES={
 function answerMatches(input,correct){
  const guess=normalizeAnswer(input),truth=normalizeAnswer(correct);
  if(!guess)return false;
- return guess===truth||((ANSWER_ALIASES[correct]||[]).some(v=>normalizeAnswer(v)===guess));
+ return guess===truth||((ANSWER_ALIASES[correct]||[]).some(v=>normalizeAnswer(v)===guess))||
+ (typeof DAILY_RIDDLE_ALIASES!=="undefined"&&(DAILY_RIDDLE_ALIASES[correct]||[]).some(v=>normalizeAnswer(v)===guess));
 }
 const cfg={name:localStorage.getItem("buzzerName")||"لاعب 1",target:2,category:CAT_ALL,bot:false};
 let roomMode="bluetooth",onlineRoomCode="",botActionAt=0,botAnswerAt=0,botWillAnswerCorrect=false;
@@ -184,6 +186,55 @@ function shouldReadStandings(round,players){
  if(nearWin&&!state.clutchRecapRead){state.clutchRecapRead=true;return true;}
  return false;
 }
+// Match history lives on the host device only; never uploaded as a permanent identity.
+const DUEL_HISTORY_KEY="jarsDuelHistoryV1";
+function duelNames(players){
+ if(!Array.isArray(players)||players.length!==2)return null;
+ const ids=players.map(p=>normalizeAnswer(clean(p.name)));
+ if(ids.some(x=>!x)||ids[0]===ids[1])return null;
+ return ids;
+}
+function duelKey(ids){return JSON.stringify(ids.slice().sort());}
+function readDuelBook(){
+ try{const data=JSON.parse(localStorage.getItem(DUEL_HISTORY_KEY)||"{}");
+  return data&&typeof data==="object"&&!Array.isArray(data)?data:{};
+ }catch(e){return {};}
+}
+function rivalrySummary(players){
+ const ids=duelNames(players);
+ if(!ids)return null;
+ const entry=readDuelBook()[duelKey(ids)];
+ if(!entry||!entry.played)return null;
+ const history=(entry.matches||[]).slice(-3).reverse().map(m=>({
+  scores:ids.map(id=>Number(m.scores?.[id]??0)),time:Number(m.time)||0
+ }));
+ return {played:entry.played, wins:ids.map(id=>Number(entry.wins?.[id]||0)),history,localOnly:true};
+}
+function refreshRivalry(){
+ if(host&&state)state.rivalry=rivalrySummary(state.players);
+}
+function saveDuelResult(){
+ if(!host||!state||state.matchRecorded||state.phase!=="finished")return;
+ state.matchRecorded=true;
+ const ids=duelNames(state.players);
+ if(!ids)return;
+ const key=duelKey(ids),book=readDuelBook();
+ const entry=book[key]||{played:0,wins:{},matches:[]};
+ const winner=state.players.find(p=>p.seat===state.winner);
+ if(!winner)return;
+ const winnerId=normalizeAnswer(clean(winner.name));
+ entry.played=(entry.played||0)+1;
+ entry.wins[winnerId]=(entry.wins[winnerId]||0)+1;
+ const scores={};
+ state.players.forEach(p=>{scores[normalizeAnswer(clean(p.name))]=p.score;});
+ entry.matches=(entry.matches||[]).concat([{time:Date.now(),scores}]).slice(-8);
+ book[key]=entry;
+ // Small bounded, private local store; other online hosts won't inherit these results.
+ const keys=Object.keys(book);
+ if(keys.length>90){keys.slice(0,keys.length-90).forEach(k=>delete book[k]);}
+ try{localStorage.setItem(DUEL_HISTORY_KEY,JSON.stringify(book));}catch(e){}
+ refreshRivalry();
+}
 function toggleVoice(){voiceOn=!voiceOn;localStorage.setItem("buzzerVoice",voiceOn?"on":"off");renderHome();}
 function previewVoice(){try{Native.speak("أهلا بيكم في جرس التحدي! معانا اتنين أو تلاتة أو أربعة متسابقين، والنهارده هنشوف مين أسرع واحد على الجرس!")}catch(e){showError("تعذر تشغيل صوت الحكم: "+e.message);}}
 function speakQuestion(text,round){
@@ -284,7 +335,7 @@ function sync(draw=false){
 function startHost(n){
  host=true;seat=0;online=true;state=mkLobby(n);answerIndex=-1;usedQuestions.clear();lastVersion=-1;
  state.roomCode=roomMode==="online"?onlineRoomCode:"";
- renderGame();sync();
+ refreshRivalry();renderGame();sync();
 }
 function playersConnected(){return state?state.players.filter(p=>p.online).length:0;}
 function allReady(){
@@ -299,7 +350,7 @@ function addRemote(info){
  if(existing){existing.online=true;existing.name="لاعب "+(id+1);}
  else state.players.push({seat:id,name:"لاعب "+(id+1),score:0,online:true});
  if(state.phase!=="lobby"){state.phase="paused";state.msg="اتغيّر الاتصال. ارجعوا للغرفة لإعادة اللعبة من البداية.";}
- state.players.sort((a,b)=>a.seat-b.seat);bump();
+ state.players.sort((a,b)=>a.seat-b.seat);refreshRivalry();bump();
 }
 function removeRemote(id){
  if(!host||!state)return;
@@ -315,7 +366,7 @@ function handleRemote(info){
  if(!player||!player.online)return;
  let packet;try{packet=JSON.parse(info.msg);}catch(e){return;}
  if(packet.t==="hello"){
-  player.name=clean(packet.name);bump();return;
+  player.name=clean(packet.name);refreshRivalry();bump();return;
  }
  if(packet.t==="buzz")claimBuzz(seatNo);
  if(packet.t==="choice")submitAnswer(seatNo,Number(packet.i));
@@ -384,6 +435,15 @@ function selectNewQuestion(){
   }
  }
  if(!pool.length)return null;
+ // Daily clues stay easy and still occur in mixed play even when difficulty progresses.
+ const dailyCandidates=state.category===CAT_ALL && typeof DAILY_CAT!=="undefined" ?
+  pool.filter(x=>x.cat===DAILY_CAT&&!usedQuestions.has(x.key)) : [];
+ if(dailyCandidates.length&&Math.random()<0.18){
+  const pick=dailyCandidates[Math.floor(Math.random()*dailyCandidates.length)];
+  usedQuestions.add(pick.key);
+  answerIndex=0;privateReverseLetters=[];
+  return {cat:pick.cat,q:pick.row[0],options:[pick.row[1]],visual:null,audioOnly:false,daily:true,tier:"easy"};
+ }
  const order=requested==="hard"?["hard","medium","easy"]:requested==="medium"?["medium","easy","hard"]:["easy","medium","hard"];
  let candidates=[];
  for(const tier of order){candidates=pool.filter(x=>x.tier===tier&&!usedQuestions.has(x.key));if(candidates.length)break;}
@@ -417,19 +477,21 @@ function selectNewQuestion(){
  const options=row.slice(1).map((value,i)=>({value,correct:i===0}));
  for(let i=options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
  answerIndex=options.findIndex(x=>x.correct);
- return {cat:item.cat,q:row[0],options:options.map(x=>x.value),visual:flagCode||null,audioOnly:reversed,tier:item.tier};
+ return {cat:item.cat,q:row[0],options:options.map(x=>x.value),visual:flagCode||null,audioOnly:reversed,
+  daily:typeof DAILY_CAT!=="undefined"&&item.cat===DAILY_CAT,tier:item.tier};
 }
 function startMatch(){
  if(!host||!state||!allReady()||state.phase!=="lobby")return;
- state.players.forEach(p=>p.score=0);state.round=0;state.clutchRecapRead=false;usedQuestions.clear();
+ state.players.forEach(p=>p.score=0);state.round=0;state.clutchRecapRead=false;state.matchRecorded=false;
+ refreshRivalry();usedQuestions.clear();
  newRound();
 }
 function newRound(){
  if(!host||!state)return;
  const winner=state.players.find(p=>p.score>=WIN_AT);
  if(winner){
-  state.phase="finished";state.winner=winner.seat;state.msg="🏆 "+judgeQuip("champion",winner)+" "+hostLine("finish");
-  speak(state.msg,"winner");sfx("win");bump();return;
+  state.phase="finished";state.winner=winner.seat;state.msg="🏆 "+winner.name+" كسب الحلقة!";
+  saveDuelResult();speak("مبروك يا "+winner.name,"winner");sfx("win");bump();return;
  }
  state.round++;
  state.phase="announce";state.question=selectNewQuestion();state.lockedSeat=null;state.result=null;
@@ -441,16 +503,13 @@ function newRound(){
  nextRevealAt=0;choiceSpeaking=false;buzzOpenedAt=0;botActionAt=0;botAnswerAt=0;
  speechWatchdogAt=Date.now()+ANNOUNCE_SEC*1000;
  state.deadline=0;state.remaining=0;state.speechOver=false;
- const recap=shouldReadStandings(state.round,state.players)?standingsNarration(state.players):"";
- const themed=MYSTERY_CATS.includes(state.question.cat)?hostLine("mysteryIntro")+". ":"";
- state.recap=recap||null;
- state.msg=recap?"📣 الحكم بيعلن ترتيب النقاط، وبعده السؤال الجديد!":"🎙️ الحكم بيقرأ السؤال، والجرس مخفي لحد ما يخلص.";
+ state.recap=null; // Silent scores: no automatic standings announcements.
+ state.msg="🎙️ السؤال بيتقال. الجرس هيفتح بعده مباشرة.";
  bump();
- const intro=(recap?recap+" ":"")+hostLine("intro")+" السؤال رقم "+state.round+". "+themed;
- speakQuestion(intro+(state.question.audioOnly?"دلوقتي كلمة مقلوبة. ركزوا في الحروف بالترتيب.":state.question.q),state.round);
+ speakQuestion((state.question.audioOnly?"اسمع الحروف وركّب الكلمة. ": "")+state.question.q,state.round);
 }
 function revealNextChoice(){
- if(!host||!state||state.phase!=="question"||!nextRevealAt||Date.now()<nextRevealAt)return;
+ if(!host||!state||state.question?.daily||state.phase!=="question"||!nextRevealAt||Date.now()<nextRevealAt)return;
  if(choiceSpeaking&&Date.now()<choiceSpeechDeadline)return;
  if(choiceSpeaking){try{Native.stopSpeech();}catch(e){} choiceSpeaking=false;}
  const shown=state.optionsShownCount||0;
@@ -477,21 +536,22 @@ function choiceVoiceDone(token){
 function openBuzz(){
  if(!host||!state||state.phase!=="announce"||!state.speechOver)return;
  buzzOpenedAt=Date.now();
- state.phase="question";state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
- state.msg="🔔 "+hostLine("start")+" الاختيارات هتتقال واحدة واحدة.";
+ state.phase="question";state.remaining=state.question?.daily?DAILY_QUIZ_SEC:QUIZ_SEC;
+ state.deadline=buzzOpenedAt+state.remaining*1000;
+ state.msg=state.question?.daily?"🔔 الجرس مفتوح، اكتب الحاجة المقصودة!":"🔔 الجرس مفتوح، الاختيارات هتظهر واحدة واحدة.";
  startChoiceCycle();scheduleBot();bump();
 }
 function startChoiceCycle(){
  state.choiceCycle=(state.choiceCycle||0)+1;
  state.optionsShown=false;state.optionsShownCount=0;
- choiceSpeaking=false;choiceSpeechDeadline=0;nextRevealAt=Date.now()+200;
+ choiceSpeaking=false;choiceSpeechDeadline=0;nextRevealAt=state.question?.daily?0:Date.now()+200;
  try{Native.stopSpeech();}catch(e){}
 }
 function claimBuzz(who){
  if(!host||!state||state.phase!=="question"||state.lockedSeat!==null||Date.now()>state.deadline)return;
  const p=state.players.find(x=>x.seat===who&&x.online);if(!p)return;
  const rush=(Date.now()-buzzOpenedAt)<=FAST_BUZZ_MS;
- state.fastBuzz=rush;state.answerWindowSec=rush?FAST_ANSWER_SEC:ANSWER_SEC;
+ state.fastBuzz=rush;state.answerWindowSec=state.question?.daily?(rush?DAILY_FAST_ANSWER_SEC:DAILY_ANSWER_SEC):(rush?FAST_ANSWER_SEC:ANSWER_SEC);
  state.lockedSeat=who;state.phase="answer";
  botActionAt=0;
  if(p.bot){
@@ -500,13 +560,13 @@ function claimBuzz(who){
  }
  // Choose ONLY among the already narrated options; write the answer if it has not been narrated.
  // 0 spoken => text; 1-3 spoken => visible options + free text; all 4 => normal multiple-choice.
- state.answerMode=state.optionsShownCount===0?"text":state.optionsShownCount<4?"hybrid":"choice";
+ state.answerMode=state.question?.daily?"text":state.optionsShownCount===0?"text":state.optionsShownCount<4?"hybrid":"choice";
  nextRevealAt=0;choiceSpeaking=false;state.choiceCycle++; // invalidate old TTS callbacks
  try{Native.stopSpeech();}catch(e){}
  state.buzzId=(state.buzzId||0)+1;
  state.deadline=Date.now()+state.answerWindowSec*1000;state.remaining=state.answerWindowSec;
- state.msg="🔔 "+p.name+(rush?" خطف الجرس! قدامه 6 ثواني؛ الغلط −2":" سبق الجميع! قدامه 12 ثانية؛ الغلط −1");
- haptic();ringBell();speak(judgeQuip(rush?"fastBuzz":"slowBuzz",p),rush?"excited":"suspense");
+ state.msg="🔔 "+p.name+" خطف الجرس! قدامه "+state.answerWindowSec+" ثانية؛ الغلط "+(rush?"−2":"−1");
+ haptic();ringBell(); // Short bell only: no long referee chatter after buzzing.
  bump();
 }
 function pressBuzzer(){
@@ -522,7 +582,7 @@ function selectOption(i){
  if(host)submitAnswer(seat,i);else send({t:"choice",i});
 }
 function submitAnswer(who,i){
- if(!host||!state||state.phase!=="answer"||!["hybrid","choice"].includes(state.answerMode)||state.lockedSeat!==who)return;
+ if(!host||!state||state.question?.daily||state.phase!=="answer"||!["hybrid","choice"].includes(state.answerMode)||state.lockedSeat!==who)return;
  // Authoritative validation: guests cannot select a choice the referee has not yet spoken.
  if(!Number.isInteger(i)||i<0||i>=state.optionsShownCount||i>=4||state.wrongChoices?.includes(i)||Date.now()>state.deadline)return;
  resolveAnswer(i===answerIndex,i,false);
@@ -557,19 +617,19 @@ function resolveAnswer(isCorrect,choice,timedout=false,typedAnswer=null){
   if(typedAnswer!==null)state.wrongTexts.push(String(typedAnswer).slice(0,85));
  }
  if(p && timedout)state.answerTimeouts=(state.answerTimeouts||0)+1;
- if(!p){msg="⏰ "+hostLine("nobuzz")+" نبدأ سؤال جديد."; }
+ if(!p){msg="⏰ محدش ضغط الجرس. سؤال جديد."; }
  else{
   delta=isCorrect?1:(state.fastBuzz?-2:-1);p.score+=delta;
   const loss=Math.abs(delta);
-  msg=isCorrect?judgeQuip("praise",p)+" نقطة لـ "+p.name:
-   timedout?judgeQuip("timeoutRoast",p)+" خسر "+loss+(loss===2?" نقطتين":" نقطة"):
-   judgeQuip(state.fastBuzz?"fastWrong":"wrongRoast",p)+" خسر "+loss+(loss===2?" نقطتين":" نقطة");
+  msg=isCorrect?"✅ صح! +1 لـ "+p.name:
+   timedout?"⏰ انتهى وقت "+p.name+"، خسر "+loss:
+   "❌ إجابة غلط من "+p.name+"، خسر "+loss;
  }
  const wrongCount=state.wrongAttempts||0;
  const endQuestion=!p||isCorrect||wrongCount>=2||state.answerTimeouts>=3;
  const again=!!p&&!endQuestion;
  if(wrongCount>=2&&!isCorrect)msg+=". ❌ محاولتين غلط، السؤال انتهى إجباريًا.";
- else if(again)msg+=". 🔄 "+hostLine("retry")+" أي حد يقدر يحاول!";
+ else if(again)msg+=". 🔄 الجرس هيفتح تاني.";
  if(p&&timedout&&again)msg+=" حتى نفس المتسابق.";
  state.phase="result";state.remaining=again?RETRY_SEC:RESULT_SEC;
  state.deadline=Date.now()+state.remaining*1000;
@@ -581,16 +641,18 @@ function resolveAnswer(isCorrect,choice,timedout=false,typedAnswer=null){
   wrongCount,skipped:false
  };
  state.msg=msg;
- speak(msg+(endQuestion?". الإجابة الصحيحة: "+answer:""),isCorrect?"praise":"tease");
+ speak(!p?"":isCorrect?"صح":timedout?"الوقت خلص":"غلط",isCorrect?"praise":"normal");
+ // Correct answer appears on-screen when the round ends; no score reading.
  sfx(isCorrect?"ok":"bad");bump();
 }
 function reopenBuzz(){
  if(!host||!state||state.phase!=="result"||!state.result?.retry)return;
  state.phase="question";state.lockedSeat=null;
  state.fastBuzz=false;state.answerWindowSec=ANSWER_SEC;state.answerMode=null;state.retry=true;
- buzzOpenedAt=Date.now();state.deadline=buzzOpenedAt+QUIZ_SEC*1000;state.remaining=QUIZ_SEC;
+ buzzOpenedAt=Date.now();state.remaining=state.question?.daily?DAILY_QUIZ_SEC:QUIZ_SEC;
+ state.deadline=buzzOpenedAt+state.remaining*1000;
  state.result=null;state.skipRequests=[];
- state.msg="🔔 "+hostLine("retry")+" الجرس فتح تاني والاختيارات هتتقال من الأول.";
+ state.msg=state.question?.daily?"🔔 الجرس فتح تاني، اكتب إجابتك!":"🔔 الجرس فتح تاني، الاختيارات من أولها.";
  startChoiceCycle();scheduleBot();bump();
 }
 function advanceRound(){
@@ -618,7 +680,7 @@ function requestSkip(){
 function resetToLobby(){
  if(!host||!state)return;
  state.phase="lobby";state.round=0;state.winner=null;state.result=null;state.question=null;state.lockedSeat=null;state.players.forEach(p=>p.score=0);
- state.msg="هنبدأ حلقة جديدة";state.clutchRecapRead=false;usedQuestions.clear();
+ state.msg="هنبدأ حلقة جديدة";state.clutchRecapRead=false;state.matchRecorded=false;usedQuestions.clear();refreshRivalry();
  state.wrongChoices=[];state.wrongAttempts=0;state.wrongTexts=[];state.skipRequests=[];state.optionsShown=false;state.optionsShownCount=0;state.choiceCycle=0;state.buzzId=0;
  bump();
 }
@@ -640,11 +702,15 @@ function botTick(){
  }
  if(state.phase==="answer"&&state.lockedSeat===bot.seat&&botAnswerAt&&Date.now()>=botAnswerAt){
   botAnswerAt=0;
-  const wrong=state.question.options.findIndex((_,i)=>i!==answerIndex&&!state.wrongChoices?.includes(i));
-  const pick=botWillAnswerCorrect?answerIndex:wrong;
-  if(pick<0)return;
-  if(state.answerMode==="choice" && pick<state.optionsShownCount)submitAnswer(bot.seat,pick);
-  else submitTypedAnswer(bot.seat,state.question.options[pick]);
+  if(state.question?.daily){
+   submitTypedAnswer(bot.seat,botWillAnswerCorrect?state.question.options[answerIndex]:"مش عارف");
+  }else{
+   const wrong=state.question.options.findIndex((_,i)=>i!==answerIndex&&!state.wrongChoices?.includes(i));
+   const pick=botWillAnswerCorrect?answerIndex:wrong;
+   if(pick<0)return;
+   if(state.answerMode==="choice" && pick<state.optionsShownCount)submitAnswer(bot.seat,pick);
+   else submitTypedAnswer(bot.seat,state.question.options[pick]);
+  }
  }
 }
 function tick(){

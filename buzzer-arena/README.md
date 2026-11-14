@@ -114,3 +114,11 @@ The app is meant for social play; Bluetooth arrival ordering is not latency-comp
 - Android's launcher icon now uses the cropped icon artwork (no large poster text) as a drawable for normal and round launcher entries.
 - The high-resolution 512 × 512 32-bit PNG for Play Console is delivered separately from the build; Play Store icons and in-app Android launcher icons are separate assets.
 - No game mechanics, questions, network settings, host flow or scoring rules changed from v10.0.
+
+## v12.0 — Minimal spoken referee, head-to-head rematch stats and daily-life riddles
+- **Quieter referee:** Reads only the question and any multiple-choice options; short "صح"/"غلط"/"الوقت خلص" feedback after an attempt and brief winner congratulations. No automatic score announcements, no banter upon a buzz, no repeated introduction or movie-style teasing.
+- **Head-to-head history for two players:** After one contestant reaches ten and the game finishes, save the result once in the host phone's Android WebView localStorage. When the same two nicknames play again under that same host phone, lobby and final screen show previous win counts and recent final scorelines, regardless of the players' seat order. It uses normalized nicknames; it does not synchronize between different hosts or devices, and removing app data deletes the history.
+- **72 original everyday-object description questions**, category "🧩 خمن الحاجة اليومية". They are intentionally simple but the clues distinguish the intended item. Players may type the object name or any of the curated common Arabic synonyms; no unannounced answer or multiple-choice option is revealed.
+- **Daily description timing:** 35 seconds to buzz (ordinary round 22); first-2-second speedy buzz gets 15 seconds to type, and later buzz 25 seconds (ordinary 6 / 12). The previous fast-guess wrong score penalty -2, later wrong -1, winner target 10 and retry-after-wrong logic stay unchanged.
+- The 72 questions remain available in mixed selection even on medium/hard score tiers; they are always tagged easy.
+- Only the host validates answers. New daily prompts are synced to guests without the correct answer until the round ends.

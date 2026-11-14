@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert'),path=require('path');
 const dir=path.join(__dirname,'../app/src/main/assets');
-function env(){
+function env(persistent={}){
  const dom={root:{innerHTML:''},nickname:{value:'أحمد'},timer:{textContent:'',classList:{toggle(){}}},timefill:{style:{}}},calls=[],messages=[];
  const Native={
   send(v){messages.push(JSON.parse(v))},host(){},join(){},permission(){},paired(){},vibrate(){},
@@ -14,11 +14,12 @@ function env(){
   onlineCreate(target,bot){calls.push({type:'onlineCreate',target,bot})},
   onlineJoin(code){calls.push({type:'onlineJoin',code})}
  };
- const window={Native},storage={data:{},getItem(k){return this.data[k]||null},setItem(k,v){this.data[k]=String(v)}};
+ const window={Native},storage={data:persistent,getItem(k){return this.data[k]||null},setItem(k,v){this.data[k]=String(v)}};
  const cx={console,Date,Math,Set,JSON,Number,String,Object,Array,Intl,window,Native,
   document:{getElementById(id){return dom[id]||null}},localStorage:storage,setInterval(){},clearInterval(){}};
  vm.createContext(cx);
- for(const file of ['questions.js','extra_questions.js','hard_questions.js','movie_music_levels.js','flag_questions.js','guess_places.js','core.js','ui.js'])vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),cx,{filename:file});
+ for(const file of ['questions.js','extra_questions.js','hard_questions.js','movie_music_levels.js','flag_questions.js','guess_places.js','guess_everyday.js','core.js','ui.js'])vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),cx,{filename:file});
+ vm.runInContext('cfg.category="🚩 تحدي أعلام العالم"',cx); // deterministic non-daily baseline for legacy-choice tests
  return {dom,calls,messages,window,run:s=>vm.runInContext(s,cx)};
 }
 function join(e,n){
@@ -302,51 +303,30 @@ for(const n of [2,3,4]){
 
 
 {
- // The host announces all player scores after three completed rounds, inside the spoken
- // question narration, so the recap cannot interrupt an option or cause a premature buzzer.
  const e=env();join(e,4);
- e.run("state.players[0].score=5;state.players[1].score=4;state.players[2].score=-2;state.players[3].score=1;state.round=3;newRound()");
+ e.run('state.players[0].score=5;state.players[1].score=4;state.players[2].score=-2;state.players[3].score=1;state.round=3;newRound()');
  assert.equal(e.run('state.round'),4);
- assert.equal(e.run('state.phase'),'announce');
- const spoken=e.calls.filter(x=>x.type==='question').at(-1).text;
- assert(spoken.includes('نقطة'),'score reading must include points');
- for(const name of Array.from(e.run('state.players.map(p=>p.name)')))assert(spoken.includes(name));
- assert(spoken.includes('سالب 2'),'negative score must be read in natural Arabic');
- assert(e.run('state.recap')!==null,'every 3 rounds score recap is recorded');
- assert(!e.dom.root.innerHTML.includes('id="thebuzzer"'),'recap and question both finish before buzzer');
+ assert.equal(e.run('state.recap'),null,'No recap or spoken scoreboard');
+ const call=e.calls.filter(x=>x.type==='question').at(-1).text;
+ assert.equal(call,e.run('state.question.q'),'referee speaks ONLY question');
+ for(const name of Array.from(e.run('state.players.map(p=>p.name)')))assert(!call.includes(name),'no player scores or names in question narration');
  e.window.onNative('speechDone','4');
  assert.equal(e.run('state.phase'),'question');
- e.run('state.round=4;newRound()');
- assert.equal(e.run('state.recap'),null,'score reading must not intrude on every round');
- console.log('PASS spoken standings every third round, including negatives and full question timing');
+ const voices=e.calls.filter(x=>x.type==='mood').length;
+ e.run('claimBuzz(1)');
+ assert.equal(e.calls.filter(x=>x.type==='mood').length,voices,'pressing buzzer produces no referee banter');
+ e.run('submitTypedAnswer(1,"إجابة خطأ")');
+ const final=e.calls.filter(x=>x.type==='mood').at(-1);
+ assert.equal(final.text,'غلط','only a short right/wrong verdict is spoken');
+ assert(!final.text.includes('نقطة'));
+ console.log('PASS referee says question, options, short verdict only; no standings or buzz banter');
 }
 {
  const e=env();join(e,2);
  e.run('state.players[0].score=8;state.players[1].score=7;state.round=1;newRound()');
- assert(e.run('state.recap'),'clutch score near win must trigger an extra recap');
- assert.equal(e.run('state.clutchRecapRead'),true);
- e.run('state.round=2;newRound()');
- assert.equal(e.run('state.recap'),null,'extra clutch recap is announced only once');
- console.log('PASS extra score announcement when a contestant nears 10 points');
-}
-{
- const e=env();join(e,3);
- e.run('startMatch()');startQuestion(e);
- const currentName=e.run('state.players.find(p=>p.seat===1).name');
- e.run('claimBuzz(1)');
- const buzz=e.calls.filter(x=>x.type==='mood').at(-1);
- assert.equal(buzz.mood,'excited');
- assert(buzz.text.includes(currentName),'fast buzz banter must mention current connected player name');
- e.run('submitTypedAnswer(1,"إجابة خاطئة")');
- assert.equal(e.run('state.result.delta'),-2);
- const roast=e.calls.filter(x=>x.type==='mood').at(-1);
- assert.equal(roast.mood,'tease');
- assert(roast.text.includes(currentName),'playful wrong-answer quip is about current participant');
- e.run('advanceRound()');
- e.run('buzzOpenedAt=Date.now()-3100;claimBuzz(0)');
- const slow=e.calls.filter(x=>x.type==='mood').at(-1);
- assert.equal(slow.mood,'suspense');
- console.log('PASS fast, slow and wrong-answer commentary vary by situation with expressive TTS moods');
+ assert.equal(e.run('state.recap'),null,'near-win must not announce the scores');
+ assert.equal(e.calls.filter(x=>x.type==='question').at(-1).text,e.run('state.question.q'));
+ console.log('PASS score announcements disabled even when contestants near victory');
 }
 {
  const e=env();
@@ -420,4 +400,74 @@ for(const n of [2,3,4]){
  console.log('PASS full online four-human mode without computer');
 }
 
-console.log('ALL v10 TESTS PASSED');
+
+{
+ const e=env();join(e,2);
+ e.run('state.category=DAILY_CAT;startMatch()');
+ assert.equal(e.run('state.question.daily'),true);
+ assert.equal(e.run('state.question.options.length'),1);
+ assert.equal(e.run('state.question.tier'),'easy');
+ assert.equal(e.run('state.phase'),'announce');
+ startQuestion(e);
+ assert.equal(e.run('state.remaining'),35,'extra time to buzz on daily riddles');
+ e.run('nextRevealAt=Date.now()-1;tick()');
+ assert.equal(e.run('state.optionsShownCount'),0,'no multiple choices ever narrated on daily riddles');
+ assert.equal(e.calls.filter(x=>x.type==='choice').length,0,'referee does not speak choices');
+ assert(!e.dom.root.innerHTML.includes('class="choicesCard"'));
+ e.run('claimBuzz(1)');
+ assert.equal(e.run('state.answerMode'),'text');
+ assert.equal(e.run('state.answerWindowSec'),15,'fast answer gets 15 seconds to type');
+ assert(e.dom.root.innerHTML.includes('كتابة فقط')||e.dom.root.innerHTML.includes('كتابة'));
+ e.run('submitAnswer(1,0)');
+ assert.equal(e.run('state.phase'),'answer','forged multiple-choice answer is rejected');
+ e.run('submitTypedAnswer(1,state.question.options[answerIndex])');
+ assert.equal(e.run('state.result.ok'),true);
+ e.run('advanceRound()');
+ assert.equal(e.run('state.phase'),'announce','new daily riddle after correct answer');
+ startQuestion(e);
+ e.run('buzzOpenedAt=Date.now()-2500;claimBuzz(1)');
+ assert.equal(e.run('state.answerWindowSec'),25,'later daily buzzer gets 25 seconds to type');
+ assert.equal(e.run('state.fastBuzz'),false);
+ e.run('state.deadline=Date.now()-1;tick()');
+ assert.equal(e.run('state.result.delta'),-1);
+ e.run('advanceRound()');
+ assert.equal(e.run('state.phase'),'question');
+ assert.equal(e.run('state.remaining'),35,'retry preserves extended 35-second buzzer window');
+ assert(e.run('answerMatches("سحاب","سوستة")'),'common correct synonyms are accepted');
+ assert(e.run('answerMatches("غطا الحلة","غطاء الحلة")'));
+ assert(!e.run('answerMatches("الريموت","غسالة")'),'unrelated answers are rejected');
+ console.log('PASS daily descriptions: typed-only, synonyms, no leaked choices, 35/15/25-second timers and retry');
+}
+{
+ const memory={};
+ const first=env(memory);join(first,2);first.run('startMatch()');startQuestion(first);
+ for(let i=0;i<10;i++){
+  if(i){first.run('advanceRound()');startQuestion(first);}
+  correct(first,1);
+ }
+ first.run('advanceRound()');
+ assert.equal(first.run('state.phase'),'finished');
+ assert.equal(first.run('state.rivalry.played'),1);
+ assert.equal(first.run('state.rivalry.wins[1]'),1);
+ assert(first.dom.root.innerHTML.includes('سجل المنافسات السابقة'));
+ first.run('resetToLobby()');
+ assert(first.dom.root.innerHTML.includes('سجل المنافسات السابقة'),'same pair sees their previous match while waiting');
+ const newApp=env(memory);join(newApp,2);
+ assert.equal(newApp.run('state.rivalry.played'),1,'rivalry survives reopening the app on the same host');
+ assert.equal(newApp.run('state.rivalry.wins[1]'),1);
+ newApp.run('startMatch()');startQuestion(newApp);
+ for(let i=0;i<10;i++){
+  if(i){newApp.run('advanceRound()');startQuestion(newApp);}
+  correct(newApp,0);
+ }
+ newApp.run('advanceRound()');
+ assert.equal(newApp.run('state.rivalry.played'),2);
+ assert.equal(newApp.run('state.rivalry.wins[0]'),1);
+ assert.equal(newApp.run('state.rivalry.wins[1]'),1);
+ assert.equal(newApp.run('state.rivalry.history.length'),2);
+ newApp.run('state.players[1].name="لاعب جديد";refreshRivalry()');
+ assert.equal(newApp.run('state.rivalry'),null,'unrelated opponent should not receive someone else’s win/loss history');
+ console.log('PASS 2-player win/loss rivalry saved across app restarts and rematches, separate by nicknames');
+}
+
+console.log('ALL v12 TESTS PASSED');

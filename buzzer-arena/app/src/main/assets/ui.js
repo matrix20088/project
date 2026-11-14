@@ -66,12 +66,24 @@ function renderPlayers(lobby=false){
    return `<div class="scorecard"><span>${ICONS[i]} ${esc(p.name)}</span><b>${p.score}</b></div>`;
   }).join("")+"</div>";
 }
+function duelHistoryCard(){
+ const h=state?.rivalry;
+ if(!h||!state||state.players.length!==2||!h.played)return "";
+ const p=state.players;
+ const scores=(h.history||[]).map((m,i)=>
+  '<div class="duelPastRow">المواجهة '+(h.played-i)+': <b>'+esc(p[0].name)+' '+(m.scores?.[0]??0)+' — '+(m.scores?.[1]??0)+' '+esc(p[1].name)+'</b></div>').join("");
+ return '<section class="card duelHistory"><div class="kicker">🏆 سجل المنافسات السابقة</div>'+
+  '<h3>'+esc(p[0].name)+' <b>'+h.wins[0]+'</b> — <b>'+h.wins[1]+'</b> '+esc(p[1].name)+'</h3>'+
+  '<p class="small">إجمالي '+h.played+' مواجهات. الأرقام هي مرات الفوز، وتحتها نتائج آخر المواجهات.</p>'+
+  scores+'<p class="small">السجل على جهاز صاحب الغرفة فقط، وبيعتمد على تطابق اسمي اللاعبين.</p></section>';
+}
 function renderLobby(){
  const ready=allReady();
  root.innerHTML=nav()+`<div class="banner">🎤 استوديو جرس التحدي • ${state.target} متسابقين</div>
  <div class="judge"><div class="face">🎙️</div><div><strong>الحَكَم جاهز ويتكلم!</strong><p>الصح +١ والغلط −١ أو −٢ حسب سرعة الخطف</p></div></div>
  ${state.roomCode||onlineRoomCode?'<div class="roomCodeCard"><small>🌐 رقم الغرفة — ابعته لأصحابك</small><strong>'+esc(state.roomCode||onlineRoomCode)+'</strong><small>صالحة لمدة ساعة • صاحب الغرفة لازم يفضل متصلًا</small></div>':""}
  <section class="card"><h2>المتسابقين داخلين الاستوديو</h2><p class="desc">${playersConnected()} من ${state.target} متصلين • الفئة: ${esc(state.category)}</p>${renderPlayers(true)}
+ ${duelHistoryCard()}
  ${host?`<button class="btn" ${ready?"":"disabled"} onclick="startMatch()">🚀 ابدأوا الحلقة!</button>`:`<div class="notice">${ready?"✅ الكل متصل، مستنيين صاحب الغرفة يبدأ":"⏳ مستنيين باقي اللاعبين..."}</div>`}
  <button class="btn ghost" onclick="backToMenu()">خروج من الغرفة</button></section>`;
 }
@@ -94,6 +106,7 @@ function updateTimerUI(){
 }
 function optionGrid(clickable=false){
  if(!state?.question?.options)return "";
+ if(state.question?.daily)return "";
  const count=state.optionsShownCount??(state.optionsShown?4:0);
  const wrong=state.wrongChoices||[],canClick=clickable&&seat===state.lockedSeat&&state.phase==="answer"&&["hybrid","choice"].includes(state.answerMode);
  // The winner can select one of the four answers. Spectators see ONLY already spoken choices.
@@ -126,26 +139,26 @@ function renderQuestion(){
  if(phase==="answer"&&["text","hybrid"].includes(state.answerMode)){
   if(seat===state.lockedSeat){
    body+='<form class="answerTextCard" onsubmit="return submitTypedFromUI()">'+
-    '<div class="kicker">⚡ '+(state.answerMode==="hybrid"?"ممكن تختار من اللي اتقال، أو تكتب إجابة تانية!":"خطفت الجرس قبل أول اختيار!")+'</div>'+
-    '<h3>'+(state.answerMode==="hybrid"?"الإجابة مش في الاختيارات الظاهرة؟ اكتبها بنفسك":"ورّينا شطارتك... اكتب الإجابة من دماغك")+'</h3>'+
-    '<p class="small">هنصحح إجابتك مع مراعاة اختلاف الهمزات والتشكيل. الاختيارات اللي لسه ما اتقالتش هتفضل مخفية.</p>'+
+    '<div class="kicker">⚡ '+(state.question?.daily?"وصف يومي: كتابة فقط":state.answerMode==="hybrid"?"ممكن تختار من اللي اتقال، أو تكتب إجابة تانية!":"خطفت الجرس قبل أول اختيار!")+'</div>'+
+    '<h3>'+(state.question?.daily?"خمّن الحاجة المطلوبة واكتب اسمها":state.answerMode==="hybrid"?"الإجابة مش في الاختيارات الظاهرة؟ اكتبها بنفسك":"ورّينا شطارتك... اكتب الإجابة من دماغك")+'</h3>'+
+    '<p class="small">'+(state.question?.daily?"مفيش اختيارات هنا. بنقبل الاسم المقصود والمسميات الشائعة الصح، والوقت أطول.":"هنصحح إجابتك مع مراعاة اختلاف الهمزات والتشكيل. الاختيارات اللي لسه ما اتقالتش هتفضل مخفية.")+'</p>'+
     '<input id="typedAnswer" name="typedAnswer" type="text" maxlength="85" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="اكتب الإجابة هنا" aria-label="اكتب إجابتك" required>'+
     '<button class="btn answerSubmit" type="submit">✅ ثبّت إجابتي</button>'+
     '</form>';
   }else{
-   body+='<div class="notice">📝 المتسابق خطف بدري، دلوقتي بيكتب الإجابة من دماغه. باقي الاختيارات مش هتظهر.</div>';
+   body+='<div class="notice">'+(state.question?.daily?"✍️ المتسابق بيكتب اسم الحاجة؛ السؤال ده من غير اختيارات.":"📝 المتسابق خطف بدري، دلوقتي بيكتب الإجابة من دماغه. باقي الاختيارات مش هتظهر.")+'</div>';
   }
  }
  if(phase==="announce"){
-  body+='<div class="judge"><div class="face">🎙️</div><div><strong>اسمع الحكم وركّز!</strong><p>أول ما السؤال يخلص، الجرس يفتح فورًا، وبعدها الاختيارات تتقال واحدة واحدة.</p></div></div>';
-  body+='<div class="notice">⚡ تقدر تخطف الجرس قبل ما الحكم يخلص كل الاختيارات.</div>';
+  body+='<div class="judge"><div class="face">🎙️</div><div><strong>اسمع السؤال!</strong><p>'+(state.question?.daily?"الحكم هيقول الوصف، وبعده تكتب الحاجة من غير اختيارات.":"أول ما السؤال يخلص، الجرس يفتح والاختيارات تتقال.")+'</p></div></div>';
+  body+='<div class="notice">'+(state.question?.daily?"⏳ الوصف اليومي: 35 ثانية للجرس، والإجابة 15 أو 25 ثانية.":"⚡ تقدر تخطف الجرس قبل ما الحكم يخلص كل الاختيارات.")+'</div>';
  }else if(phase==="question"){
   body+='<div class="buzzerWrap"><button id="thebuzzer" class="buzzer" onclick="pressBuzzer()" '+(online&&seat!==null?"":"disabled")+'>🔔<small>اضغط!</small></button>'+
-   '<p class="desc">⚡ أول ثانيتين: 6 ثواني للإجابة والغلط −2. بعد كده: 12 ثانية والغلط −1.</p></div>';
-  if(state.retry)body+='<div class="notice">🔄 نفس السؤال! الاختيارات بتتقال من الأول بعد ما الجرس اتفتح تاني.</div>';
+   '<p class="desc">'+(state.question?.daily?"✍️ وصف يومي: أول ثانيتين 15 ثانية للكتابة والغلط −2، بعدها 25 ثانية والغلط −1.":"⚡ أول ثانيتين: 6 ثواني للإجابة والغلط −2. بعد كده: 12 ثانية والغلط −1.")+'</p></div>';
+  if(state.retry)body+='<div class="notice">'+(state.question?.daily?"🔄 نفس وصف الحاجة، والجرس متاح لتخمين جديد.":"🔄 نفس السؤال! الاختيارات بتتقال من الأول بعد ما الجرس اتفتح تاني.")+'</div>';
  }else{
   body+='<div class="judge"><div class="face">'+(ICONS[state.lockedSeat]||"🔔")+'</div><div><strong>'+esc(locked?.name||"المتسابق")+'</strong><p>'+
-  (state.fastBuzz?"⚡ خطف خاطف! 6 ثواني والخطأ −2":"🎯 ضغط متأني: 12 ثانية والخطأ −1")+'</p></div></div>';
+  ("⏱️ "+state.answerWindowSec+" ثانية للإجابة، والخطأ "+(state.fastBuzz?"−2":"−1"))+'</p></div></div>';
   if(seat!==state.lockedSeat)body+='<div class="notice">⏸️ '+esc(locked?.name||"المتسابق")+' خطف الجرس؛ عرض باقي الاختيارات وقف. استنوا إجابته.</div>';
  }
  body+='<div class="attemptbar">❌ محاولات غلط: '+(state.wrongAttempts||0)+' / 2</div>';
@@ -158,7 +171,7 @@ function renderResult(){
  '<div class="card center"><div class="resultIcon">'+icon+'</div><h2>'+
  (r.skipped?"السؤال اتخطى":r.seat<0?"محدش ضغط الجرس":r.ok?"إجابة صح!":r.retry?"إجابة غلط... فرصة تانية!":"السؤال انتهى!")+'</h2>'+
  '<p class="desc">'+esc(state.msg)+'</p><div class="delta">'+(r.delta>0?"+"+r.delta:r.delta<0?"−"+Math.abs(r.delta):"0")+'</div>'+
- (r.ended?'<div class="notice ok"><b>الإجابة الصحيحة:</b> '+esc(r.correct||"—")+'</div>':
+ (r.ended?'<div class="notice ok"><b>'+(state.question?.daily?"الحاجة المقصودة: ":"الإجابة الصحيحة: ")+'</b> '+esc(r.correct||"—")+'</div>':
  '<div class="notice">🔒 الإجابة الصحيحة لسه سرية؛ الجرس هيفتح تاني!</div>')+
  (r.chosen?'<p class="small">'+(r.typed?"الإجابة المكتوبة: ":"الإجابة اللي اتجرّبت: ")+esc(r.chosen)+'</p>':"")+
  optionGrid(false);
@@ -172,6 +185,7 @@ function renderFinished(){
  const winner=state.players.find(p=>p.seat===state.winner);
  return nav()+`<section class="hero"><div class="badgeHero">🏆</div><div class="kicker">انتهت الحلقة</div><h1>البطل هو <em>${esc(winner?.name||"المتسابق")}</em>!</h1><p class="desc">وصل لـ ${WIN_AT} نقاط قبل الجميع!</p></section>
  <section class="card"><h2>🏅 النتيجة النهائية</h2>${state.players.slice().sort((a,b)=>b.score-a.score).map((p,i)=>`<div class="scorecard ${p.seat===state.winner?"leader":""}" style="margin:10px 0"><span>${["🥇","🥈","🥉","⭐"][i]} ${esc(p.name)}</span><b>${p.score}</b></div>`).join("")}
+ ${duelHistoryCard()}
  ${host?`<button class="btn" onclick="resetToLobby()">🔄 حلقة جديدة بنفس المتسابقين</button>`:`<p class="desc">استنوا صاحب الغرفة يبدأ حلقة جديدة.</p>`}
  <button class="btn ghost" onclick="backToMenu()">الرئيسية</button></section>`;
 }
