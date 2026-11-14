@@ -3,7 +3,7 @@ const root=document.getElementById("root");
 const CAT_ALL="🌟 منوعات",CAT_KEYS=Object.keys(QUESTIONS),ICONS=["🔵","🩷","🟡","🟣"];
 const TOTAL_QUESTIONS=CAT_KEYS.reduce((n,k)=>n+QUESTIONS[k].length,0);
 const QUIZ_SEC=22,ANSWER_SEC=12,FAST_ANSWER_SEC=6,FAST_BUZZ_MS=2000;
-const CHOICE_REVEAL_STEP_MS=350,ANNOUNCE_SEC=70,RESULT_SEC=8,RETRY_SEC=3,WIN_AT=10;
+const CHOICE_REVEAL_STEP_MS=350,ANNOUNCE_SEC=70,RESULT_SEC=10,RETRY_SEC=7,WIN_AT=10;
 const HARD_CATS=["🏛️ تاريخ للنخبة","🧬 علوم صعبة","🧭 جغرافيا متقدمة","🎨 فن وأدب","♟️ منطق صعب"];
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const clean=s=>String(s??"").trim().replace(/[\r\n\t]+/g," ").slice(0,18)||"لاعب";
@@ -34,6 +34,7 @@ let host=false,seat=null,online=false,pending="",devices=[],state=null,answerInd
 let usedQuestions=new Set(),lastVersion=-1,soundOn=true;
 let lastTapAt=0;
 const ENTERTAINMENT_CATS=["🎬 سينما وتلفزيون","🎭 إفيهات السينما","📺 مسلسلات ومسرح","🎼 أغاني وفنانين","🎥 سينما عالمية","🎶 موسيقى وأغاني صعبة"];
+const MYSTERY_CATS=["🌍 خمن الدولة من الوصف","🏙️ خمن المدينة أو المكان"];
 const TIER_LABELS={easy:"سهل 🟢",medium:"متوسط 🟡",hard:"صعب 🔴"};
 function difficultyByScore(scores){
  const high=Math.max(0,...scores.map(Number).filter(Number.isFinite));
@@ -75,6 +76,113 @@ function hostLine(kind){
  hostHistory[kind]=i;
  return lines[i];
 }
+// Energetic, light-hearted original Egyptian Arabic show banter. Every phrase has several alternatives.
+Object.assign(HOST_LINES,{
+ fastBuzz:[
+ "يا {name} انت دوست على الجرس ولا جريت وراه؟","بسرعة كده يا {name}، طيب خد نفس!",
+ "هو الجرس لحق يفتح يا {name}؟","يا {name} أسرع من إشعار الموبايل!",
+ "يا {name} ده انت خطفتها وهي طايرة!","لحقت تقرا السؤال يا {name}؟",
+ "يا نجم {name} السرعة دي وراها إجابة؟","يا {name} إيدك أسرع من مخك ولا إيه؟",
+ "بالراحة علينا يا {name}، الجرس مش هيهرب!","يا {name} على مهلك، كأن عليه خصم!",
+ "يا {name} الجرس بيقول الحقوني!","عاش يا {name}، بس ورينا المعلومة!"],
+ slowBuzz:[
+ "{name} دخل السباق بهدوء، يا ترى هتكمل؟","يا {name} دخلت بثقة، عايزين نشوف الإجابة!",
+ "{name} استنى شوية وبعدين قرر يهاجم!","يا {name} وقت التفكير خلص، اتفضل!",
+ "{name} بيقول راحة بال وكسبان!","طب يا {name} من غير خطف، معاك الإجابة؟",
+ "يا {name} شكلك حسبتها بالورقة والقلم!","دورك يا {name}، الجمهور مستني!"],
+ fastWrong:[
+ "يا {name} دوّست قبل ما الفكرة تكمل!","يا {name} خطفة عالمية وإجابة من كوكب تاني!",
+ "يا {name} الجرس مش زرار طلب بيتزا يا نجم!","يا {name} السرعة ممتازة، بس الإجابة فين؟",
+ "ده أنت خطفت الخسارة يا {name}!","يا {name} واضح إن إيدك سبقت المعلومة!",
+ "يا {name} كنت سريع قوي... في الاتجاه الغلط!","خطفة صاروخية يا {name}، بس الصاروخ راح غلط!",
+ "يا {name} إيه الاستعجال ده؟ النقط بتجري منك!","يا {name} البطولة مش بطولة ضغط جرس بس!",
+ "يا {name} الجرس فاز عليك بالمرة دي!","يا {name} اختارت بسرعة، بس مش صح!"],
+ wrongRoast:[
+ "يا {name} المعلومة عاملة معاك مقلب!","مش كده يا {name}، ركز شوية!",
+ "يا {name} الفكرة دي راحت محطة غلط!","يا {name} كنت قريب من الحماس، بعيد عن الصح!",
+ "دا احنا هنذاكر قبل الجولة الجاية يا {name}!","يا {name} الإجابة راحت تتمشى لوحدها!",
+ "يا {name} مش معقولة، ده السؤال كان مستنيك!","خسارة يا {name}، الكرسي اللي جنبك حظّه أحسن!",
+ "يا {name} اختياراتك محتاجة لجنة مراجعة!","برافو على الجرأة يا {name}، لكن الإجابة لأ!"],
+ timeoutRoast:[
+ "يا {name} انت نسيت إن فيه مؤقت؟","الوقت خلص يا {name} وانت لسه بتفكر!",
+ "يا {name} كأننا مستنيين نتيجة الثانوية!","يا {name} الجرس اتخطف، والإجابة أخدت أجازة!",
+ "يا {name} المؤقت مش بيقف احترامًا للتفكير!","يا {name} شكلك رحت تجيب الإجابة من جوجل!"],
+ praise:[
+ "يا {name} إجابة معلم كبير!","يا سلام يا {name}، مخك حاضر!",
+ "صفقة ناجحة يا {name}، نقطة جديدة!","برافو يا {name}، الجرس اختار صاحبه!",
+ "يا {name} انت فاتح كتاب الإجابات ولا إيه؟","يا {name} الكلام الكبير ده عايز تصفيق!",
+ "يا {name} كده الخصوم هيتوتروا!","دي إجابة على الجرح يا {name}!",
+ "تحية خاصة للتركيز يا {name}!","حلوة يا {name}، خلي المنافسين يلحقوك!",
+ "يا {name} انت عامل حصالة نقاط!","يا {name} إجابة تستاهل جرسين!"],
+ scoreOpen:[
+ "📣 استنوا يا جماعة، نشوف نتيجة المنافسة!",
+ "يا جماعة معلش، عندنا نشرة أخبار السكور!",
+ "يا سادة يا كرام، نعلن ترتيب النقاط!",
+ "تعالوا نشوف مين متقدم ومين بيلمّ نفسه!",
+ "وقفوا التصفيق ثانية، النتيجة وصلت!"],
+ tied:[
+ "يا نهار أبيض، في تعادل! محدش عايز يسيبها للتاني!",
+ "النتيجة متساوية، والمنافسة ولعت رسمي!",
+ "كل ده ولسه محدش قدر يهرب بالصدارة!"],
+ close:[
+ "نقطة واحدة بس بين الأول والتاني، الجولة الجاية ممكن تقلب الدنيا!",
+ "يا ساتر، الفرق نقطة! الجرس ده هيحسم مصير ناس!",
+ "اللي جاي ممكن يبدّل المراكز كلها!"],
+ runaway:[
+ "المتصدر بيجري والناس وراه! يا ترى هيلحقوه؟",
+ "في واحد عامل نفسه قطار سريع! فين بقية المتسابقين؟",
+ "الفرق كبر، بس لسه العودة ممكنة!"],
+ mixed:[
+ "يا ترى اللي متأخر يعمل ريمونتادا؟",
+ "لسه في لعب، ولسه في مفاجآت كتير!",
+ "النتيجة دي محتاجة واحدة يخطفها صح!"],
+ lastPlace:[
+ "يا {name} شد حيلك، الجرس مش للزينة!",
+ "{name} لسه قدامه فرصة يقلبها، يا رب يبطل استعجال!",
+ "يا {name} يلا يا نجم، عايزين نسمع اسمك في الصدارة!"],
+ suspense:[
+ "المنافسة سخنت، ومش ناقص غير هدف في الدقيقة تسعين!",
+ "احنا دخلنا المنطقة الخطيرة! أي نقطة هتفرق!",
+ "اللي يكسب السؤال الجاي ممكن يكتب التاريخ!",
+ "يا جماعة الصوت يعلى شوية، الحلقة سخنت!"],
+ mysteryIntro:[
+ "دلوقتي لعبة الوصف! مكان سرّي في دماغي، خمنوه!",
+ "السؤال ده رحلة من غير تذكرة سفر!",
+ "هقولكم شوية قرائن، وانتوا قولوا البلد أو المكان!",
+ "خلي بالك من كل كلمة في الوصف، ممكن تكسب!",
+ "عايز أشوف مين يعرف العالم من وصف صغير!"],
+ champion:[
+ "يا {name} يا بطل، مبروك الفوز!","النهارده الكأس راح لـ {name}، وده يستاهل تصفيق!",
+ "{name} خلّص الحلقة على أعلى مستوى!","يا {name} هات الكأس، كله بيصقف لك!",
+ "الليلة ليلة {name}، نجم المسابقة بلا منازع!"]
+});
+HOST_LINES.intro.push(
+ "مين مستعد ينقذ نقاطه من الضياع؟","ركّزوا، في ناس بتحضّر مفاجآت!",
+ "الجولة دي فيها فرصة انتقام حلوة!","الجرس جاي وفيه كلام كتير!",
+ "هنشوف مين حافظ ومين بيضرب وخلاص!","يا جماعة سيبوا الموبايلات الثانية وركزوا!",
+ "السكور ضيق والنار قربت تولع!","اللي فاهم يضغط واللي مش فاهم يستنى!",
+ "جاهزين نتفرج على الخطفات؟","إيه يا أبطال، محدش هيقلب الترابيزة؟"
+);
+function judgeQuip(kind,player){
+ return hostLine(kind).replaceAll("{name}",String(player?.name||"يا بطل"));
+}
+function scoreAsSpeech(value){return value<0?"سالب "+Math.abs(value):String(value);}
+function standingsNarration(players){
+ const sorted=players.slice().sort((a,b)=>b.score-a.score);
+ if(sorted.length<2)return "";
+ const scores=sorted.map(p=>p.name+" معاه "+scoreAsSpeech(p.score)+" نقطة").join("، ");
+ const gap=sorted[0].score-sorted[1].score;
+ const mood=gap===0?"tied":gap===1?"close":gap>=4?"runaway":"mixed";
+ const small=sorted[sorted.length-1];
+ const comeback=small.score<=-2?" "+judgeQuip("lastPlace",small):"";
+ return hostLine("scoreOpen")+" "+scores+". "+hostLine(mood)+comeback;
+}
+function shouldReadStandings(round,players){
+ if(round>1&&(round-1)%3===0)return true;
+ const nearWin=Math.max(...players.map(p=>p.score))>=WIN_AT-2;
+ if(nearWin&&!state.clutchRecapRead){state.clutchRecapRead=true;return true;}
+ return false;
+}
 function toggleVoice(){voiceOn=!voiceOn;localStorage.setItem("buzzerVoice",voiceOn?"on":"off");renderHome();}
 function previewVoice(){try{Native.speak("أهلا بيكم في جرس التحدي! معانا اتنين أو تلاتة أو أربعة متسابقين، والنهارده هنشوف مين أسرع واحد على الجرس!")}catch(e){showError("تعذر تشغيل صوت الحكم: "+e.message);}}
 function speakQuestion(text,round){
@@ -114,7 +222,12 @@ function sfx(type){
  o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.2);o.onended=()=>a.close();
  }catch(e){}
 }
-function speak(s){if(host&&voiceOn)try{Native.speak(String(s))}catch(e){}}
+function speak(s,mood="normal"){
+ if(host&&voiceOn)try{
+  if(typeof Native.speakMood==="function")Native.speakMood(String(s),String(mood));
+  else Native.speak(String(s));
+ }catch(e){}
+}
 function saveName(s){cfg.name=clean(s);try{localStorage.setItem("buzzerName",cfg.name)}catch(e){}}
 function chooseTarget(v){cfg.target=Math.min(4,Math.max(2,Number(v)||2));renderHome();}
 function chooseCategory(v){cfg.category=CAT_KEYS.includes(v)?v:CAT_ALL;}
@@ -255,9 +368,18 @@ function selectNewQuestion(){
  if(!candidates.length)return null;
  if(state.category===CAT_ALL){
   const entertainment=candidates.filter(x=>ENTERTAINMENT_CATS.includes(x.cat));
-  const everythingElse=candidates.filter(x=>!ENTERTAINMENT_CATS.includes(x.cat));
-  if(entertainment.length&&everythingElse.length)
-    candidates=Math.random()<.62?entertainment:everythingElse;
+  const mystery=candidates.filter(x=>MYSTERY_CATS.includes(x.cat));
+  const other=candidates.filter(x=>!ENTERTAINMENT_CATS.includes(x.cat)&&!MYSTERY_CATS.includes(x.cat));
+  const categories=[
+    ...(entertainment.length?[{items:entertainment,weight:0.54}]:[]),
+    ...(mystery.length?[{items:mystery,weight:0.25}]:[]),
+    ...(other.length?[{items:other,weight:0.21}]:[])
+  ];
+  if(categories.length>1){
+    const total=categories.reduce((n,g)=>n+g.weight,0);
+    let hit=Math.random()*total;
+    for(const group of categories){hit-=group.weight;if(hit<=0){candidates=group.items;break;}}
+  }
  }
  const item=candidates[Math.floor(Math.random()*candidates.length)];
  usedQuestions.add(item.key);
@@ -273,15 +395,15 @@ function selectNewQuestion(){
 }
 function startMatch(){
  if(!host||!state||!allReady()||state.phase!=="lobby")return;
- state.players.forEach(p=>p.score=0);state.round=0;usedQuestions.clear();
+ state.players.forEach(p=>p.score=0);state.round=0;state.clutchRecapRead=false;usedQuestions.clear();
  newRound();
 }
 function newRound(){
  if(!host||!state)return;
  const winner=state.players.find(p=>p.score>=WIN_AT);
  if(winner){
-  state.phase="finished";state.winner=winner.seat;state.msg="🏆 "+hostLine("finish",state.round)+" "+winner.name+" كسب الحلقة!";
-  speak(state.msg);sfx("win");bump();return;
+  state.phase="finished";state.winner=winner.seat;state.msg="🏆 "+judgeQuip("champion",winner)+" "+hostLine("finish");
+  speak(state.msg,"winner");sfx("win");bump();return;
  }
  state.round++;
  state.phase="announce";state.question=selectNewQuestion();state.lockedSeat=null;state.result=null;
@@ -293,9 +415,12 @@ function newRound(){
  nextRevealAt=0;choiceSpeaking=false;buzzOpenedAt=0;
  speechWatchdogAt=Date.now()+ANNOUNCE_SEC*1000;
  state.deadline=0;state.remaining=0;state.speechOver=false;
- state.msg="🎙️ الحكم بيقرأ السؤال، والجرس مخفي لحد ما يخلص.";
+ const recap=shouldReadStandings(state.round,state.players)?standingsNarration(state.players):"";
+ const themed=MYSTERY_CATS.includes(state.question.cat)?hostLine("mysteryIntro")+". ":"";
+ state.recap=recap||null;
+ state.msg=recap?"📣 الحكم بيعلن ترتيب النقاط، وبعده السؤال الجديد!":"🎙️ الحكم بيقرأ السؤال، والجرس مخفي لحد ما يخلص.";
  bump();
- const intro=hostLine("intro",state.round)+" السؤال رقم "+state.round+". ";
+ const intro=(recap?recap+" ":"")+hostLine("intro")+" السؤال رقم "+state.round+". "+themed;
  speakQuestion(intro+(state.question.audioOnly?"دلوقتي كلمة مقلوبة. ركزوا في الحروف بالترتيب.":state.question.q),state.round);
 }
 function revealNextChoice(){
@@ -350,7 +475,7 @@ function claimBuzz(who){
  state.buzzId=(state.buzzId||0)+1;
  state.deadline=Date.now()+state.answerWindowSec*1000;state.remaining=state.answerWindowSec;
  state.msg="🔔 "+p.name+(rush?" خطف الجرس! قدامه 6 ثواني؛ الغلط −2":" سبق الجميع! قدامه 12 ثانية؛ الغلط −1");
- haptic();ringBell();speak(hostLine("buzz")+" "+p.name+"، اتفضل جاوب!");
+ haptic();ringBell();speak(judgeQuip(rush?"fastBuzz":"slowBuzz",p),rush?"excited":"suspense");
  bump();
 }
 function pressBuzzer(){
@@ -405,9 +530,9 @@ function resolveAnswer(isCorrect,choice,timedout=false,typedAnswer=null){
  else{
   delta=isCorrect?1:(state.fastBuzz?-2:-1);p.score+=delta;
   const loss=Math.abs(delta);
-  msg=isCorrect?hostLine("correct",state.round)+" نقطة لـ "+p.name:
-   timedout?hostLine("timeout")+" "+p.name+" خسر "+loss+(loss===2?" نقطتين":" نقطة"):
-   hostLine("wrong",state.round)+" "+p.name+" خسر "+loss+(loss===2?" نقطتين":" نقطة");
+  msg=isCorrect?judgeQuip("praise",p)+" نقطة لـ "+p.name:
+   timedout?judgeQuip("timeoutRoast",p)+" خسر "+loss+(loss===2?" نقطتين":" نقطة"):
+   judgeQuip(state.fastBuzz?"fastWrong":"wrongRoast",p)+" خسر "+loss+(loss===2?" نقطتين":" نقطة");
  }
  const wrongCount=state.wrongAttempts||0;
  const endQuestion=!p||isCorrect||wrongCount>=2||state.answerTimeouts>=3;
@@ -425,7 +550,7 @@ function resolveAnswer(isCorrect,choice,timedout=false,typedAnswer=null){
   wrongCount,skipped:false
  };
  state.msg=msg;
- speak(msg+(endQuestion?". الإجابة الصحيحة: "+answer:""));
+ speak(msg+(endQuestion?". الإجابة الصحيحة: "+answer:""),isCorrect?"praise":"tease");
  sfx(isCorrect?"ok":"bad");bump();
 }
 function reopenBuzz(){
@@ -462,7 +587,7 @@ function requestSkip(){
 function resetToLobby(){
  if(!host||!state)return;
  state.phase="lobby";state.round=0;state.winner=null;state.result=null;state.question=null;state.lockedSeat=null;state.players.forEach(p=>p.score=0);
- state.msg="هنبدأ حلقة جديدة";usedQuestions.clear();
+ state.msg="هنبدأ حلقة جديدة";state.clutchRecapRead=false;usedQuestions.clear();
  state.wrongChoices=[];state.wrongAttempts=0;state.wrongTexts=[];state.skipRequests=[];state.optionsShown=false;state.optionsShownCount=0;state.choiceCycle=0;state.buzzId=0;
  bump();
 }

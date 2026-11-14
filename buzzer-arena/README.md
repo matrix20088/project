@@ -92,3 +92,11 @@ The app is meant for social play; Bluetooth arrival ordering is not latency-comp
 - Both the client and the authoritative Bluetooth host reject forged selections of option indexes not actually narrated, even if someone sends a custom Bluetooth packet.
 - Unspoken options remain redacted in every outgoing state packet. Rushing in the first two seconds still has a doubled penalty (-2 wrong/timeout), while later buzzes retain -1 wrong/timeout.
 - The same question reopens after a wrong answer, with the original choices spoken again from the first option, until the existing two-wrong limit or other completion conditions.
+
+## v9.0 — Playful referee + recurring spoken scoreboard + place riddles
+- Egyptian Arabic referee offers more diverse, non-repeating, playful banter for fast buzz, careful buzz, wrong guess, timeout, correct answer, tie, close scores, runaway leader, comeback, and winning. Nicknames are included; no LLM or internet voice backend.
+- Android built-in Arabic TextToSpeech lightly changes pace/pitch by event: excitement, teasing, praise, suspense, and victory; no voice cloning.
+- **Every three completed questions** (before rounds 4, 7, 10, …) the referee announces the scores of all contestants, including negative scores, and jokes about ties, leaders and comebacks.
+- A one-time extra narration happens when any contestant reaches 8 points. Score narration is **prepended to the same spoken question utterance**, so it never interrupts a question, options or answer; the buzzer stays closed until reading finishes.
+- **122 original geography description questions** split into 🌍 Guess the country and 🏙️ Guess the city/landmark; all are easy/medium/hard and read aloud without naming the answer. Mixed category choices weight geography description ~25% (when available), entertainment ~54%, everything else ~21%.
+- Same local multiplayer Bluetooth and v8 multiple-choice/typed hybrid rules. Original game-show bell remains.

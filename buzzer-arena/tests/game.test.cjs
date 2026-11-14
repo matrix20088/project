@@ -5,6 +5,7 @@ function env(){
  const Native={
   send(v){messages.push(JSON.parse(v))},host(){},join(){},permission(){},paired(){},vibrate(){},
   speak(text){calls.push({type:'speak',text})},
+  speakMood(text,mood){calls.push({type:'mood',text,mood})},
   speakQuestion(text,round){calls.push({type:'question',text,round})},
   spellQuestion(text,letters,round){calls.push({type:'spell',letters:JSON.parse(letters),round})},
   speakChoice(text,token){calls.push({type:'choice',text,token})},
@@ -15,7 +16,7 @@ function env(){
  const cx={console,Date,Math,Set,JSON,Number,String,Object,Array,Intl,window,Native,
   document:{getElementById(id){return dom[id]||null}},localStorage:storage,setInterval(){},clearInterval(){}};
  vm.createContext(cx);
- for(const file of ['questions.js','extra_questions.js','hard_questions.js','movie_music_levels.js','flag_questions.js','core.js','ui.js'])vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),cx,{filename:file});
+ for(const file of ['questions.js','extra_questions.js','hard_questions.js','movie_music_levels.js','flag_questions.js','guess_places.js','core.js','ui.js'])vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),cx,{filename:file});
  return {dom,calls,messages,window,run:s=>vm.runInContext(s,cx)};
 }
 function join(e,n){
@@ -297,4 +298,84 @@ for(const n of [2,3,4]){
  console.log('PASS hybrid 2-choice free text can answer with a still unspoken option');
 }
 
-console.log('ALL v8 TESTS PASSED');
+
+{
+ // The host announces all player scores after three completed rounds, inside the spoken
+ // question narration, so the recap cannot interrupt an option or cause a premature buzzer.
+ const e=env();join(e,4);
+ e.run("state.players[0].score=5;state.players[1].score=4;state.players[2].score=-2;state.players[3].score=1;state.round=3;newRound()");
+ assert.equal(e.run('state.round'),4);
+ assert.equal(e.run('state.phase'),'announce');
+ const spoken=e.calls.filter(x=>x.type==='question').at(-1).text;
+ assert(spoken.includes('نقطة'),'score reading must include points');
+ for(const name of Array.from(e.run('state.players.map(p=>p.name)')))assert(spoken.includes(name));
+ assert(spoken.includes('سالب 2'),'negative score must be read in natural Arabic');
+ assert(e.run('state.recap')!==null,'every 3 rounds score recap is recorded');
+ assert(!e.dom.root.innerHTML.includes('id="thebuzzer"'),'recap and question both finish before buzzer');
+ e.window.onNative('speechDone','4');
+ assert.equal(e.run('state.phase'),'question');
+ e.run('state.round=4;newRound()');
+ assert.equal(e.run('state.recap'),null,'score reading must not intrude on every round');
+ console.log('PASS spoken standings every third round, including negatives and full question timing');
+}
+{
+ const e=env();join(e,2);
+ e.run('state.players[0].score=8;state.players[1].score=7;state.round=1;newRound()');
+ assert(e.run('state.recap'),'clutch score near win must trigger an extra recap');
+ assert.equal(e.run('state.clutchRecapRead'),true);
+ e.run('state.round=2;newRound()');
+ assert.equal(e.run('state.recap'),null,'extra clutch recap is announced only once');
+ console.log('PASS extra score announcement when a contestant nears 10 points');
+}
+{
+ const e=env();join(e,3);
+ e.run('startMatch()');startQuestion(e);
+ e.run('claimBuzz(1)');
+ const buzz=e.calls.filter(x=>x.type==='mood').at(-1);
+ assert.equal(buzz.mood,'excited');
+ assert(buzz.text.includes('لاعب 2'),'fast buzz banter must mention winner by name');
+ e.run('submitTypedAnswer(1,"إجابة خاطئة")');
+ assert.equal(e.run('state.result.delta'),-2);
+ const roast=e.calls.filter(x=>x.type==='mood').at(-1);
+ assert.equal(roast.mood,'tease');
+ assert(roast.text.includes('لاعب 2'),'playful wrong-answer quip is about participant, no generic repetition');
+ e.run('advanceRound()');
+ e.run('buzzOpenedAt=Date.now()-3100;claimBuzz(0)');
+ const slow=e.calls.filter(x=>x.type==='mood').at(-1);
+ assert.equal(slow.mood,'suspense');
+ console.log('PASS fast, slow and wrong-answer commentary vary by situation with expressive TTS moods');
+}
+{
+ const e=env();
+ const kinds=['fastBuzz','slowBuzz','fastWrong','wrongRoast','timeoutRoast','praise','scoreOpen','tied','close','runaway','mysteryIntro'];
+ for(const kind of kinds){
+   const phrases=Array.from({length:40},()=>e.run('hostLine('+JSON.stringify(kind)+')'));
+   assert(phrases.every((x,i)=>i===0||x!==phrases[i-1]),kind+' should not repeat the same line twice consecutively');
+   assert(new Set(phrases).size>=3,'needs plenty of variety for '+kind);
+ }
+ console.log('PASS 11 referee contexts with anti-repeat and varied Egyptian one-liners');
+}
+{
+ const e=env();join(e,2);
+ const all=e.run('TOTAL_QUESTIONS'),n=e.run('CAT_KEYS.length');
+ assert(all>=1420,'expect 1420+ offline questions, got '+all);
+ assert(n>=26,'expect >=26 categories, got '+n);
+ for(const cat of ['🌍 خمن الدولة من الوصف','🏙️ خمن المدينة أو المكان']){
+  assert(e.run('QUESTIONS['+JSON.stringify(cat)+'].length')>=50);
+  const rows=Array.from(e.run('QUESTIONS['+JSON.stringify(cat)+']'));
+  assert(rows.every(row=>row.length===5));
+  assert(rows.every(row=>!row[0].includes(row[1])),'a described place must not be named in the clue');
+  e.run('state.category='+JSON.stringify(cat)+';state.players[0].score=0;startMatch()');
+  assert.equal(e.run('state.question.tier'),'easy');
+  assert.equal(e.run('state.question.cat'),cat);
+  assert(e.calls.filter(x=>x.type==='question').at(-1).text.includes('أنا مكان غامض'));
+  e.run('state.players[0].score=3;newRound()');
+  assert.equal(e.run('state.question.tier'),'medium');
+  e.run('state.players[0].score=6;newRound()');
+  assert.equal(e.run('state.question.tier'),'hard');
+  e.run('resetToLobby()');
+ }
+ console.log('PASS '+all+' questions across '+n+' categories including 122 place/country riddles and adaptive levels');
+}
+
+console.log('ALL v9 TESTS PASSED');

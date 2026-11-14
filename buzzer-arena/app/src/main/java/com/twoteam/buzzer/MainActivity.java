@@ -339,6 +339,28 @@ public class MainActivity extends Activity {
         @android.webkit.JavascriptInterface public void speak(String text){
             announce(text,"comment");
         }
+        // The referee changes pace slightly by situation, without imitating a real host's voice.
+        @android.webkit.JavascriptInterface public void speakMood(String text,String mood){
+            runOnUiThread(()->{
+                if(!speechReady||speech==null||text==null||text.isEmpty())return;
+                final String type=mood==null?"normal":mood;
+                float speed=1.0f,pitch=1.06f;
+                switch(type){
+                    case "excited": speed=1.13f;pitch=1.15f;break;
+                    case "suspense":speed=0.99f;pitch=1.02f;break;
+                    case "praise":speed=1.09f;pitch=1.11f;break;
+                    case "tease":speed=0.99f;pitch=1.08f;break;
+                    case "winner":speed=1.00f;pitch=1.15f;break;
+                    default:break;
+                }
+                final float micro=(float)(System.nanoTime()%5)/100f;
+                speech.setSpeechRate(speed+micro);
+                speech.setPitch(pitch+micro/2);
+                int result=speech.speak(text.substring(0,Math.min(text.length(),500)),
+                    TextToSpeech.QUEUE_FLUSH,null,"mood-"+type+"-"+System.nanoTime());
+                if(result==TextToSpeech.ERROR)fire("voiceStatus","unavailable");
+            });
+        }
         @android.webkit.JavascriptInterface public void announce(String text,String utteranceId){
             runOnUiThread(()->{
                 if(speechReady&&text!=null&&!text.isEmpty()&&speech!=null){
@@ -360,6 +382,7 @@ public class MainActivity extends Activity {
                     fire("choiceUnavailable",token);return;
                 }
                 speech.setSpeechRate(0.92f);
+                speech.setPitch(1.05f);
                 int rc=speech.speak(text.substring(0,Math.min(text.length(),300)),
                     TextToSpeech.QUEUE_FLUSH,null,"choice-"+token);
                 if(rc==TextToSpeech.ERROR)fire("choiceUnavailable",token);
@@ -368,6 +391,8 @@ public class MainActivity extends Activity {
         @android.webkit.JavascriptInterface public void speakQuestion(String text,String round){
             runOnUiThread(()->{
                 if(speechReady&&speech!=null&&text!=null&&!text.isEmpty()){
+                    speech.setSpeechRate(1.0f);
+                    speech.setPitch(1.05f);
                     int rc=speech.speak(text.substring(0,Math.min(500,text.length())),
                         TextToSpeech.QUEUE_FLUSH,null,round==null?"q":round);
                     if(rc==TextToSpeech.ERROR)fire("speechUnavailable",round);
