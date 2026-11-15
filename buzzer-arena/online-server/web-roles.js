@@ -56,7 +56,7 @@
  };
  window.mdQuickMatch=async function(){
   if(!mdUser||matching||online)return;
-  matching=true;mdStatus="";
+  matching=true;mdStatus="";window.mdRoomMatchMode="random";
   try{
    window.mdVoiceUnlock?.();
    const result=await mdAPI({action:"match"});
@@ -74,7 +74,7 @@
  soundOn=voiceOn;
  localStorage.setItem("buzzerVoice",voiceOn?"on":"off");
  const oldCreate=window.mdCreateRoom;
- window.mdCreateRoom=function(){window.mdVoiceUnlock?.();return oldCreate();};
+ window.mdCreateRoom=function(){window.mdRoomMatchMode="friend";window.mdVoiceUnlock?.();return oldCreate();};
  const oldJoin=window.mdJoinRoom;
  window.mdJoinRoom=function(code){window.mdVoiceUnlock?.();return oldJoin(code);};
  // Owner alone can make a request for the directory. Everyone else never even tries.
