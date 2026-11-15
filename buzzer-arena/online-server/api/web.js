@@ -133,7 +133,7 @@ export default async function handler(req,res){
   if(!user)return json(res,401,{error:"سجّل الدخول أو ادخل كضيف"});
   if(action==="match"){
    if(!throttle(req,"list"))return json(res,429,{error:"استنى دقيقة وجرب تاني"});
-   const available=(await allRooms("",false)).filter(r=>r.phase==="lobby"&&r.players<r.target&&!r.stale);
+   const available=(await allRooms("",false)).filter(r=>r.phase==="lobby"&&r.players<r.target&&(!r.stale||Date.now()-r.created<12000));
    if(!available.length)return json(res,200,{ok:true,code:null,create:true});
    const selected=available[randomInt(available.length)];
    return json(res,200,{ok:true,code:selected.code,create:false});
