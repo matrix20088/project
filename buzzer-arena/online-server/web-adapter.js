@@ -17,7 +17,12 @@
   active=false;epoch++;clearTimeout(pollTimer);pollTimer=0;processed.clear();assigned.clear();queue=Promise.resolve();
  }
  function enqueue(body){
-  queue=queue.then(()=>request(body)).catch(e=>{console.warn("room send",e.message);notify("onlineWarning","في تأخير بالشبكة، بنحاول نكمل...");});
+  queue=queue.then(async()=>{
+   await request(body);
+   // The host is counted only after the live room state has been accepted by the server.
+   if(body.action==="state"&&body.message?.s&&["announce","question","answer","result","finished"].includes(body.message.s.phase))
+    void window.mdTrackPlayed?.({code,role:"host",token});
+  }).catch(e=>{console.warn("room send",e.message);notify("onlineWarning","في تأخير بالشبكة، بنحاول نكمل...");});
  }
  async function create(n,computer){
   stop();const ticket=epoch;
@@ -85,6 +90,9 @@
   if(assignedSeat<0)return;
   if(r.message&&r.updated>lastState){
    lastState=r.updated;notify("message",JSON.stringify(r.message));
+   // A guest is counted only after an assigned seat receives a started game state.
+   if(assignedSeat>=0&&r.message.t==="state"&&["announce","question","answer","result","finished"].includes(r.message.s?.phase))
+    void window.mdTrackPlayed?.({code,role:"guest",token,id:playerId});
   }
  }
  window.Native={
