@@ -31,9 +31,9 @@ function mdAuthScreen(){
  <p class="web-foot">بدون محادثات أو مكالمات صوتية • لعب مباشر بين ٢–٤ متسابقين</p>`;
 }
 function mdRoomCard(r){
- const filled=r.players>=r.target;
- return `<article class="web-room"><div><b>🎯 ${wEscape(r.title)}</b><small>👤 ${wEscape(r.host)} · ${r.players} من ${r.target} · ${r.phase==="lobby"?"في انتظار اللاعبين":"بدأت المواجهة"}</small></div>
- <button type="button" class="web-room-join" onclick="mdJoinRoom('${r.code}')" ${filled?"disabled":""}>انضم ↗</button></article>`;
+ const filled=r.players>=r.target,inactive=!!r.stale;
+ return `<article class="web-room"><div><b>🎯 ${wEscape(r.title)}</b><small>👤 ${wEscape(r.host)} · ${r.players} من ${r.target} · ${r.phase==="lobby"?"في انتظار اللاعبين":r.phase==="finished"?"انتهت":"بدأت المواجهة"}</small><small>${inactive?"⚪ بدون اتصال حديث (قد تكون مهجورة)":"🟢 غرفة متصلة"} · كود ${wEscape(r.code)}</small></div>
+ <button type="button" class="web-room-join" onclick="mdJoinRoom('${r.code}')" ${filled||inactive?"disabled":""}>${inactive?"غير نشطة":"انضم ↗"}</button></article>`;
 }
 function mdHubScreen(){
  const cats=[CAT_ALL,...CAT_KEYS.filter(c=>c!=="🔄 كلمة مقلوبة")];

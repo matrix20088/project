@@ -23,7 +23,8 @@
   html=html.replace(/<option\b[^>]*value="🌟 منوعات"[^>]*>[^<]*<\/option>/g,"");
   if(isOwner){
    html=html.replace('<section class="card web-discover">','<section class="card web-discover"><button class="btn md-match" type="button" onclick="mdQuickMatch()">🎲 دور عشوائي ليا</button>');
-   html=html.replace("العب مع ناس تانية","لوحة تحكم المالك");
+   html=html.replace("العب مع ناس تانية","📂 الغرف المفتوحة");
+   html=html.replace("شوف الغرف المفتوحة، ابحث باسم الغرفة أو رقمها، وانضم للعب.","الغرف التي لم تُغلق بعد، مع توضيح إذا كان صاحب الغرفة متصلًا أو انقطع. اضغط تحديث لمراجعة آخر حالة.");
   }else{
    const matchCard='<section class="card web-discover web-random"><div class="kicker">🎲 البحث العشوائي</div>'
     +'<h2>دور على منافس</h2><p class="desc">هندخّلك غرفة متاحة بشكل عشوائي من غير ترتيب ولا عرض أسماء الغرف. لو مفيش غرفة جاهزة، هنعملك غرفة انتظار تلقائيًا.</p>'

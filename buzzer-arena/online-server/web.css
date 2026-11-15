@@ -105,3 +105,9 @@
 .md-stats-expand{display:block;width:100%;margin:14px 0 0;padding:12px;border-radius:12px;background:#753350;border:1px solid #ed9eb3;color:#fff;font-weight:900;font-size:13px;cursor:pointer}
 .md-stats-details{padding:5px 0 0}
 @media(max-width:420px){.md-stats-shortcut{padding:7px 8px;font-size:10px}.web-account{gap:5px;flex-wrap:wrap}.md-owner-stats{margin-top:9px}}
+
+/* Owner can review live/stale rooms immediately on mobile. */
+.md-owner-warning{margin:14px 0;padding:16px;border:1px solid #e8a4a4;background:#452b3e;color:#fce9ec;line-height:1.85}
+.md-owner-warning p{font-size:13px;margin:8px 0 0}
+.web-room small{display:block;line-height:1.55}
+.web-room-join:disabled{opacity:.65}
