@@ -53,3 +53,14 @@
 .web-random .md-match,.web-discover .md-match{background:linear-gradient(100deg,#f88b76,#ff527b);color:white;font-size:16px}
 .web-random .web-empty{margin-top:16px}
 @media(max-width:540px){.web-audio{flex-direction:column;align-items:stretch}.web-audio-actions{justify-content:space-between}.web-audio-actions button{min-width:120px}}
+
+
+/* Seven category multi-picker. All seven cycle sequentially by default. */
+.md-category-selector{margin:7px 0 15px}
+.md-category-all,.md-category-chip{border:1px solid #785575;background:#2c2849;color:#e9dcea;border-radius:12px;padding:10px 12px;min-height:44px;font-weight:800;text-align:center;line-height:1.4}
+.md-category-all{width:100%;margin-bottom:10px;min-height:52px;font-size:14px}
+.md-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.md-category-chip{font-size:12px;white-space:normal;overflow-wrap:anywhere}
+.md-category-all.active,.md-category-chip.active{background:#5b304f;border-color:#ffa4a8;color:#fff0e5;box-shadow:inset 0 0 0 1px #ff8e9c55}
+.md-category-note{color:#d4c6db;font-size:11px;line-height:1.8;margin:10px 0 0}
+@media(max-width:350px){.md-category-grid{grid-template-columns:1fr}}
