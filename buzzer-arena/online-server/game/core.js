@@ -459,6 +459,15 @@ function selectNewQuestion(){
  const recentSet=new Set(recentQuestions);
  const unseenCandidates=candidates.filter(x=>!recentSet.has(x.key));
  if(unseenCandidates.length)candidates=unseenCandidates;
+ else {
+  // When every candidate in the preferred difficulty was recently played,
+  // widen the search before repeating an old question from another match.
+  const unseenFromAnyTier=pool.filter(x=>!usedQuestions.has(x.key)&&!recentSet.has(x.key));
+  for(const tier of order){
+   const freshTier=unseenFromAnyTier.filter(x=>x.tier===tier);
+   if(freshTier.length){candidates=freshTier;break;}
+  }
+ }
  if(state.category===CAT_ALL){
   const entertainment=candidates.filter(x=>ENTERTAINMENT_CATS.includes(x.cat));
   const mystery=candidates.filter(x=>MYSTERY_CATS.includes(x.cat));
