@@ -472,13 +472,13 @@ function selectNewQuestion(){
  const reversed=item.cat==="🔄 كلمات معكوسة";
  const flagCode=typeof FLAG_QUESTION_IMAGES!=="undefined"?FLAG_QUESTION_IMAGES[item.key]:null;
  privateReverseLetters=reversed?spelledLetters(item.row[0]):[];
- const clue=reversed?[...item.row[0]].reverse().join(" • "):"";
- const row=reversed?["ركّب الكلمة من الحروف المعكوسة: "+clue,...item.row]:item.row.slice();
+ const row=reversed?["🎧 استمع إلى الحروف المعكوسة وحدد الكلمة الصحيحة.",...item.row]:item.row.slice();
  if(flagCode)row[0]="لأي دولة هذا العلم؟";
  const options=row.slice(1).map((value,i)=>({value,correct:i===0}));
  for(let i=options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
  answerIndex=options.findIndex(x=>x.correct);
- return {cat:item.cat,q:row[0],options:options.map(x=>x.value),visual:flagCode||null,audioOnly:false,
+ return {cat:item.cat,q:row[0],options:options.map(x=>x.value),visual:flagCode||null,audioOnly:reversed,
+  audioCue:reversed?privateReverseLetters.join("، "):null,
   daily:(item.cat==="🧩 وصف"&&item.row.length===2),tier:item.tier};
 }
 function startMatch(){
