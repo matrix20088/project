@@ -111,3 +111,60 @@
 .md-owner-warning p{font-size:13px;margin:8px 0 0}
 .web-room small{display:block;line-height:1.55}
 .web-room-join:disabled{opacity:.65}
+
+
+/* Clear primary web landing actions: fast matchmaking or a room with a friend. */
+.web-hero{margin:8px auto 13px;max-width:690px}
+.web-hero h1{font-size:clamp(26px,5.5vw,42px);line-height:1.3;margin:5px 0 8px}
+.web-hero p{line-height:1.65;font-size:13px;max-width:620px}
+.web-hero .web-eyebrow{margin:3px 0}
+.md-entry-home{margin:9px auto 18px;max-width:800px;padding:0}
+.md-entry-kicker{text-align:center;color:#ffc88e;font-size:13px;font-weight:900;margin:0 0 9px}
+.md-entry-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.md-play-primary{appearance:none;border:1px solid #ffb3c0;border-radius:20px;padding:16px 13px;min-height:107px;display:flex;gap:11px;align-items:center;text-align:right;color:#fff;cursor:pointer;box-shadow:0 6px 22px #100d2544;transition:transform .15s,border-color .15s;overflow:hidden}
+.md-play-primary:active{transform:scale(.985)}
+.md-play-primary:disabled{opacity:.6}
+.md-play-random{background:linear-gradient(127deg,#773364,#b94470 55%,#dc6572)}
+.md-play-friend{background:linear-gradient(126deg,#1e5372,#375b87 50%,#68529f);border-color:#8bb7e7}
+.md-play-emoji{font-size:37px;line-height:1}
+.md-play-primary>span:nth-child(2){display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.md-play-primary strong{font-size:18px;line-height:1.45;font-weight:950}
+.md-play-primary small{display:block;font-size:11px;font-weight:600;line-height:1.65;color:#f9eaf4}
+.md-play-arrow{font-size:21px;color:#ffdeca}
+.md-entry-other{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin:12px 0}
+.md-entry-other button{min-height:42px;padding:9px 14px;background:#292640;color:#eee0ee;border:1px solid #79617e;border-radius:13px;cursor:pointer;font-size:13px;font-weight:850}
+.md-entry-other button[aria-expanded=true]{background:#573652;border-color:#efadbb}
+.md-invite-arrived,.md-invite-auth{border:1px solid #b18dff;background:#362950;color:#f4e4ff;padding:12px 14px;border-radius:13px;text-align:center;line-height:1.8;font-size:13px;margin:10px auto}
+.md-invite-auth{max-width:510px}
+.md-join-panel{background:linear-gradient(145deg,#342945,#211d37);border:1px solid #836588;border-radius:19px;padding:16px;margin:12px auto;max-width:610px}
+.md-join-panel label{display:block;color:#fff0dc;font-weight:900;font-size:14px;margin:0 0 10px}
+.md-join-panel form{display:flex;gap:9px;align-items:stretch}
+.md-join-panel input{border:1px solid #6780b7;border-radius:13px;min-width:0;flex:1;max-width:none;background:#101d3c;color:#fff;text-align:center;direction:ltr;letter-spacing:4px;font-size:22px;font-weight:900;min-height:50px}
+.md-join-panel form button{border:0;border-radius:13px;background:#ff7d92;color:#2b1930;padding:8px 13px;font-size:14px;font-weight:900;white-space:nowrap}
+.md-join-panel p{font-size:12px;color:#d9c3db;line-height:1.7;margin:9px 0 0}
+.md-friend-custom{max-width:690px;margin:12px auto 22px}
+.md-lobby-share{border-top:1px solid #886c8b;margin-top:13px;padding-top:13px;text-align:center}
+.md-lobby-share p{font-size:13px;line-height:1.8;color:#f4e0ef}
+.md-lobby-share-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin:11px 0}
+.md-lobby-share-actions button{border:1px solid #fa9da9;background:#673858;color:#fff;border-radius:12px;min-height:46px;padding:10px 17px;font-size:14px;font-weight:900;cursor:pointer}
+.md-lobby-share-actions button:last-child{background:#365174;border-color:#98b8e3}
+.md-lobby-share small{display:block;line-height:1.75;color:#dbcfdf}
+@media(max-width:700px){
+ .md-entry-actions{grid-template-columns:1fr;gap:9px}
+ .md-play-primary{min-height:88px;border-radius:17px;padding:12px 15px}
+ .md-play-primary strong{font-size:18px}
+ .md-play-emoji{font-size:34px}
+ .md-entry-home{margin:8px auto 16px}
+ .web-header{margin-bottom:9px}
+ .web-hero{margin:6px auto 11px}
+ .web-hero h1{font-size:clamp(27px,8vw,34px)}
+}
+@media(max-width:390px){
+ .md-play-primary strong{font-size:16px}
+ .md-play-primary small{font-size:10px}
+ .md-join-panel form{flex-wrap:wrap}
+ .md-join-panel form button{width:100%;min-height:45px}
+ .md-entry-other{gap:7px}
+ .md-entry-other button{flex:1;padding:8px 10px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.md-play-primary{transition:none}}
