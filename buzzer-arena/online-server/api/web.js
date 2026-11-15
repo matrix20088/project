@@ -69,6 +69,7 @@ async function allRooms(query){
   const state=await read(ROOM_ROOT+"/"+entry.code+"/state.json");
   const s=state?.message?.s;
   const stale=!state?.updated||Date.now()-state.updated>90_000;
+  if(stale&&Date.now()-entry.created>60_000)continue;
   if(s?.phase==="finished"||s?.phase==="paused")continue;
   if(!stale&&Array.isArray(s?.players)&&s.players.length>=entry.target)continue;
   result.push({code:entry.code,title:entry.title,host:entry.hostName,target:entry.target,

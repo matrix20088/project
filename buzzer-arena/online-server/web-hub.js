@@ -36,7 +36,7 @@ function mdRoomCard(r){
  <button type="button" class="web-room-join" onclick="mdJoinRoom('${r.code}')" ${filled?"disabled":""}>انضم ↗</button></article>`;
 }
 function mdHubScreen(){
- const cats=[CAT_ALL,...CAT_KEYS];
+ const cats=[CAT_ALL,...CAT_KEYS.filter(c=>c!=="🔄 كلمة مقلوبة")];
  return `<header class="web-header"><div class="web-brand">🧠 <span>من <b>دماغك</b></span></div><div class="web-account"><span>${mdUser.guest?"👻 ضيف "+wEscape(mdUser.name):"👤 "+wEscape(mdUser.name)}</span><button onclick="mdLogout()">خروج</button></div></header>
  <div class="web-hero"><span class="web-eyebrow">جاهز للمنافسة؟</span><h1>الدور عليك... <em>والقرار قرارك!</em></h1><p>من دماغك: صح +٢، غلط −١ | الاختيارات: صح +١، غلط −٢. أوّل لاعب يوصل ١٠ يكسب.</p></div>
  <div class="web-sections">

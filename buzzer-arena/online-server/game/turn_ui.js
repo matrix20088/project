@@ -1,3 +1,4 @@
+function webFlagEmoji(code){return String(code||"").toUpperCase().replace(/[A-Z]/g,ch=>String.fromCodePoint(127397+ch.charCodeAt(0)));}
 "use strict";
 // Coral visual identity, fully replacing buzzer-specific screens.
 nav=function(){return `<div class="nav"><div class="navbrand"><span class="logo md-logo">🧠</span><span>من <span style="color:var(--yellow)">دماغك</span></span></div><div class="pill">🎯 السباق إلى 10</div></div>`;};
@@ -72,7 +73,7 @@ renderQuestion=function(){
  const phase=state.phase,who=state.players.find(p=>p.seat===state.lockedSeat),mine=seat===state.lockedSeat;
  const level=TIER_LABELS[state.question?.tier]||"منوع";
  let html=nav()+renderPlayers()+timeHeader()+`<div class="banner md-turnBanner">${phase==="announce"?"🎙️ بنقرأ السؤال...":state.stealStage?"🔥 فرصة خطف!":"🎯 السؤال لدور "+esc(who?.name||"المتسابق")}</div>`+
- `<section class="card md-questionCard"><div class="kicker">${esc(state.question?.cat||"")} • ${esc(level)}</div><div class="question">${state.question?.audioOnly?"🎧 اسمع الحروف بصوت الحكم":esc(state.question?.q||"")}${state.question?.visual?'<div class="flagPhoto"><img src="flags/'+esc(state.question.visual)+'.svg" alt="علم دولة" decoding="async"></div>':""}</div></section>`;
+ `<section class="card md-questionCard"><div class="kicker">${esc(state.question?.cat||"")} • ${esc(level)}</div><div class="question">${state.question?.audioOnly?"🎧 اسمع الحروف بصوت الحكم":esc(state.question?.q||"")}${state.question?.visual?'<div class="flagPhoto" style="font-size:95px"><span role="img" aria-label="علم دولة">'+webFlagEmoji(state.question.visual)+'</span></div>':""}</div></section>`;
  if(phase==="announce")html+=`<div class="notice">🎙️ السؤال هيتقرأ وبعده يبدأ دور المتسابق.</div>`;
  if(phase==="question"){
   if(mine){html+=`<section class="card md-decide"><h3>🧠 هتجاوب إزاي؟</h3><p class="small">اختار دلوقتي؛ بمجرد طلب الاختيارات مش هتقدر ترجع.</p>
