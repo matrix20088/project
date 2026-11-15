@@ -18,6 +18,10 @@ jobs:
           node-version: '22'
       - name: Verify fair turn-based game and ten-point winner
         run: node buzzer-arena/tests/turn_mode.test.cjs
+      - name: Verify one-time onboarding walkthrough
+        run: |
+          node --check buzzer-arena/app/src/main/assets/onboarding.js
+          node buzzer-arena/tests/onboarding.test.cjs
       - name: Validate backend syntax and room logic
         run: |
           node --check buzzer-arena/online-server/api/room.js
@@ -61,18 +65,18 @@ jobs:
         run: gradle -p buzzer-arena :app:assembleDebug :app:bundleRelease --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: Men-Demaghak-v13-APK
+          name: Men-Demaghak-v14-APK
           path: buzzer-arena/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: Men-Demaghak-v13-unsigned-AAB
+          name: Men-Demaghak-v14-unsigned-AAB
           path: buzzer-arena/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
       - name: Publish APK release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Men-Demaghak-v13.apk
-          gh release delete men-demaghak-v13 --yes 2>/dev/null || true
-          gh release create men-demaghak-v13 Men-Demaghak-v13.apk --title "من دماغك 13.0 — أدوار عادلة وهوية مرجانية" --notes "Turn-based Arabic quiz with no buzzer. Players alternate questions; typed correct +2, wrong -1; choices correct +1, wrong -2; a single steal chance for the next player after a wrong answer. First to reach ten points wins regardless of question count. Six-digit online rooms, local Bluetooth, optional computer rival, and previous duel history are retained. Test APK is a developer debug build; the generated AAB is unsigned and must be signed with the user-owned upload key before Play submission."
+          cp buzzer-arena/app/build/outputs/apk/debug/app-debug.apk Men-Demaghak-v14.apk
+          gh release delete men-demaghak-v14 --yes 2>/dev/null || true
+          gh release create men-demaghak-v14 Men-Demaghak-v14.apk --title "من دماغك 14.0 — إرشادات تفاعلية لأول مرة" --notes "Turn-based Arabic quiz with no buzzer. Players alternate questions; typed correct +2, wrong -1; choices correct +1, wrong -2; a single steal chance for the next player after a wrong answer. First to reach ten points wins regardless of question count. Six-digit online rooms, local Bluetooth, optional computer rival, and previous duel history are retained. First-time players get a four-step home walkthrough, contextual hints on their own turns, and a replay control; each guide persists per device and never pauses the online match. Test APK is a developer debug build; the generated AAB is unsigned and must be signed with the user-owned upload key before Play submission."

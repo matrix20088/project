@@ -1,0 +1,16 @@
+/* First-run help: only displayed on its owner's device, never part of room state. */
+.md-tour-shade{position:fixed;inset:0;background:rgba(7,9,25,.74);z-index:3000}
+.md-tour-highlight{position:relative!important;z-index:3001!important;box-shadow:0 0 0 5px #ffb58f,0 0 28px 11px #ff667ebb!important;border-radius:16px!important;pointer-events:none!important;scroll-margin-top:48px}
+.md-tour-panel{position:fixed;z-index:3002;bottom:max(14px,env(safe-area-inset-bottom));left:12px;right:12px;max-width:480px;margin:auto;max-height:50dvh;overflow:auto;padding:17px 19px 18px;border:2px solid #ff9cab;border-radius:22px;background:linear-gradient(145deg,#432b4a,#251e3b);color:#fff6fa;box-shadow:0 12px 55px #000a;text-align:right;direction:rtl}
+.md-tour-top{display:flex;align-items:center;justify-content:space-between;font-weight:800;color:#ffe6bb;font-size:12px}
+.md-tour-top small{color:#ffbbc5}.md-tour-emoji{font-size:30px;margin:7px 0}
+.md-tour-panel h2{font-size:21px;margin:5px 0 8px;color:white}.md-tour-panel p{font-size:14px;line-height:1.9;margin:0 0 15px;color:#ffe8eb}
+.md-tour-actions{display:flex;gap:9px}.md-tour-actions button{border:0;border-radius:13px;min-height:45px;padding:9px 17px;font-weight:850;font-family:inherit;font-size:14px;cursor:pointer}
+.md-tour-skip{background:#56465d;color:#f9dfed;flex:1}.md-tour-next{background:#ff667e;color:white;flex:2;box-shadow:0 6px 20px #ff667e44}
+.md-inline-coach{background:#51324d;border:1.5px solid #ff9ea4;border-radius:14px;padding:12px;margin:8px 0 15px;box-shadow:0 0 20px #ff667e22;text-align:right}
+.md-inline-coach b{color:#ffe6aa;font-size:15px}.md-inline-coach p{font-size:13px;color:#fff2f5;line-height:1.9;margin:5px 0 8px}
+.md-inline-coach button{font:800 12px system-ui,sans-serif;border-radius:10px;border:1px solid #ffadb8;background:#63384d;color:#fff;padding:7px 13px;cursor:pointer}
+.md-coach-active .md-free,.md-coach-active .md-choices,.md-coach-active .answerSubmit,.md-coach-active .option.selectChoice{outline:2px solid #ffbb82;outline-offset:2px}
+.md-replay{display:block;margin:14px 0!important;opacity:.88}
+@media(max-height:610px){.md-tour-panel{max-height:56dvh}.md-tour-panel h2{font-size:18px}.md-tour-emoji{display:none}}
+@media(prefers-reduced-motion:reduce){.md-tour-highlight{scroll-behavior:auto!important}}
