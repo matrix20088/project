@@ -98,3 +98,10 @@
 .md-stats-csv{margin:13px 0 2px;width:100%}
 .md-privacy{margin:18px auto 8px;max-width:550px;text-align:center;font-size:11px;color:#91a5c3;line-height:1.7}
 @media(max-width:600px){.md-stats-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.md-stats-list{grid-template-columns:1fr;max-height:560px}.md-owner-stats{padding:12px}}
+
+/* Make owner analytics visible immediately on mobile, with a compact detail toggle. */
+.md-stats-shortcut{border:1px solid #eab5c7;border-radius:11px;padding:8px 10px;background:#672b50;color:#fff;white-space:nowrap;font-size:11px;font-weight:900}
+.md-owner-stats{scroll-margin-top:12px;border:1px solid #bc769b}
+.md-stats-expand{display:block;width:100%;margin:14px 0 0;padding:12px;border-radius:12px;background:#753350;border:1px solid #ed9eb3;color:#fff;font-weight:900;font-size:13px;cursor:pointer}
+.md-stats-details{padding:5px 0 0}
+@media(max-width:420px){.md-stats-shortcut{padding:7px 8px;font-size:10px}.web-account{gap:5px;flex-wrap:wrap}.md-owner-stats{margin-top:9px}}
