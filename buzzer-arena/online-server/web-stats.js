@@ -84,14 +84,28 @@
  const previousHub=mdHubScreen;
  mdHubScreen=function(){
   const h=previousHub();
-  if(!mdUser?.isOwner)return h;
-  // Keep the analytics overview above room creation, where owners can see it immediately.
   const placement='<div class="web-sections">';
-  if(h.includes(placement)){
-   const top=h.replace(placement,panel()+placement);
-   return top.replace('<div class="web-account">','<div class="web-account"><button type="button" class="md-stats-shortcut" onclick="mdScrollToStats()" aria-label="افتح الإحصائيات">📊 الإحصائيات</button>');
+  if(!mdUser?.isOwner){
+   // Make a display-name/real-owner mismatch visible instead of silently hiding admin controls.
+   if(!mdUser?.guest&&String(mdUser?.name||"").normalize("NFKC").trim().toLowerCase()==="owner"){
+    const username=esc(mdUser?.username||"غير معروف");
+    const warning='<section class="card md-owner-warning"><b>⚠️ حساب باسم Owner لكن صلاحية المالك لم تُؤكَّد.</b><p>اسم المستخدم المسجَّل: <strong>'+username+'</strong> — البيانات والغرف الإدارية لا تظهر إلا للحساب الموثّق.</p></section>';
+    return h.replace(placement,warning+placement);
+   }
+   return h;
   }
-  return panel()+h;
+  // Owner sees both room directory and visitor stats immediately, above room creation.
+  let out=h,room="";
+  const start=out.indexOf('<section class="card web-discover">');
+  if(start>=0){
+   const end=out.indexOf('</section>',start);
+   if(end>start){room=out.slice(start,end+10);out=out.slice(0,start)+out.slice(end+10);}
+  }
+  if(out.includes(placement)){
+   out=out.replace(placement,panel()+placement+room);
+   return out.replace('<div class="web-account">','<div class="web-account"><button type="button" class="md-stats-shortcut" onclick="mdScrollToStats()" aria-label="افتح الإحصائيات">📊 الإحصائيات</button>');
+  }
+  return panel()+out;
  };
  function redraw(){
   const f=document.getElementById("webTitle");if(f)mdRoomTitle=String(f.value||"").slice(0,40);
