@@ -31,7 +31,7 @@
   try{
    const r=await request({action:"create",target});if(ticket!==epoch)return;
    code=r.code;token=r.token;active=true;lastEvents=Date.now()-1500;lastState=0;errors=0;
-   try{await webAction({action:"publish",code,token,title:String(window.mdRoomTitle||"غرفة من دماغك").slice(0,40)});}catch(e){console.warn("room directory",e.message);}
+   try{await webAction({action:"publish",code,token,mode:window.mdRoomMatchMode==="random"?"random":"friend",title:String(window.mdRoomTitle||"غرفة من دماغك").slice(0,40)});}catch(e){console.warn("room directory",e.message);}
    if(ticket!==epoch)return;
    notify("hosting",target);notify("roomCode",code);schedule(ticket,20);
   }catch(e){if(ticket===epoch){active=false;notify("error","تعذر إنشاء الغرفة: "+e.message);}}

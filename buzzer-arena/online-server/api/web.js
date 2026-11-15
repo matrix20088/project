@@ -79,7 +79,7 @@ async function allRooms(query,forOwner=false){
   if(!forOwner&&!stale&&Array.isArray(s?.players)&&s.players.length>=entry.target)continue;
   result.push({code:entry.code,title:entry.title,host:entry.hostName,target:entry.target,
     players:Array.isArray(s?.players)?s.players.filter(p=>p.online).length:1,created:entry.created,lastActive,
-    expires:entry.expires,phase:s?.phase||"lobby",stale});
+    expires:entry.expires,phase:s?.phase||"lobby",stale,mode:entry.mode||"friend"});
   if(result.length>=40)break;
  }
  return result;
@@ -138,7 +138,7 @@ export default async function handler(req,res){
   if(!user)return json(res,401,{error:"سجّل الدخول أو ادخل كضيف"});
   if(action==="match"){
    if(!throttle(req,"list"))return json(res,429,{error:"استنى دقيقة وجرب تاني"});
-   const available=(await allRooms("",false)).filter(r=>r.phase==="lobby"&&r.players<r.target&&(!r.stale||Date.now()-r.created<12000));
+   const available=(await allRooms("",false)).filter(r=>r.phase==="lobby"&&r.players<r.target&&r.mode==="random"&&(!r.stale||Date.now()-r.created<12000));
    if(!available.length)return json(res,200,{ok:true,code:null,create:true});
    const selected=available[randomInt(available.length)];
    return json(res,200,{ok:true,code:selected.code,create:false});
@@ -154,7 +154,8 @@ export default async function handler(req,res){
     return json(res,200,{ok:true});
    }
    const title=String(req.body.title||"").trim().replace(/[<>]/g,"").slice(0,40)||"غرفة "+user.name;
-   const record={code,title,hostName:user.name,target:meta.target,created:meta.created,expires:meta.expires,closed:false};
+   const mode=req.body.mode==="random"?"random":"friend";
+   const record={code,title,hostName:user.name,target:meta.target,mode,created:meta.created,expires:meta.expires,closed:false};
    await write(pathRoom,record,true);
    return json(res,200,{ok:true,room:record});
   }
