@@ -1,0 +1,19 @@
+{
+  "name": "من دماغك — تحدي الأسئلة",
+  "short_name": "من دماغك",
+  "description": "لعبة أسئلة جماعية أونلاين بدون جرس، أول 10 نقاط يفوز",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101329",
+  "theme_color": "#ff667e",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
