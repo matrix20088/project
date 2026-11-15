@@ -1,5 +1,5 @@
 import {get,put,list} from "@vercel/blob";
-import {randomBytes,scrypt as scryptCallback,timingSafeEqual,createHash} from "node:crypto";
+import {randomBytes,randomInt,scrypt as scryptCallback,timingSafeEqual,createHash} from "node:crypto";
 import {promisify} from "node:util";
 
 const scrypt=promisify(scryptCallback);
@@ -38,17 +38,17 @@ async function userFor(req){
  if(!/^[a-f0-9]{64}$/.test(token))return null;
  const session=await read(path("sessions",hash(token)));
  if(!session||session.expires<Date.now())return null;
- return {id:session.id,name:session.name,username:session.username||null,guest:!!session.guest};
+ return {id:session.id,name:session.name,username:session.username||null,guest:!!session.guest,isOwner:!session.guest&&session.username==="owner"&&session.id===hash("owner")};
 }
 async function loginSession(res,details,isGuest){
  const token=randomBytes(32).toString("hex"),hours=isGuest?GUEST_HOURS:SESSION_DAYS*24;
  await write(path("sessions",hash(token)),{...details,guest:isGuest,expires:Date.now()+hours*3_600_000});
  setCookie(res,token,hours*3600);
- return {id:details.id,name:details.name,username:details.username||null,guest:isGuest};
+ return {id:details.id,name:details.name,username:details.username||null,guest:isGuest,isOwner:!isGuest&&details.username==="owner"&&details.id===hash("owner")};
 }
 async function passwordHash(password,salt){return (await scrypt(password,salt,64,{maxmem:64*1024*1024})).toString("hex");}
 function validPassword(x){return typeof x==="string"&&x.length>=8&&x.length<=128;}
-async function allRooms(query){
+async function allRooms(query,forOwner=false){
  const entries=[];let cursor;
  for(let pg=0;pg<3;pg++){
   const found=await list({prefix:ROOT+"/rooms/",limit:100,cursor});
@@ -70,12 +70,12 @@ async function allRooms(query){
   const s=state?.message?.s;
   const stale=!state?.updated||Date.now()-state.updated>90_000;
   if(stale&&Date.now()-entry.created>60_000)continue;
-  if(s?.phase==="finished"||s?.phase==="paused")continue;
-  if(!stale&&Array.isArray(s?.players)&&s.players.length>=entry.target)continue;
+  if(!forOwner&&(s?.phase==="finished"||s?.phase==="paused"))continue;
+  if(!forOwner&&!stale&&Array.isArray(s?.players)&&s.players.length>=entry.target)continue;
   result.push({code:entry.code,title:entry.title,host:entry.hostName,target:entry.target,
     players:Array.isArray(s?.players)?s.players.filter(p=>p.online).length:1,created:entry.created,
     expires:entry.expires,phase:s?.phase||"lobby",stale});
-  if(result.length>=24)break;
+  if(result.length>=40)break;
  }
  return result;
 }
@@ -84,12 +84,15 @@ export default async function handler(req,res){
   if(req.method==="OPTIONS")return json(res,405,{error:"Not allowed"});
   if(req.method==="GET"){
    const action=String(req.query.action||"");
-   if(action==="health")return json(res,200,{ok:true,app:"Men Demaghak web",version:1,auth:"registered-and-guest",rooms:"public-discovery"});
+   if(action==="health")return json(res,200,{ok:true,app:"Men Demaghak web",version:1,auth:"registered-and-guest",rooms:"owner-only-and-random-matchmaking"});
    if(action==="me")return json(res,200,{ok:true,user:await userFor(req)});
    if(action==="rooms"){
+    const user=await userFor(req);
+    if(!user)return json(res,401,{error:"سجّل الدخول أولًا"});
+    if(!user.isOwner)return json(res,403,{error:"قائمة الغرف متاحة للمالك فقط"});
     if(!throttle(req,"list"))return json(res,429,{error:"طلبات كتير، حاول بعد دقيقة"});
     const search=String(req.query.search||"").trim().toLowerCase().slice(0,40);
-    return json(res,200,{ok:true,rooms:await allRooms(search)});
+    return json(res,200,{ok:true,rooms:await allRooms(search,true)});
    }
    return json(res,404,{error:"Not found"});
   }
@@ -108,6 +111,7 @@ export default async function handler(req,res){
    if(!nameOK(username)||!validPassword(password))return json(res,400,{error:"اسم المستخدم 3–24 حرفًا، وكلمة المرور 8 أحرف على الأقل"});
    const accountPath=path("accounts",hash(username));
    if(action==="register"){
+    if(username==="owner")return json(res,403,{error:"اسم المستخدم ده مخصص لمالك اللعبة"});
     const salt=randomBytes(16).toString("hex");
     const digest=await passwordHash(password,salt);
     const record={id:hash(username),username,name:nickname(req.body.name)||username.slice(0,18),
@@ -127,6 +131,13 @@ export default async function handler(req,res){
   if(action==="logout"){setCookie(res,"",0);return json(res,200,{ok:true});}
   const user=await userFor(req);
   if(!user)return json(res,401,{error:"سجّل الدخول أو ادخل كضيف"});
+  if(action==="match"){
+   if(!throttle(req,"list"))return json(res,429,{error:"استنى دقيقة وجرب تاني"});
+   const available=(await allRooms("",false)).filter(r=>r.phase==="lobby"&&r.players<r.target&&!r.stale);
+   if(!available.length)return json(res,200,{ok:true,code:null,create:true});
+   const selected=available[randomInt(available.length)];
+   return json(res,200,{ok:true,code:selected.code,create:false});
+  }
   if(action==="publish"||action==="close"){
    const code=String(req.body.code||""),token=String(req.body.token||"");
    if(!/^[1-9][0-9]{5}$/.test(code)||!/^[a-f0-9]{64}$/.test(token))return json(res,400,{error:"بيانات الغرفة غير صحيحة"});
