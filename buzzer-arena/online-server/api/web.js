@@ -61,6 +61,8 @@ async function allRooms(query,forOwner=false){
  for(const entry of entries.slice(0,200)){
   const doc=await read(entry.pathname);
   if(!doc||doc.expires<=now||doc.closed)continue;
+  // Private friend rooms never enter public anonymous matchmaking discovery.
+  if(!forOwner&&doc.mode!=="random")continue;
   if(query&&!([doc.code,doc.title,doc.hostName].some(x=>String(x).toLowerCase().includes(query))))continue;
   filtered.push(doc);
  }
