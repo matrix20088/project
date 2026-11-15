@@ -116,7 +116,7 @@ export default async function handler(req,res){
     const id=String(body.id||""),player=await guestFor(code,id,token);
     if(!player)return json(res,403,{error:"Guest authentication failed"});
     const message=body.message;
-    if(!message||!["hello","buzz","choice","typed","skipRequest","leave"].includes(message.t)||JSON.stringify(message).length>400)
+    if(!message||!["hello","buzz","choice","typed","mode","skipRequest","leave"].includes(message.t)||JSON.stringify(message).length>400)
      return json(res,400,{error:"Guest action invalid"});
     await save(eventPath(code),{kind:"event",id,message});
     return json(res,200,{ok:true});
