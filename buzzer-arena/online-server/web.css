@@ -70,3 +70,31 @@
 .md-audio-replay p{color:#f2dcef;font-size:13px;line-height:1.9;margin:2px 0 12px}
 .md-audio-replay .btn{max-width:420px;margin:0 auto}
 .md-audio-replay .btn:disabled{opacity:.62;background:#38394e;color:#c2b7d1;box-shadow:none}
+
+/* Owner-only browser-unique visitors and started-match dashboard. */
+.md-owner-stats{margin:14px 0 12px;padding:16px}
+.md-stats-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.md-stats-head h2{font-size:19px;margin:4px 0}
+.md-stats-refresh,.md-stats-csv{background:#243c5c;border:1px solid #6683a4;border-radius:11px;padding:10px 13px;color:#fff;font-weight:700;cursor:pointer}
+.md-stats-refresh:disabled{opacity:.65}
+.md-stats-explain,.md-stats-extra,.md-stats-loading{color:#bdcce1;font-size:12px;line-height:1.8;margin:10px 0}
+.md-stats-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.md-stats-kpis>div{border:1px solid #4d607e;border-radius:12px;background:#1d304e;padding:11px 7px;text-align:center;display:flex;flex-direction:column;gap:4px}
+.md-stats-kpis strong{font-size:24px;font-weight:900;color:#fae8ac}
+.md-stats-kpis span{font-size:11px;color:#cbd9ef}
+.md-stats-warning{color:#ffcb82;font-size:12px}
+.md-stats-filters{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 11px}
+.md-stats-filters button{background:#1b2a44;color:#d0dcef;border:1px solid #607596;border-radius:10px;padding:10px 12px;font-weight:700}
+.md-stats-filters button.active{background:#3d587f;color:#fff;border-color:#a5c9fb}
+.md-stats-search{width:100%;margin:8px 0}
+.md-stats-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:480px;overflow-y:auto}
+.md-stats-person{background:#142741;border:1px solid #425672;border-radius:11px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.md-stats-name{display:flex;flex-direction:column;gap:3px;overflow-wrap:anywhere}
+.md-stats-name b{color:#f3f5ff;font-size:14px}
+.md-stats-name small,.md-stats-person>small{font-size:10px;color:#adbdd4;overflow-wrap:anywhere}
+.md-stats-state{font-size:12px;font-weight:800}
+.md-stats-state.yes{color:#8cf4be}
+.md-stats-state.no{color:#ffc58a}
+.md-stats-csv{margin:13px 0 2px;width:100%}
+.md-privacy{margin:18px auto 8px;max-width:550px;text-align:center;font-size:11px;color:#91a5c3;line-height:1.7}
+@media(max-width:600px){.md-stats-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.md-stats-list{grid-template-columns:1fr;max-height:560px}.md-owner-stats{padding:12px}}

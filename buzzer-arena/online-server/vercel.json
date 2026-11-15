@@ -6,6 +6,9 @@
     },
     "api/cleanup.js": {
       "maxDuration": 60
+    },
+    "api/stats.js": {
+      "maxDuration": 60
     }
   },
   "crons": [
