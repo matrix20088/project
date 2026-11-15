@@ -1,5 +1,6 @@
 import {get,put,list} from "@vercel/blob";
 import {randomBytes,createHash,timingSafeEqual} from "node:crypto";
+import {isGameOwner} from "./owner-auth.js";
 
 const ROOT="game-web/v1", ROOMS="game-rooms/v1",STATS="game-stats/v1/visitors/";
 const hash=x=>createHash("sha256").update(String(x)).digest("hex");
@@ -75,7 +76,7 @@ async function markPlayed(req,res,body){
 }
 async function dashboard(req,res){
  const owner=await sessionFor(req);
- if(!owner||owner.guest||owner.username!=="owner"||owner.id!==hash("owner"))return json(res,403,{error:"الإحصائيات متاحة لحساب المالك فقط"});
+ if(!await isGameOwner(owner))return json(res,403,{error:"الإحصائيات متاحة لحساب المالك فقط"});
  const entries=[];let cursor,complete=true;
  for(let page=0;page<30;page++){
   const batch=await list({prefix:STATS,limit:100,cursor});

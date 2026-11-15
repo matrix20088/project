@@ -1,6 +1,7 @@
 import {get,put,list} from "@vercel/blob";
 import {randomBytes,randomInt,scrypt as scryptCallback,timingSafeEqual,createHash} from "node:crypto";
 import {promisify} from "node:util";
+import {isGameOwner} from "./owner-auth.js";
 
 const scrypt=promisify(scryptCallback);
 const ROOT="game-web/v1",ROOM_ROOT="game-rooms/v1";
@@ -38,13 +39,13 @@ async function userFor(req){
  if(!/^[a-f0-9]{64}$/.test(token))return null;
  const session=await read(path("sessions",hash(token)));
  if(!session||session.expires<Date.now())return null;
- return {id:session.id,name:session.name,username:session.username||null,guest:!!session.guest,isOwner:!session.guest&&session.username==="owner"&&session.id===hash("owner")};
+ return {id:session.id,name:session.name,username:session.username||null,guest:!!session.guest,isOwner:await isGameOwner(session)};
 }
 async function loginSession(res,details,isGuest){
  const token=randomBytes(32).toString("hex"),hours=isGuest?GUEST_HOURS:SESSION_DAYS*24;
  await write(path("sessions",hash(token)),{...details,guest:isGuest,expires:Date.now()+hours*3_600_000});
  setCookie(res,token,hours*3600);
- return {id:details.id,name:details.name,username:details.username||null,guest:isGuest,isOwner:!isGuest&&details.username==="owner"&&details.id===hash("owner")};
+ return {id:details.id,name:details.name,username:details.username||null,guest:isGuest,isOwner:!isGuest&&await isGameOwner({...details,guest:false})};
 }
 async function passwordHash(password,salt){return (await scrypt(password,salt,64,{maxmem:64*1024*1024})).toString("hex");}
 function validPassword(x){return typeof x==="string"&&x.length>=8&&x.length<=128;}
@@ -68,12 +69,16 @@ async function allRooms(query,forOwner=false){
  for(const entry of filtered.slice(0,35)){
   const state=await read(ROOM_ROOT+"/"+entry.code+"/state.json");
   const s=state?.message?.s;
-  const stale=!state?.updated||Date.now()-state.updated>90_000;
-  if(stale&&Date.now()-entry.created>60_000)continue;
+  const heartbeat=await read(ROOM_ROOT+"/"+entry.code+"/heartbeat.json");
+  const lastActive=Math.max(Number(heartbeat?.updated)||0,Number(state?.updated)||0);
+  const stale=!lastActive||Date.now()-lastActive>90_000;
+  // The owner sees all nonclosed, unexpired rooms, including stale rooms for diagnosis.
+  // Other players see only currently alive rooms (plus a short initial creation grace).
+  if(!forOwner&&stale&&Date.now()-entry.created>60_000)continue;
   if(!forOwner&&(s?.phase==="finished"||s?.phase==="paused"))continue;
   if(!forOwner&&!stale&&Array.isArray(s?.players)&&s.players.length>=entry.target)continue;
   result.push({code:entry.code,title:entry.title,host:entry.hostName,target:entry.target,
-    players:Array.isArray(s?.players)?s.players.filter(p=>p.online).length:1,created:entry.created,
+    players:Array.isArray(s?.players)?s.players.filter(p=>p.online).length:1,created:entry.created,lastActive,
     expires:entry.expires,phase:s?.phase||"lobby",stale});
   if(result.length>=40)break;
  }

@@ -4,6 +4,7 @@ import { randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 const ROOT="game-rooms/v1";
 const TTL=60*60*1000;
 const KEYS=400;
+const roomHeartbeats=new Map();
 const json=(r,n,d)=>r.status(n).setHeader("Cache-Control","no-store").json(d);
 const codeOK=x=>/^[1-9][0-9]{5}$/.test(String(x||""));
 const idOK=x=>/^[a-f0-9]{24}$/.test(String(x||""));
@@ -87,6 +88,13 @@ export default async function handler(req,res){
    if(role==="host"){
     if(!safeEqual(token,meta.hostToken))return json(res,403,{error:"Host authentication failed"});
     if(action==="poll"){
+     // Heartbeat while host is connected, even if the lobby state has not changed.
+     const now=Date.now();
+     if(now-(roomHeartbeats.get(code)||0)>25000){
+      await save(key(code,"heartbeat.json"),{updated:now},true);
+      roomHeartbeats.set(code,now);
+      if(roomHeartbeats.size>600){for(const [k,t] of roomHeartbeats)if(now-t>120000)roomHeartbeats.delete(k);}
+     }
      const since=Math.max(Date.now()-119999,Math.min(Date.now(),Number(body.since)||Date.now()-10000));
      const events=await eventsSince(code,since);
      return json(res,200,{ok:true,events,time:Date.now()});
