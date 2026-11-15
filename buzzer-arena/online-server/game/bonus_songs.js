@@ -8,7 +8,7 @@
  for(let i=0;i<songs.length;i++){
   const [song,artist]=songs[i];
   const q="مين صاحب أغنية «"+song+"»؟";
-  if(existing.has(q))continue;
+  if(existing.has(q)||QUESTIONS[cat].some(row=>row[0].includes(song)&&/أغنية|غنّى|غنى|مين صاحب/.test(row[0])))continue;
   const candidates=artists.filter(x=>x!==artist);
   const first=(i*11+5)%candidates.length;
   const wrong=[candidates[first],candidates[(first+3)%candidates.length],candidates[(first+7)%candidates.length]];
