@@ -67,28 +67,41 @@
      +'<small>آخر ظهور: '+fmt(r.lastSeen)+(r.played?' · أول لعب: '+fmt(r.firstPlayed):'')+'</small></div>').join('')+'</div>'
     :'<p class="md-stats-loading">لا يوجد زوار مطابقون للفلتر.</p>');
  }
+ let detailsOpen=false;
  function panel(){
   const filters=[["all","الكل"],["played","🎮 لعبوا"],["not","👀 لم يلعبوا"]];
-  return '<section class="card md-owner-stats" aria-label="إحصائيات المالك">'
+  return '<section class="card md-owner-stats" id="mdOwnerStats" aria-label="إحصائيات المالك">'
    +'<div class="md-stats-head"><div><div class="kicker">📊 لوحة المالك</div><h2>الزوار واللاعبين</h2></div><button type="button" class="md-stats-refresh" onclick="mdRefreshStats()" '+(loading?'disabled':'')+'>🔄 تحديث</button></div>'
    +'<p class="md-stats-explain">كل متصفح يتحسب مرة واحدة؛ «لعب» تعني دخوله مباراة بدأت فعلًا، مش مجرد إنشاء غرفة أو فتح الصفحة.</p>'
    +counts()
-   +(stats?'<div class="md-stats-filters">'+filters.map(([key,title])=>'<button type="button" class="'+(selectedView===key?'active':'')+'" onclick="mdStatsView(\''+key+'\')">'+title+'</button>').join('')+'</div>'
+   +(stats?'<button type="button" class="md-stats-expand" aria-expanded="'+detailsOpen+'" onclick="mdToggleStatsDetails()">'+(detailsOpen?'▲ اخفي كشف الزوار':'▼ اعرض كشف الزوار: مين لعب ومين لا')+'</button>':'')
+   +(stats&&detailsOpen?'<div class="md-stats-details"><div class="md-stats-filters">'+filters.map(([key,title])=>'<button type="button" class="'+(selectedView===key?'active':'')+'" onclick="mdStatsView(\''+key+'\')">'+title+'</button>').join('')+'</div>'
       +'<input class="field md-stats-search" placeholder="ابحث باسم الزائر أو الحساب أو الرقم" value="'+esc(search)+'" oninput="mdStatsSearch(this.value)" aria-label="البحث في الزوار"/>'
       +'<div id="mdStatsRows">'+rowHtml()+'</div>'
-      +'<button type="button" class="md-stats-csv" onclick="mdDownloadStats()">⬇️ تنزيل كل الزوار CSV</button>':'')
+      +'<button type="button" class="md-stats-csv" onclick="mdDownloadStats()">⬇️ تنزيل كل الزوار CSV</button></div>':'')
    +'</section>';
  }
  const previousHub=mdHubScreen;
  mdHubScreen=function(){
   const h=previousHub();
   if(!mdUser?.isOwner)return h;
-  return h.replace(/<p class="web-foot">/,panel()+'<p class="web-foot">');
+  // Keep the analytics overview above room creation, where owners can see it immediately.
+  const placement='<div class="web-sections">';
+  if(h.includes(placement)){
+   const top=h.replace(placement,panel()+placement);
+   return top.replace('<div class="web-account">','<div class="web-account"><button type="button" class="md-stats-shortcut" onclick="mdScrollToStats()" aria-label="افتح الإحصائيات">📊 الإحصائيات</button>');
+  }
+  return panel()+h;
  };
  function redraw(){
   const f=document.getElementById("webTitle");if(f)mdRoomTitle=String(f.value||"").slice(0,40);
   renderHome();
  }
+ window.mdScrollToStats=function(){
+  const section=document.getElementById("mdOwnerStats");
+  if(section&&typeof section.scrollIntoView==="function")section.scrollIntoView({behavior:"smooth",block:"start"});
+ };
+ window.mdToggleStatsDetails=function(){detailsOpen=!detailsOpen;redraw();mdScrollToStats();};
  window.mdStatsView=function(view){
   if(!["all","played","not"].includes(view))return;
   selectedView=view;redraw();
