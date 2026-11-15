@@ -425,7 +425,7 @@ window.onNative=(type,detail)=>{
 };
 function selectNewQuestion(){
  const requested=difficultyByScore(state.players.map(p=>p.score));
- const eligible=state.category===CAT_ALL?CAT_KEYS.filter(cat=>cat!=="🔄 كلمة مقلوبة"||voiceOn&&voiceAvailable):[state.category];
+ const eligible=state.category===CAT_ALL?CAT_KEYS.filter(cat=>cat!=="🔄 كلمات معكوسة"||voiceOn&&voiceAvailable):[state.category];
  const pool=[];
  for(const cat of eligible){
   const rows=QUESTIONS[cat]||[];
@@ -469,16 +469,17 @@ function selectNewQuestion(){
  }
  const item=candidates[Math.floor(Math.random()*candidates.length)];
  usedQuestions.add(item.key);
- const reversed=item.cat==="🔄 كلمة مقلوبة";
+ const reversed=item.cat==="🔄 كلمات معكوسة";
  const flagCode=typeof FLAG_QUESTION_IMAGES!=="undefined"?FLAG_QUESTION_IMAGES[item.key]:null;
  privateReverseLetters=reversed?spelledLetters(item.row[0]):[];
- const row=reversed?["🎧 اسمع الحروف من الحكم، وركّب الكلمة بالمقلوب.",...item.row]:item.row.slice();
+ const clue=reversed?[...item.row[0]].reverse().join(" • "):"";
+ const row=reversed?["ركّب الكلمة من الحروف المعكوسة: "+clue,...item.row]:item.row.slice();
  if(flagCode)row[0]="لأي دولة هذا العلم؟";
  const options=row.slice(1).map((value,i)=>({value,correct:i===0}));
  for(let i=options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
  answerIndex=options.findIndex(x=>x.correct);
- return {cat:item.cat,q:row[0],options:options.map(x=>x.value),visual:flagCode||null,audioOnly:reversed,
-  daily:typeof DAILY_CAT!=="undefined"&&item.cat===DAILY_CAT,tier:item.tier};
+ return {cat:item.cat,q:row[0],options:options.map(x=>x.value),visual:flagCode||null,audioOnly:false,
+  daily:(item.cat==="🧩 وصف"&&item.row.length===2),tier:item.tier};
 }
 function startMatch(){
  if(!host||!state||!allReady()||state.phase!=="lobby")return;
