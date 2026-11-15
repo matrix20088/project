@@ -241,7 +241,7 @@ function speakQuestion(text,round){
  if(!host)return;
  if(state?.question?.audioOnly){
   if(!voiceOn||!voiceAvailable){unavailableSpelling();return;}
-  try{Native.spellQuestion(String(text),JSON.stringify(privateReverseLetters),String(round));}
+  try{Native.spellQuestion(String(text),JSON.stringify(privateReverseLetters),String(round),state.question.audioIntro!==false);}
   catch(e){unavailableSpelling();}
   return;
  }
@@ -452,6 +452,13 @@ function selectNewQuestion(){
   for(const item of candidates)usedQuestions.delete(item.key);
  }
  if(!candidates.length)return null;
+ // Prefer questions that have not been asked in recent matches on this host device.
+ // Keep the tier selection logic intact but rotate away from recently played entries.
+ let recentQuestions=[];
+ try{recentQuestions=JSON.parse(localStorage.getItem("md_recent_question_keys_v2")||"[]");if(!Array.isArray(recentQuestions))recentQuestions=[];}catch(e){}
+ const recentSet=new Set(recentQuestions);
+ const unseenCandidates=candidates.filter(x=>!recentSet.has(x.key));
+ if(unseenCandidates.length)candidates=unseenCandidates;
  if(state.category===CAT_ALL){
   const entertainment=candidates.filter(x=>ENTERTAINMENT_CATS.includes(x.cat));
   const mystery=candidates.filter(x=>MYSTERY_CATS.includes(x.cat));
@@ -469,9 +476,17 @@ function selectNewQuestion(){
  }
  const item=candidates[Math.floor(Math.random()*candidates.length)];
  usedQuestions.add(item.key);
+ // Track across games, not only the currently open match.
+ try{
+  const recent=Array.isArray(recentQuestions)?recentQuestions:[];
+  const updated=recent.filter(k=>k!==item.key).concat(item.key).slice(-650);
+  localStorage.setItem("md_recent_question_keys_v2",JSON.stringify(updated));
+ }catch(e){}
  const reversed=item.cat==="🔄 كلمات معكوسة";
  const flagCode=typeof FLAG_QUESTION_IMAGES!=="undefined"?FLAG_QUESTION_IMAGES[item.key]:null;
  privateReverseLetters=reversed?spelledLetters(item.row[0]):[];
+ const entersReverse=reversed&&state.lastQuestionCategory!=="🔄 كلمات معكوسة";
+ state.lastQuestionCategory=item.cat;
  const row=reversed?["🎧 استمع إلى الحروف المعكوسة وحدد الكلمة الصحيحة.",...item.row]:item.row.slice();
  if(flagCode)row[0]="لأي دولة هذا العلم؟";
  const options=row.slice(1).map((value,i)=>({value,correct:i===0}));
@@ -479,6 +494,7 @@ function selectNewQuestion(){
  answerIndex=options.findIndex(x=>x.correct);
  return {cat:item.cat,q:row[0],options:options.map(x=>x.value),visual:flagCode||null,audioOnly:reversed,
   audioCue:reversed?privateReverseLetters.join("، "):null,
+  audioIntro:entersReverse,
   daily:(item.cat==="🧩 وصف"&&item.row.length===2),tier:item.tier};
 }
 function startMatch(){

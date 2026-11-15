@@ -37,9 +37,10 @@
  window.Native.speakMood=(text)=>say(text);
  window.Native.speakQuestion=(text,round)=>say(text,String(round));
  window.Native.speakChoice=(text)=>say(text);
- window.Native.spellQuestion=(text,letters,round)=>{
+ window.Native.spellQuestion=(text,letters,round,intro=true)=>{
   let chars=[];try{chars=JSON.parse(letters);}catch(e){}
-  say(chars.length?chars.join("، "):text,String(round));
+  const leading=intro?"يا أبطال، دخلنا تحدي الكلمات المعكوسة! ركّزوا مع الحروف. ":"";
+  say(leading+(chars.length?chars.join("، "):text),String(round));
  };
  window.Native.replayReverse=function(cue){if(!String(cue||"").trim())return false;if(!voiceOn||!synth||typeof window.SpeechSynthesisUtterance!=="function")return false;say(String(cue));return true;};
  window.Native.stopSpeech=stop;
@@ -52,7 +53,7 @@
   const s=packet.s;
   if(s.phase==="announce"&&s.question){
    const unique=String(s.roomCode||"")+"-"+s.round;
-   if(lastGuestRound!==unique){lastGuestRound=unique;say(s.question.audioOnly?s.question.audioCue:s.question.q);}
+   if(lastGuestRound!==unique){lastGuestRound=unique;say(s.question.audioOnly?(s.question.audioIntro?"يا أبطال، دخلنا تحدي الكلمات المعكوسة! ركّزوا مع الحروف. ":"")+s.question.audioCue:s.question.q);}
   }else if(s.phase==="result"&&s.result){
    const unique=String(s.roomCode||"")+"-"+s.round+"-"+s.result.seat+"-"+s.result.retry;
    if(lastGuestResult!==unique){
