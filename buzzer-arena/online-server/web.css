@@ -168,3 +168,5 @@
  .md-entry-other button{flex:1;padding:8px 10px;font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.md-play-primary{transition:none}}
+
+.md-stats-updated{display:block;color:#b8c8de;font-size:10px;line-height:1.7;margin-top:3px}
