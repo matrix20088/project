@@ -1,5 +1,6 @@
 import { get, put, list } from "@vercel/blob";
 import { randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import {participant,recordActiveSeats} from "./play-tracking.js";
 
 const ROOT="game-rooms/v1";
 const TTL=60*60*1000;
@@ -69,7 +70,7 @@ export default async function handler(req,res){
     for(let i=0;i<12;i++){
      const code=String(randomInt(100000,1000000));
      if(await load(key(code,"meta.json")))continue;
-     const hostToken=secret(),meta={target,hostToken,created:Date.now(),expires:Date.now()+TTL};
+     const hostToken=secret(),hostParticipant=await participant(req,res),meta={target,hostToken,hostParticipant,created:Date.now(),expires:Date.now()+TTL};
      try{await save(key(code,"meta.json"),meta,false);}catch(e){if(String(e).includes("already exists"))continue;throw e;}
      return json(res,201,{ok:true,code,token:hostToken,target,expires:meta.expires});
     }
@@ -79,7 +80,8 @@ export default async function handler(req,res){
    if(!meta)return json(res,404,{error:"الغرفة مش موجودة أو انتهت صلاحيتها"});
    if(action==="join"){
     const id=randomBytes(12).toString("hex"),token=secret();
-    const player={id,token,joined:Date.now()};
+    const identity=await participant(req,res);
+    const player={id,token,...identity,joined:Date.now()};
     await save(key(code,"players/"+id+".json"),player);
     await save(eventPath(code),{kind:"join",id});
     return json(res,201,{ok:true,code,id,token,expires:meta.expires});
@@ -104,6 +106,18 @@ export default async function handler(req,res){
      if(!message||message.t!=="state"||!message.s||JSON.stringify(message).length>85000)
       return json(res,400,{error:"State message invalid"});
      await save(key(code,"state.json"),{message,updated:Date.now()},true);
+     // Stats are written from the same authenticated, accepted state that starts gameplay.
+     // Never fail the actual match if reporting is temporarily unavailable.
+     if(["announce","question","answer","result","finished"].includes(message.s.phase)){
+      try{
+       const previous=await load(key(code,"stats-sync.json"));
+       const now=Date.now();
+       if(!previous?.updated||now-previous.updated>15000){
+        await recordActiveSeats(code,meta,message.s);
+        await save(key(code,"stats-sync.json"),{updated:now},true);
+       }
+      }catch(e){console.warn("room stats sync",String(e?.message||e).slice(0,150));}
+     }
      return json(res,200,{ok:true});
     }
     if(action==="welcome"){
@@ -111,6 +125,13 @@ export default async function handler(req,res){
      if(!idOK(id)||!Number.isInteger(seat)||seat< -1||seat>=meta.target||!(await load(key(code,"players/"+id+".json"))))
       return json(res,400,{error:"Bad guest ID or seat"});
      await save(key(code,"welcome/"+id+".json"),{seat,updated:Date.now()},true);
+     if(seat>=1){
+      const guest=await load(key(code,"players/"+id+".json"));
+      if(guest?.visitorId){
+       const row={id,visitorId:guest.visitorId,username:guest.username||"",name:guest.name||"",type:guest.type||"anonymous"};
+       await save(key(code,"seat-players/"+seat+".json"),row,true);
+      }
+     }
      return json(res,200,{ok:true});
     }
    }
