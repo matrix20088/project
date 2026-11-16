@@ -29,6 +29,7 @@
   target=Math.max(2,Math.min(4,Number(n)||2));botSeat=computer?target-1:-1;owner=true;
   notify("waiting","بنجهز الغرفة الأونلاين...");
   try{
+   await window.mdEnsureVisitor?.();
    const r=await request({action:"create",target});if(ticket!==epoch)return;
    code=r.code;token=r.token;active=true;lastEvents=Date.now()-1500;lastState=0;errors=0;
    try{await webAction({action:"publish",code,token,mode:window.mdRoomMatchMode==="random"?"random":"friend",title:String(window.mdRoomTitle||"غرفة من دماغك").slice(0,40)});}catch(e){console.warn("room directory",e.message);}
@@ -42,6 +43,7 @@
   if(!/^[1-9][0-9]{5}$/.test(code)){notify("error","رقم الغرفة لازم 6 أرقام");return;}
   notify("waiting","بندخل غرفة "+code+"...");
   try{
+   await window.mdEnsureVisitor?.();
    const r=await request({action:"join",code});if(ticket!==epoch)return;
    token=r.token;playerId=r.id;active=true;errors=0;
    notify("connected","تم الاتصال بالسيرفر");notify("roomCode",code);schedule(ticket,40);
@@ -61,6 +63,8 @@
  }
  async function readHost(){
   const data=await request({action:"poll",role:"host",code,token,since:lastEvents?lastEvents-1000:Date.now()-15000});
+  if(state&&["announce","question","answer","result","finished"].includes(state.phase))
+   void window.mdTrackPlayed?.({code,role:"host",token});
   for(const item of data.events||[]){
    if(processed.has(item.eventId))continue;
    processed.add(item.eventId);if(processed.size>1800)processed.clear();
@@ -90,10 +94,11 @@
   if(assignedSeat<0)return;
   if(r.message&&r.updated>lastState){
    lastState=r.updated;notify("message",JSON.stringify(r.message));
-   // A guest is counted only after an assigned seat receives a started game state.
-   if(assignedSeat>=0&&r.message.t==="state"&&["announce","question","answer","result","finished"].includes(r.message.s?.phase))
-    void window.mdTrackPlayed?.({code,role:"guest",token,id:playerId});
   }
+  // Reattempt while this guest remains in an actual running match. A single failed
+  // analytics request must not permanently mark a real player as a non-player.
+  if(assignedSeat>=0&&r.message?.t==="state"&&["announce","question","answer","result","finished"].includes(r.message.s?.phase))
+   void window.mdTrackPlayed?.({code,role:"guest",token,id:playerId});
  }
  window.Native={
   onlineCreate:(n,bot)=>{void create(n,bot);},

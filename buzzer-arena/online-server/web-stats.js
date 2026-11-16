@@ -2,7 +2,7 @@
 /* Anonymous browser-level unique visitor tracking. Personal stats visible only to owner. */
 (function(){
  let visitPromise=null,stats=null,loading=false,statsError="",selectedView="all",search="",lastTry=0;
- const playedRooms=new Set(),inFlight=new Set();
+ const playedRooms=new Set(),inFlight=new Set(),nextAttempt=new Map();
  const started=phase=>["announce","question","answer","result","finished"].includes(phase);
  function api(data){
   return fetch("/api/stats",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify(data)})
@@ -18,6 +18,8 @@
   const role=identity?.role;
   const key=role+"|"+code;
   if(!/^[1-9][0-9]{5}$/.test(code)||!["host","guest"].includes(role)||playedRooms.has(key)||inFlight.has(key))return;
+  if(Date.now()<(nextAttempt.get(key)||0))return;
+  nextAttempt.set(key,Date.now()+12000);
   inFlight.add(key);
   try{
    await visit();
@@ -26,6 +28,7 @@
   }catch(e){console.warn("match stats",e.message);}
   finally{inFlight.delete(key);}
  };
+ window.mdEnsureVisitor=visit;
  const originalAuth=mdAuthScreen;
  mdAuthScreen=function(){
   return originalAuth()+'<p class="md-privacy">📊 بنحسب المتصفحات المختلفة ومين بدأ مباراة. مش بنخزن عنوان الإنترنت في سجل الزوار.</p>';
