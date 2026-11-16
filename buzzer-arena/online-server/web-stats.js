@@ -1,7 +1,7 @@
 "use strict";
 /* Anonymous browser-level unique visitor tracking. Personal stats visible only to owner. */
 (function(){
- let visitPromise=null,stats=null,loading=false,statsError="",selectedView="all",search="",lastTry=0;
+ let visitPromise=null,stats=null,loading=false,statsError="",selectedView="all",search="",lastTry=0,lastUpdated=0;
  const playedRooms=new Set(),inFlight=new Set(),nextAttempt=new Map();
  const started=phase=>["announce","question","answer","result","finished"].includes(phase);
  function api(data){
@@ -74,7 +74,7 @@
  function panel(){
   const filters=[["all","الكل"],["played","🎮 لعبوا"],["not","👀 لم يلعبوا"]];
   return '<section class="card md-owner-stats" id="mdOwnerStats" aria-label="إحصائيات المالك">'
-   +'<div class="md-stats-head"><div><div class="kicker">📊 لوحة المالك</div><h2>الزوار واللاعبين</h2></div><button type="button" class="md-stats-refresh" onclick="mdRefreshStats()" '+(loading?'disabled':'')+'>🔄 تحديث</button></div>'
+   +'<div class="md-stats-head"><div><div class="kicker">📊 لوحة المالك</div><h2>الزوار واللاعبين</h2><small class="md-stats-updated">'+(lastUpdated?'آخر تحديث: '+new Date(lastUpdated).toLocaleTimeString('ar-EG')+' · تحديث تلقائي كل 30 ثانية':'تحديث تلقائي كل 30 ثانية')+'</small></div><button type="button" class="md-stats-refresh" onclick="mdRefreshStats()" '+(loading?'disabled':'')+'>🔄 تحديث</button></div>'
    +'<p class="md-stats-explain">كل متصفح يتحسب مرة واحدة؛ «لعب» تعني دخوله مباراة بدأت فعلًا، مش مجرد إنشاء غرفة أو فتح الصفحة.</p>'
    +counts()
    +(stats?'<button type="button" class="md-stats-expand" aria-expanded="'+detailsOpen+'" onclick="mdToggleStatsDetails()">'+(detailsOpen?'▲ اخفي كشف الزوار':'▼ اعرض كشف الزوار: مين لعب ومين لا')+'</button>':'')
@@ -133,7 +133,7 @@
   try{
    const r=await fetch("/api/stats?action=dashboard",{credentials:"same-origin",cache:"no-store"});
    const data=await r.json();if(!r.ok)throw Error(data.error||"تعذر عرض الإحصائيات");
-   stats=data;
+   stats=data;lastUpdated=Date.now();
   }catch(e){statsError=String(e.message||"تعذر عرض الإحصائيات");}
   finally{loading=false;redraw();}
  };
@@ -149,8 +149,13 @@
  const oldRender=renderHome;
  renderHome=function(){
   oldRender();
-  if(mdUser?.isOwner&&!stats&&!loading&&Date.now()-lastTry>5000)void mdRefreshStats();
+  if(mdUser?.isOwner&&!loading&&Date.now()-lastTry>(stats?30000:5000))void mdRefreshStats();
  };
+ // Keep the owner's numbers fresh while the dashboard is open.
+ setInterval(()=>{
+  if(mdUser?.isOwner&&!online&&!state&&document.visibilityState==="visible"&&!loading&&Date.now()-lastTry>=30000)
+   void mdRefreshStats();
+ },30000);
  void visit();
  renderHome();
 })();
