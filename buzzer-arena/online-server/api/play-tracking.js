@@ -4,7 +4,7 @@ import {createHash,randomBytes} from "node:crypto";
 const ROOT="game-web/v1/sessions/";
 const LEDGER="game-stats/v2/plays/";
 const hash=s=>createHash("sha256").update(String(s)).digest("hex");
-const key=(code,seat)=>LEDGER+code+"/"+seat+".json";
+const key=(code,seat,visitorId)=>LEDGER+code+"/"+seat+"-"+visitorId+".json";
 const blobOpts=(overwrite=false)=>({access:"private",addRandomSuffix:false,allowOverwrite:overwrite,contentType:"application/json"});
 export async function readPrivate(path){
  try{
@@ -40,9 +40,9 @@ export async function participant(req,res){
 export async function storePlayed(code,seat,person){
  if(!/^[1-9][0-9]{5}$/.test(String(code))||!Number.isInteger(seat)||seat<0||seat>3)return false;
  if(!person||!/^[a-f0-9]{32}$/.test(String(person.visitorId)))return false;
- const pathname=key(code,seat);
+ const pathname=key(code,seat,person.visitorId);
  const existing=await readPrivate(pathname);
- if(existing)return true; // Only one player per seat per room.
+ if(existing)return true; // Idempotent for each visitor participating in this room/seat.
  const doc={code,seat,visitorId:person.visitorId,username:person.username||"",name:person.name||"",
   type:person.type||"anonymous",playedAt:Date.now()};
  try{
