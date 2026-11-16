@@ -1,6 +1,7 @@
 import {get,put,list} from "@vercel/blob";
 import {randomBytes,createHash,timingSafeEqual} from "node:crypto";
 import {isGameOwner} from "./owner-auth.js";
+import {storePlayed} from "./play-tracking.js";
 
 const ROOT="game-web/v1", ROOMS="game-rooms/v1",STATS="game-stats/v1/visitors/";
 const hash=x=>createHash("sha256").update(String(x)).digest("hex");
@@ -71,6 +72,8 @@ async function markPlayed(req,res,body){
  if(!row.firstPlayed)row.firstPlayed=now;
  row.lastPlayed=now;
  if(!row.rooms.includes(code)){row.games++;row.rooms=[...row.rooms,code].slice(-100);}
+ // The independent immutable per-seat event survives races with repeated visitor pings.
+ await storePlayed(code,seat,{visitorId:id,username:row.username,name:row.lastName,type:row.type});
  await save(recordPath(id),row);
  return json(res,200,{ok:true,played:true,games:row.games});
 }
@@ -97,7 +100,45 @@ async function dashboard(req,res){
   }));
   rows.push(...chunk.filter(Boolean));
  }
+ // Reconcile the verified server-side participation ledger with visitor records.
+ // A user who played is counted even if their browser's tracking request never completed.
+ const events=[];let playedCursor,playComplete=true;
+ for(let page=0;page<30;page++){
+  const batch=await list({prefix:"game-stats/v2/plays/",limit:100,cursor:playedCursor});
+  events.push(...(batch.blobs||[]));
+  if(!batch.hasMore){playedCursor=null;break;}
+  playedCursor=batch.cursor;
+  if(page===29)playComplete=false;
+ }
+ const byId=new Map(rows.map(row=>[row.id,row]));
+ const recordedCodes=new Map();
+ for(let i=0;i<events.length;i+=20){
+  const chunk=await Promise.all(events.slice(i,i+20).map(x=>read(x.pathname)));
+  for(const event of chunk){
+   if(!event||!/^[a-f0-9]{32}$/.test(event.visitorId)||!/^[1-9][0-9]{5}$/.test(event.code))continue;
+   const id=event.visitorId,when=Number(event.playedAt)||Date.now();
+   let row=byId.get(id);
+   if(!row){
+    row=normalize({firstSeen:when,lastSeen:when},id);
+    byId.set(id,row);rows.push(row);
+   }
+   if(event.name&&!row.lastName)row.lastName=String(event.name).slice(0,18);
+   if(event.username&&!row.username)row.username=String(event.username).slice(0,24);
+   if(event.username)row.type="registered";
+   else if(event.type==="guest"&&row.type==="anonymous")row.type="guest";
+   row.firstPlayed=row.firstPlayed?Math.min(row.firstPlayed,when):when;
+   row.lastPlayed=Math.max(row.lastPlayed,when);
+   if(!recordedCodes.has(id))recordedCodes.set(id,new Set(row.rooms));
+   recordedCodes.get(id).add(event.code);
+  }
+ }
+ for(const [id,codes] of recordedCodes){
+  const row=byId.get(id);
+  row.games=Math.max(row.games,codes.size);
+  row.rooms=[...codes].slice(-100);
+ }
  rows.sort((a,b)=>b.lastSeen-a.lastSeen);
+ complete=complete&&playComplete;
  const now=Date.now(),startDay=new Date().setUTCHours(0,0,0,0);
  const played=rows.filter(x=>x.firstPlayed);
  const visitors=rows.length;
@@ -111,7 +152,7 @@ async function dashboard(req,res){
   newTodayUTC:day,newLast7Days:last7,registered:rows.filter(x=>x.type==="registered").length,
   guests:rows.filter(x=>x.type==="guest").length,anonymous:rows.filter(x=>x.type==="anonymous").length,
   gamesRecorded:rows.reduce((n,x)=>n+x.games,0)},
-  visitors:rows.map(format),note:"زائر فريد = متصفح يحتفظ بملف تعريف ارتباط؛ ليس ضمانًا أن كل متصفح يمثل شخصًا مختلفًا."});
+  visitors:rows.map(format),note:"اللاعب مُثبت من سيرفر المباراة، والزائر الفريد يعني متصفح يحتفظ بملف تعريف ارتباط؛ لا يساوي بالضرورة شخصًا مختلفًا."});
 }
 export default async function handler(req,res){
  try{
