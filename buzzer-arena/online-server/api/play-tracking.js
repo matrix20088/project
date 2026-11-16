@@ -61,22 +61,12 @@ export async function recordActiveSeats(code,meta,gameState){
  if(gameState.players.some(p=>p.seat===0&&p.online!==false)&&host?.visitorId){
   if(await storePlayed(code,0,host))saved++;
  }
- // Welcome tokens are assigned by the verified host to physical remote player seats.
- // Do not count a filled bot seat as a separate visitor.
- const {list}=await import("@vercel/blob");
- let cursor,entries=[];
- for(let page=0;page<3;page++){
-  const r=await list({prefix:"game-rooms/v1/"+code+"/players/",limit:100,cursor});
-  entries.push(...(r.blobs||[]));
-  if(!r.hasMore)break;cursor=r.cursor;
- }
- for(const entry of entries){
-  const guest=await readPrivate(entry.pathname);
-  if(!guest?.visitorId)continue;
-  const welcome=await readPrivate("game-rooms/v1/"+code+"/welcome/"+guest.id+".json");
-  const seat=Number(welcome?.seat);
-  if(!Number.isInteger(seat)||seat<1||seat>=meta.target)continue;
+ // Welcome mapping is written by the authenticated host only. Read a maximum of 3
+ // fixed-size seat records, not a growing list of room events on every state update.
+ for(let seat=1;seat<meta.target;seat++){
   if(!gameState.players.some(p=>p.seat===seat&&!p.bot&&p.online!==false))continue;
+  const guest=await readPrivate("game-rooms/v1/"+code+"/seat-players/"+seat+".json");
+  if(!guest?.visitorId)continue;
   if(await storePlayed(code,seat,guest))saved++;
  }
  return saved;
